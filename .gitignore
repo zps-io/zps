@@ -1,0 +1,11 @@
+.DS_Store
+*.db
+*.zpkg
+dist/
+extract/
+test/extract
+test/proto
+test/testrepo
+sat/
+*.iml
+.idea/

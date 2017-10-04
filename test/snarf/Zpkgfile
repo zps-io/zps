@@ -1,0 +1,41 @@
+meta {
+  namespace = "zpkg"
+  name = "uri"
+  value = "zpkg://solvent/tests/snarf@0.0.3:7"
+}
+
+meta {
+  namespace = "zpkg"
+  name = "summary"
+  value = "Snarf the ultimate zpkg"
+}
+
+meta {
+  namespace = "zpkg"
+  name = "description"
+  value = "The long description of the Snarf package, that is long, because it needs to be long."
+}
+
+meta {
+  namespace = "zpkg"
+  name = "description"
+  value = "A duplicate because they are neat"
+}  
+
+meta {
+  namespace = "zpkg"
+  name = "os"
+  value = "darwin"
+}
+
+meta {
+  namespace = "zpkg"
+  name = "arch"
+  value = "x86_64"
+}
+
+meta {
+  namespace = "vcs"
+  name = "uri"
+  value = "https://github.com/solvent-io/snarf"
+}

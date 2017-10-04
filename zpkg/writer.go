@@ -1,0 +1,82 @@
+package zpkg
+
+import (
+	"bufio"
+	"bytes"
+	"io"
+	"os"
+
+	"github.com/dsnet/compress/bzip2"
+	"github.com/lunixbochs/struc"
+	"github.com/solvent-io/zps/action"
+	"github.com/solvent-io/zps/zpkg/payload"
+)
+
+type Writer struct{}
+
+func NewWriter() *Writer {
+	return &Writer{}
+}
+
+func (w *Writer) Write(filename string, header *Header, manifest *action.Manifest, payload *payload.Writer) error {
+	var manifestBuffer bytes.Buffer
+
+	// compress header
+	bzw, _ := bzip2.NewWriter(&manifestBuffer, &bzip2.WriterConfig{Level: 7})
+
+	if _, err := io.WriteString(bzw, manifest.Json()); err != nil {
+		return err
+	}
+
+	if err := bzw.Close(); err != nil {
+		return err
+	}
+
+	// Finalize Header
+	header.ManifestLength = uint32(manifestBuffer.Len())
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	writer := bufio.NewWriter(file)
+
+	// Writer header
+	struc.Pack(writer, header)
+	writer.Flush()
+
+	// Write manifest
+	writer.Write(manifestBuffer.Bytes())
+	writer.Flush()
+
+	// Finish Payload
+	if payload.HasContents() {
+		payloadName := payload.Name()
+		payload.Close()
+
+		// Copy Payload to zpkg file
+		payloadTmpFile, err := os.Open(payloadName)
+		if err != nil {
+			return err
+		}
+
+		reader := bufio.NewReader(payloadTmpFile)
+		_, err = io.Copy(writer, reader)
+		if err != nil {
+			return err
+		}
+		writer.Flush()
+
+		payloadTmpFile.Close()
+		file.Close()
+
+		// Cleanup
+		err = os.Remove(payloadName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
