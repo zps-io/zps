@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/solvent-io/zps/zps"
+	"fmt"
 )
 
 type RepoMeta struct {
@@ -39,7 +40,31 @@ func (r *RepoMeta) Add(pkgs ...*zps.Pkg) {
 }
 
 func (r *RepoMeta) Prune(count int) ([]string, error) {
-	return nil, nil
+	index := make(map[string]zps.Solvables)
+
+	sort.Sort(r.Repo.Solvables)
+
+	for _, solvable := range r.Repo.Solvables {
+		index[solvable.Name()] = append(index[solvable.Name()], solvable)
+	}
+
+
+	var pruned zps.Solvables
+
+	for name := range index {
+		for len(index[name]) > count {
+			var prune zps.Solvable
+			prune, index[name] = index[name][len(index[name])-1], index[name][:len(index[name])-1]
+			pruned = append(pruned, prune)
+		}
+	}
+
+	var files []string
+	for _, file := range pruned {
+		files = append(files, fmt.Sprintf("%s@%s-%s-%s.zpkg", file.Name(), file.Version().String(), file.Os(), file.Arch()))
+	}
+
+	return files, nil
 }
 
 func (r *RepoMeta) Remove(pkg zps.ZpkgUri) error {

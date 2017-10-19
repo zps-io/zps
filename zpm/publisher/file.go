@@ -11,6 +11,7 @@ import (
 
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
+	"fmt"
 )
 
 type FilePublisher struct {
@@ -51,16 +52,20 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 	}
 
 	for _, osarch := range zps.Platforms() {
-		err := f.publish(osarch, zpkgs)
-		if err != nil {
-			return err
+
+		pkgFiles, pkgs := f.filter(osarch, zpkgs)
+		if len(pkgFiles) > 0 {
+			err := f.publish(osarch, pkgFiles, pkgs)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func (f *FilePublisher) publish(osarch *zps.OsArch, zpkgs map[string]*zps.Pkg) error {
+func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
 	var err error
 
 	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
@@ -85,11 +90,9 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, zpkgs map[string]*zps.Pkg) e
 		return err
 	}
 
-	files, pkgs := f.filter(osarch, zpkgs)
+	meta.Add(zpkgs...)
 
-	meta.Add(pkgs...)
-
-	delFiles, err := meta.Prune(f.prune)
+	rmFiles, err := meta.Prune(f.prune)
 	if err != nil {
 		return err
 	}
@@ -102,14 +105,15 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, zpkgs map[string]*zps.Pkg) e
 
 		os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
 
-		for _, file := range files {
+		for _, file := range pkgFiles {
+			fmt.Println(file)
 			err = f.upload(file, filepath.Join(f.uri.Path, osarch.String(), filepath.Base(file)))
 			if err != nil {
 				return err
 			}
 		}
 
-		for _, file := range delFiles {
+		for _, file := range rmFiles {
 			os.Remove(filepath.Join(f.uri.Path, osarch.String(), file))
 		}
 

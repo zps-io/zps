@@ -12,7 +12,7 @@ fetch {
 
 publish {
 	uri = "file://$(ROOT_DIR)/test/testrepo"
-	prune = 6
+	prune = 3
 }
 endef
 
