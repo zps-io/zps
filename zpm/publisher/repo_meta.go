@@ -50,6 +50,7 @@ func (r *RepoMeta) Prune(count int) ([]string, error) {
 
 
 	var pruned zps.Solvables
+	var result zps.Solvables
 
 	for name := range index {
 		for len(index[name]) > count {
@@ -57,12 +58,16 @@ func (r *RepoMeta) Prune(count int) ([]string, error) {
 			prune, index[name] = index[name][len(index[name])-1], index[name][:len(index[name])-1]
 			pruned = append(pruned, prune)
 		}
+
+		result = append(result, index[name]...)
 	}
 
 	var files []string
 	for _, file := range pruned {
 		files = append(files, fmt.Sprintf("%s@%s-%s-%s.zpkg", file.Name(), file.Version().String(), file.Os(), file.Arch()))
 	}
+
+	r.Repo.Solvables = result
 
 	return files, nil
 }
