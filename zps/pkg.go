@@ -39,6 +39,33 @@ func NewPkg(uri string, reqs []*Requirement, arch string, os string, summary str
 	return &Pkg{u, reqs, arch, os, summary, description, 0, 0}, nil
 }
 
+func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
+	pkg := &Pkg{}
+
+	uri := NewZpkgUri()
+	err := uri.Parse(jpkg.Uri)
+	if err != nil {
+		return nil, err
+	}
+
+	pkg.uri = uri
+	pkg.arch = jpkg.Arch
+	pkg.os = jpkg.Os
+	pkg.summary = jpkg.Summary
+	pkg.description = jpkg.Description
+
+	for _, jreq := range jpkg.Requirements {
+		req, err := NewRequirementFromJson(jreq)
+		if err != nil {
+			return nil, err
+		}
+
+		pkg.reqs = append(pkg.reqs, req)
+	}
+
+	return pkg, nil
+}
+
 func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 	pkg := &Pkg{}
 	zpkg := manifest.Section("zpkg")[0].(*action.Zpkg)
@@ -153,6 +180,7 @@ func (p *Pkg) Satisfies(req *Requirement) bool {
 func (p *Pkg) Json() *JsonPkg {
 	json := &JsonPkg{}
 	json.Arch = p.arch
+	json.Os = p.os
 	json.Description = p.description
 	json.Summary = p.summary
 	json.Uri = p.uri.String()

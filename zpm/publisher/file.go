@@ -11,7 +11,6 @@ import (
 
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
-	"fmt"
 )
 
 type FilePublisher struct {
@@ -106,7 +105,6 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 		os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
 
 		for _, file := range pkgFiles {
-			fmt.Println(file)
 			err = f.upload(file, filepath.Join(f.uri.Path, osarch.String(), filepath.Base(file)))
 			if err != nil {
 				return err

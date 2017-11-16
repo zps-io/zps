@@ -6,8 +6,9 @@ import (
 
 	"sort"
 
-	"github.com/solvent-io/zps/zps"
 	"fmt"
+
+	"github.com/solvent-io/zps/zps"
 )
 
 type RepoMeta struct {
@@ -23,6 +24,17 @@ type JsonRepoMeta struct {
 func (r *RepoMeta) Load(bytes []byte) error {
 	meta := &JsonRepoMeta{}
 	err := json.Unmarshal(bytes, meta)
+
+	r.Repo = &zps.Repo{}
+
+	for _, jpkg := range meta.Packages {
+		pkg, err := zps.NewPkgFromJson(jpkg)
+		if err != nil {
+			return err
+		}
+
+		r.Repo.Solvables = append(r.Repo.Solvables, pkg)
+	}
 
 	return err
 }
@@ -47,7 +59,6 @@ func (r *RepoMeta) Prune(count int) ([]string, error) {
 	for _, solvable := range r.Repo.Solvables {
 		index[solvable.Name()] = append(index[solvable.Name()], solvable)
 	}
-
 
 	var pruned zps.Solvables
 	var result zps.Solvables

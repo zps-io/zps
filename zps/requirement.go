@@ -23,7 +23,7 @@ func NewRequirement(name string, version *Version) *Requirement {
 	return &Requirement{Name: name, Version: version}
 }
 
-func NewRequirementFromJsonRequirement(req *JsonRequirement) (*Requirement, error) {
+func NewRequirementFromJson(req *JsonRequirement) (*Requirement, error) {
 	newreq := &Requirement{}
 
 	newreq.Name = req.Name
