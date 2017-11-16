@@ -167,7 +167,9 @@ func (r *Requirement) Json() *JsonRequirement {
 
 	json.Method = r.Method
 	json.Name = r.Name
-	json.Version = r.Version.String()
+	if r.Version != nil {
+		json.Version = r.Version.String()
+	}
 	json.Operation = r.OpString()
 
 	return json

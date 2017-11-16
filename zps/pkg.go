@@ -103,6 +103,8 @@ func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 		case "provides":
 			req = req.Provides().ANY()
 		}
+
+		pkg.reqs = append(pkg.reqs, req)
 	}
 
 	return pkg, nil
