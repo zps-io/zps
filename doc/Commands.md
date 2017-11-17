@@ -6,7 +6,8 @@ zpm - manage z package system image
   - remove
   - upgrade
   - fetch
-  - policy
+  - plan
+  - configure
 
   - cache
   - refresh
@@ -31,9 +32,7 @@ zpm - manage z package system image
   - retract
   - channel
 
-  - history
-  - rollback
-  - delta
+  - transaction
 
   - repo
   - image

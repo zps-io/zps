@@ -6,6 +6,7 @@ import (
 
 	"github.com/chuckpreslar/emission"
 	"github.com/solvent-io/zps/config"
+	"github.com/solvent-io/zps/zpm/fetcher"
 	"github.com/solvent-io/zps/zpm/publisher"
 )
 
@@ -40,6 +41,18 @@ func (m *Manager) Publish(repo string, pkgs ...string) error {
 	}
 
 	return errors.New("Repo: " + repo + " not found")
+}
+
+func (m *Manager) Refresh() error {
+	for _, r := range m.config.Repos {
+		fe := fetcher.Get(r.Fetch.Uri)
+
+		err := fe.Refresh()
+
+		return err
+	}
+
+	return nil
 }
 
 func (m *Manager) RepoList() ([]string, error) {

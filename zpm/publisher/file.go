@@ -69,7 +69,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 
 	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
 	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
-	meta := &RepoMeta{}
+	meta := &zps.RepoMeta{}
 
 	if _, err = os.Stat(lockfile); !os.IsNotExist(err) {
 		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")

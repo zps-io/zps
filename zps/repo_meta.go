@@ -1,4 +1,4 @@
-package publisher
+package zps
 
 import (
 	"encoding/json"
@@ -7,28 +7,26 @@ import (
 	"sort"
 
 	"fmt"
-
-	"github.com/solvent-io/zps/zps"
 )
 
 type RepoMeta struct {
 	Updated *time.Time
-	Repo    *zps.Repo
+	Repo    *Repo
 }
 
 type JsonRepoMeta struct {
-	Updated  string         `json:"updated"`
-	Packages []*zps.JsonPkg `json:"packages"`
+	Updated  string     `json:"updated"`
+	Packages []*JsonPkg `json:"packages"`
 }
 
 func (r *RepoMeta) Load(bytes []byte) error {
 	meta := &JsonRepoMeta{}
 	err := json.Unmarshal(bytes, meta)
 
-	r.Repo = &zps.Repo{}
+	r.Repo = &Repo{}
 
 	for _, jpkg := range meta.Packages {
-		pkg, err := zps.NewPkgFromJson(jpkg)
+		pkg, err := NewPkgFromJson(jpkg)
 		if err != nil {
 			return err
 		}
@@ -39,9 +37,9 @@ func (r *RepoMeta) Load(bytes []byte) error {
 	return err
 }
 
-func (r *RepoMeta) Add(pkgs ...*zps.Pkg) {
+func (r *RepoMeta) Add(pkgs ...*Pkg) {
 	if r.Repo == nil {
-		r.Repo = &zps.Repo{}
+		r.Repo = &Repo{}
 	}
 
 	for _, p := range pkgs {
@@ -52,7 +50,7 @@ func (r *RepoMeta) Add(pkgs ...*zps.Pkg) {
 }
 
 func (r *RepoMeta) Prune(count int) ([]string, error) {
-	index := make(map[string]zps.Solvables)
+	index := make(map[string]Solvables)
 
 	sort.Sort(r.Repo.Solvables)
 
@@ -60,12 +58,12 @@ func (r *RepoMeta) Prune(count int) ([]string, error) {
 		index[solvable.Name()] = append(index[solvable.Name()], solvable)
 	}
 
-	var pruned zps.Solvables
-	var result zps.Solvables
+	var pruned Solvables
+	var result Solvables
 
 	for name := range index {
 		for len(index[name]) > count {
-			var prune zps.Solvable
+			var prune Solvable
 			prune, index[name] = index[name][len(index[name])-1], index[name][:len(index[name])-1]
 			pruned = append(pruned, prune)
 		}
@@ -83,7 +81,7 @@ func (r *RepoMeta) Prune(count int) ([]string, error) {
 	return files, nil
 }
 
-func (r *RepoMeta) Remove(pkg zps.ZpkgUri) error {
+func (r *RepoMeta) Remove(pkg ZpkgUri) error {
 	return nil
 }
 
@@ -92,7 +90,7 @@ func (r *RepoMeta) Json() ([]byte, error) {
 	jsonMeta.Updated = time.Now().Format("20060102T150405Z")
 
 	for _, pkg := range r.Repo.Solvables {
-		jsonMeta.Packages = append(jsonMeta.Packages, pkg.(*zps.Pkg).Json())
+		jsonMeta.Packages = append(jsonMeta.Packages, pkg.(*Pkg).Json())
 	}
 
 	result, err := json.Marshal(jsonMeta)

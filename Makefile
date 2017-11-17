@@ -34,7 +34,6 @@ deps:
 	go get github.com/dsnet/compress
 	go get github.com/boltdb/bolt/...
 	go get github.com/chuckpreslar/emission
-	go get github.com/mitchellh/cli
 	go get github.com/spf13/cobra/cobra
 	go get github.com/mitchellh/colorstring
 	go get github.com/hashicorp/hcl
