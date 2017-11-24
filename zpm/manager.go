@@ -8,6 +8,13 @@ import (
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zpm/fetcher"
 	"github.com/solvent-io/zps/zpm/publisher"
+	"github.com/solvent-io/zps/zps"
+	"crypto/sha256"
+	"encoding/hex"
+	"path/filepath"
+	"fmt"
+	"io/ioutil"
+	"os"
 )
 
 type Manager struct {
@@ -29,6 +36,61 @@ func NewManager(root string, image string) (*Manager, error) {
 	return mgr, nil
 }
 
+// TODO Entire function is a giant WIP
+func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
+	if action != "install" && action != "remove" {
+		return nil, errors.New("action must be either: install or remove")
+	}
+
+	var repos []*zps.Repo
+
+	// TODO load installed from current image
+	image := zps.NewRepo("installed", -1, true, []zps.Solvable{})
+
+	for _, r := range m.config.Repos {
+		if r.Enabled == true {
+			repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, []zps.Solvable{})
+
+			// Load meta from cache
+			hasher := sha256.New()
+			hasher.Write([]byte(r.Fetch.Uri.String()))
+			repoId := hex.EncodeToString(hasher.Sum(nil))
+
+			// TODO fix
+			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
+
+			packagesfile := filepath.Join(m.config.CachePath(), fmt.Sprint(repoId, ".", osarch.String(), ".packages.json"))
+			meta := &zps.RepoMeta{}
+
+			pkgsbytes, err := ioutil.ReadFile(packagesfile)
+
+			if err == nil {
+				err = meta.Load(pkgsbytes)
+				if err != nil {
+					return nil, err
+				}
+			} else if !os.IsNotExist(err) {
+				return nil, err
+			}
+
+			for _, pkg := range meta.Repo.Solvables {
+				repo.Solvables = append(repo.Solvables, pkg)
+			}
+
+			repos = append(repos, repo)
+		}
+	}
+
+	pool, err := zps.NewPool(image, repos...)
+	if err != nil {
+		return nil, err
+	}
+
+
+
+	return solution, nil
+}
+
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
 		if repo == r.Name && r.Publish.Uri != nil {
@@ -45,7 +107,7 @@ func (m *Manager) Publish(repo string, pkgs ...string) error {
 
 func (m *Manager) Refresh() error {
 	for _, r := range m.config.Repos {
-		fe := fetcher.Get(r.Fetch.Uri)
+		fe := fetcher.Get(r.Fetch.Uri, m.config.CachePath())
 
 		err := fe.Refresh()
 

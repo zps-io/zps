@@ -49,7 +49,7 @@ zps: clean deps
 	mkdir -p dist/etc/zps/policy.d
 	mkdir -p dist/etc/zps/repo.d
 	mkdir -p dist/var/lib/zps
-	mkdir -p dist/var/cache/zps/repo
+	mkdir -p dist/var/cache/zps
 	echo $(CONFIG) > dist/etc/zps/main.conf
 	echo "$$REPO" > dist/etc/zps/repo.d/testrepo.conf
 	go build -o dist/usr/bin/zpkg github.com/solvent-io/zps/cli/zpkg

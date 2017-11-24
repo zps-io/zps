@@ -48,4 +48,3 @@ func (z *ZpmRefreshCommand) run(cmd *cobra.Command, args []string) error {
 	}
 	return nil
 }
-

@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/hcl"
+	"runtime"
 )
 
 type ZpsConfig struct {
@@ -92,7 +93,16 @@ func (z *ZpsConfig) CachePath() string {
 }
 
 func (z *ZpsConfig) LoadImages() error {
-	defaultImage := &ImageConfig{"default", z.Root}
+	defaultOs := runtime.GOOS
+	var defaultArch string
+	switch runtime.GOARCH {
+	case "amd64":
+		defaultArch = "x86_64"
+	default:
+		defaultArch = runtime.GOARCH
+	}
+
+	defaultImage := &ImageConfig{"default", z.Root, defaultOs, defaultArch}
 
 	z.Images = append(z.Images, defaultImage)
 
