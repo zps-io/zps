@@ -55,7 +55,13 @@ func (r *Reader) Read() error {
 		return errors.New("does not appear to be a zpkg file")
 	}
 
-	bzreader, err := bzip2.NewReader(reader, &bzip2.ReaderConfig{})
+	var cManifestBytes bytes.Buffer
+	_, err = io.CopyN(&cManifestBytes, reader, int64(r.Header.ManifestLength))
+	if err != nil {
+		return err
+	}
+
+	bzreader, err := bzip2.NewReader(&cManifestBytes, &bzip2.ReaderConfig{})
 	if err != nil {
 		return err
 	}

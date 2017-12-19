@@ -44,6 +44,14 @@ func (z *ZpmPlanCommand) run(cmd *cobra.Command, args []string) error {
 		z.Fatal(err.Error())
 	}
 
+	mgr.On("install", func(pkg string) {
+		z.Info(fmt.Sprint("+ ", pkg))
+	})
+
+	mgr.On("remove", func(pkg string) {
+		z.Info(fmt.Sprint("- ", pkg))
+	})
+
 	if cmd.Flags().Arg(0) == "" {
 		return errors.New("plan action required")
 	}
@@ -52,11 +60,11 @@ func (z *ZpmPlanCommand) run(cmd *cobra.Command, args []string) error {
 		return errors.New("at least one package must be specified")
 	}
 
-	solution, err := mgr.Plan(cmd.Flags().Arg(0), cmd.Flags().Args()[1:])
+	_, err = mgr.Plan(cmd.Flags().Arg(0), cmd.Flags().Args()[1:])
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	fmt.Println(solution)
+
 	return nil
 }

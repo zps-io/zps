@@ -21,7 +21,7 @@ func NewWriter() *Writer {
 func (w *Writer) Write(filename string, header *Header, manifest *action.Manifest, payload *payload.Writer) error {
 	var manifestBuffer bytes.Buffer
 
-	// compress header
+	// compress manifest
 	bzw, _ := bzip2.NewWriter(&manifestBuffer, &bzip2.WriterConfig{Level: 7})
 
 	if _, err := io.WriteString(bzw, manifest.Json()); err != nil {

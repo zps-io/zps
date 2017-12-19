@@ -86,7 +86,38 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 		return nil, err
 	}
 
+	request := zps.NewRequest()
+	for _, arg := range args {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return nil, err
+		}
 
+		switch action {
+		case "install":
+			request.Install(req)
+		case "remove":
+			request.Remove(req)
+		}
+	}
+
+	// TODO: configure policy
+	solver := zps.NewSolver(pool, zps.NewPolicy("updated"))
+
+	solution, err := solver.Solve(request)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, op := range solution.Operations() {
+		switch op.Operation {
+		case "install":
+			m.Emitter.Emit("install", op.Package.Id())
+		case "remove":
+			m.Emitter.Emit("remove", op.Package.Id())
+		}
+
+	}
 
 	return solution, nil
 }

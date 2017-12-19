@@ -19,7 +19,7 @@ type Manifest struct {
 
 type JsonManifest struct {
 	Zpkg        []Action `json:"zpkg"`
-	Requirement []Action `json:"requirement"`
+	Requirement []Action `json:"requirement,omitempty"`
 	Meta        []Action `json:"meta,omitempty"`
 	Dir         []Action `json:"dir,omitempty"`
 	File        []Action `json:"file,omitempty"`
