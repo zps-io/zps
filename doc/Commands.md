@@ -4,48 +4,46 @@ ZPS Commands
 zpm - manage z package system image
   - install
   - remove
-  - upgrade
+  - update
   - fetch
   - plan
   - configure
-
-  - cache
   - refresh
-
-  - info
-  - contents
-
+  - clean
+  
   - list
   - search
-
+  
+  - info
+  - contents
+  - graph
+  - freeze
+  - thaw
+    
   - verify
   - repair
 
-  - freeze
-  - thaw
-
   - publisher
-  - key
   - identity
 
   - publish
   - retract
   - channel
 
-  - transaction
+  - transactions
+  - rollback
 
   - repo
   - image
   - env
-
-zpkg - work with package files
-
-  - build
-  - gen
-  - lint
   
   - sign
   - validate
+
+zpkg - work with package files
+  - build
+  - gen
+  - lint
 
   - info
   - contents

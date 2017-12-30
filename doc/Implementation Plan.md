@@ -8,16 +8,16 @@ Implementation Plan
 	- Dir (done)
 	- SymLink (done)
 	- Signature
-	- Requirement
+	- Requirement (done)
 	- User
 	- Group
 	- Service
 - Version URI handling
-- Constraint Solver (in progress)
+- Constraint Solver (done-ish)
 - Commands
     - zpkg (in progress)
     - zpm (in progress)
-- Static Repositories
+- Static Repositories (in progress)
 - Global repository hosting and search system (AWS)
 	- Public repositories
 	- Private repositories
@@ -25,5 +25,5 @@ Implementation Plan
 	- Search
 - Tooling
 	- Jenkins/Teamcity artifact publishing plugins
-- Package build DSL
+- Package build DSL (done-ish)
 - Build Linux OS as packaging test case
