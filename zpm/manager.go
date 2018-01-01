@@ -20,6 +20,7 @@ import (
 type Manager struct {
 	*emission.Emitter
 	config *config.ZpsConfig
+	db *Db
 }
 
 func NewManager(root string, image string) (*Manager, error) {
@@ -32,6 +33,8 @@ func NewManager(root string, image string) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	mgr.db = &Db{mgr.config.DbPath()}
 
 	return mgr, nil
 }

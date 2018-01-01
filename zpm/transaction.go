@@ -11,7 +11,6 @@ import (
 
 	"github.com/chuckpreslar/emission"
 	"github.com/solvent-io/zps/action"
-	"github.com/solvent-io/zps/db"
 	"github.com/solvent-io/zps/provider"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
@@ -25,6 +24,7 @@ type Transaction struct {
 	*emission.Emitter
 
 	TargetPath string
+	Db         *Db
 	Phase      string
 	Uris       []*url.URL
 	Packages   []string
@@ -33,8 +33,8 @@ type Transaction struct {
 	lookup  map[action.Action]*zps.Pkg
 }
 
-func NewTransaction(targetPath string, phase string, uris ...*url.URL) *Transaction {
-	return &Transaction{emission.NewEmitter(), targetPath, phase, uris, nil, make(map[string]*zpkg.Reader), make(map[action.Action]*zps.Pkg)}
+func NewTransaction(targetPath string, db *Db, phase string, uris ...*url.URL) *Transaction {
+	return &Transaction{emission.NewEmitter(), targetPath, db, phase, uris, nil, make(map[string]*zpkg.Reader), make(map[action.Action]*zps.Pkg)}
 }
 
 func (t *Transaction) AddUri(uri *url.URL) *Transaction {
@@ -186,7 +186,7 @@ func (t *Transaction) resolve() error {
 			return err
 		}
 
-		lookup, err := db.GetPackage(current.Name())
+		lookup, err := t.Db.GetPackage(current.Name())
 		if err != nil {
 			return err
 		}
@@ -236,7 +236,7 @@ func (t *Transaction) resolve() error {
 		}
 
 		for _, action := range reader.Manifest.Section("dir", "file", "symlink") {
-			fsEntry, err := db.GetFsEntry(action.Key())
+			fsEntry, err := t.Db.GetFsEntry(action.Key())
 
 			if err != nil {
 				return err
@@ -289,14 +289,14 @@ func (t *Transaction) installPkg(reader *zpkg.Reader) error {
 	}
 
 	// Add this to the package db
-	err = db.PutPackage(pkg.Name(), reader.Manifest)
+	err = t.Db.PutPackage(pkg.Name(), reader.Manifest)
 	if err != nil {
 		return err
 	}
 
 	// Add all the fs object to the fs db
 	for _, fsObject := range contents {
-		err = db.PutFsEntry(fsObject.Key(), pkg.Name(), fsObject.Type())
+		err = t.Db.PutFsEntry(fsObject.Key(), pkg.Name(), fsObject.Type())
 		if err != nil {
 			return err
 		}
@@ -306,7 +306,7 @@ func (t *Transaction) installPkg(reader *zpkg.Reader) error {
 }
 
 func (t *Transaction) removePkg(pkg string, quiet bool) error {
-	lookup, err := db.GetPackage(pkg)
+	lookup, err := t.Db.GetPackage(pkg)
 	if err != nil {
 		return err
 	}
@@ -336,14 +336,14 @@ func (t *Transaction) removePkg(pkg string, quiet bool) error {
 		}
 
 		// Remove from the package db
-		err = db.DelPackage(pkg.Name())
+		err = t.Db.DelPackage(pkg.Name())
 		if err != nil {
 			return err
 		}
 
 		// Remove fs objects from fs db
 		for _, fsObject := range contents {
-			err = db.DelFsEntry(fsObject.Key(), pkg.Name())
+			err = t.Db.DelFsEntry(fsObject.Key(), pkg.Name())
 			if err != nil {
 				return err
 			}

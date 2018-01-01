@@ -5,24 +5,22 @@ zpm - manage z package system image
   - install
   - remove
   - update
-  - fetch
   - plan
-  - configure
   - refresh
   - clean
-  
+  - freeze
+  - thaw
   - list
+  - verify
+  - repair
+  
+  - fetch
   - search
   
   - info
   - contents
   - graph
-  - freeze
-  - thaw
-    
-  - verify
-  - repair
-
+  
   - publisher
   - identity
 

@@ -54,7 +54,7 @@ func (z *ZpmInstallCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Setup ZPM transaction
-	transaction := zpm.NewTransaction(cfg.CurrentImage.Path, "install")
+	transaction := zpm.NewTransaction(cfg.CurrentImage.Path, &zpm.Db{cfg.DbPath()}, "install")
 	transaction.On("info", func(msg string) {
 		z.Info(msg)
 	})

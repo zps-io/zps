@@ -3,9 +3,10 @@ package commands
 import (
 	"github.com/ryanuber/columnize"
 	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/db"
 	"github.com/solvent-io/zps/zps"
 	"github.com/spf13/cobra"
+	"github.com/solvent-io/zps/config"
+	"github.com/solvent-io/zps/zpm"
 )
 
 type ZpmListCommand struct {
@@ -35,7 +36,17 @@ func (z *ZpmListCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpmListCommand) run(cmd *cobra.Command, args []string) error {
+	root, _ := cmd.Flags().GetString("root")
+	image, _ := cmd.Flags().GetString("image")
 	var err error
+
+	// Load config
+	cfg, err := config.LoadConfig(root, image)
+	if err != nil {
+		z.Fatal(err.Error())
+	}
+
+	db := &zpm.Db{cfg.DbPath()}
 
 	packages, err := db.Packages()
 	if err != nil {
