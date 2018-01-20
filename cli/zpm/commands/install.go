@@ -40,7 +40,6 @@ func (z *ZpmInstallCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpmInstallCommand) run(cmd *cobra.Command, args []string) error {
-	root, _ := cmd.Flags().GetString("root")
 	image, _ := cmd.Flags().GetString("image")
 
 	if cmd.Flags().NArg() == 0 {
@@ -48,7 +47,7 @@ func (z *ZpmInstallCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load config
-	cfg, err := config.LoadConfig(root, image)
+	cfg, err := config.LoadConfig(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

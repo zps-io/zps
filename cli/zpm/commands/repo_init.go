@@ -35,7 +35,6 @@ func (z *ZpmRepoInitCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpmRepoInitCommand) run(cmd *cobra.Command, args []string) error {
-	root, _ := cmd.Flags().GetString("root")
 	image, _ := cmd.Flags().GetString("image")
 
 	if cmd.Flags().Arg(0) == "" {
@@ -43,7 +42,7 @@ func (z *ZpmRepoInitCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load manager
-	mgr, err := zpm.NewManager(root, image)
+	mgr, err := zpm.NewManager(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

@@ -23,13 +23,13 @@ type Manager struct {
 	db *Db
 }
 
-func NewManager(root string, image string) (*Manager, error) {
+func NewManager(image string) (*Manager, error) {
 	var err error
 	mgr := &Manager{}
 
 	mgr.Emitter = emission.NewEmitter()
 
-	mgr.config, err = config.LoadConfig(root, image)
+	mgr.config, err = config.LoadConfig(image)
 	if err != nil {
 		return nil, err
 	}

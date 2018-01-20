@@ -34,11 +34,10 @@ func (z *ZpmRefreshCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpmRefreshCommand) run(cmd *cobra.Command, args []string) error {
-	root, _ := cmd.Flags().GetString("root")
 	image, _ := cmd.Flags().GetString("image")
 
 	// Load manager
-	mgr, err := zpm.NewManager(root, image)
+	mgr, err := zpm.NewManager(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

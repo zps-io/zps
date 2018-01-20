@@ -24,12 +24,12 @@ type ZpsConfig struct {
 	Repos  []*RepoConfig
 }
 
-func LoadConfig(zpsRoot string, image string) (*ZpsConfig, error) {
+func LoadConfig(image string) (*ZpsConfig, error) {
 	var err error
 
 	config := &ZpsConfig{}
 
-	err = config.SetRoot(zpsRoot)
+	err = config.SetRoot()
 	if err != nil {
 		return nil, err
 	}
@@ -61,16 +61,12 @@ func LoadConfig(zpsRoot string, image string) (*ZpsConfig, error) {
 	return config, nil
 }
 
-func (z *ZpsConfig) SetRoot(root string) error {
+func (z *ZpsConfig) SetRoot() error {
 	var err error
 
-	if root != "" {
-		z.Root = root
-	} else {
-		z.Root, err = InstallPrefix()
-		if err != nil {
-			return err
-		}
+	z.Root, err = InstallPrefix()
+	if err != nil {
+		return err
 	}
 
 	return nil

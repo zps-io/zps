@@ -36,12 +36,11 @@ func (z *ZpmListCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpmListCommand) run(cmd *cobra.Command, args []string) error {
-	root, _ := cmd.Flags().GetString("root")
 	image, _ := cmd.Flags().GetString("image")
 	var err error
 
 	// Load config
-	cfg, err := config.LoadConfig(root, image)
+	cfg, err := config.LoadConfig(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
