@@ -52,8 +52,10 @@ zps: clean deps
 	mkdir -p dist/var/cache/zps
 	echo $(CONFIG) > dist/etc/zps/main.conf
 	echo "$$REPO" > dist/etc/zps/repo.d/testrepo.conf
-	go build -o dist/usr/bin/zpkg github.com/solvent-io/zps/cli/zpkg
-	go build -o dist/usr/bin/zpm github.com/solvent-io/zps/cli/zpm
+	go build -o dist/usr/bin/zps github.com/solvent-io/zps/cli/zps
+	ln dist/usr/bin/zps dist/usr/bin/zpkg
+	ln dist/usr/bin/zps dist/usr/bin/zpm
+
 
 illumos: clean deps
 	mkdir -p dist/illumos/etc/zps/image.d
@@ -61,8 +63,9 @@ illumos: clean deps
 	mkdir -p dist/illumos/etc/zps/repo.d
 	mkdir -p dist/var/cache/zps/repo
 	echo $(CONFIG) >> dist/illumos/etc/zps/config.conf
-	GOOS=solaris go build -o dist/illumos/usr/bin/zpkg github.com/solvent-io/zps/cmd/zpkg
-	GOOS=solaris go build -o dist/illumos/usr/bin/zpm github.com/solvent-io/zps/cmd/zpm
+	GOOS=solaris go build -o dist/illumos/usr/bin/zps github.com/solvent-io/zps/cmd/zps
+	ln dist/illumos/usr/bin/zps dist/illumos/usr/bin/zpkg
+	ln dist/illumos/usr/bin/zps dist/illumos/usr/bin/zpm
 
 fmt:
 	goimports -w .
