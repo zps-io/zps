@@ -10,8 +10,9 @@ import (
 
 	"net/url"
 
-	"github.com/hashicorp/hcl"
 	"runtime"
+
+	"github.com/hashicorp/hcl"
 )
 
 type ZpsConfig struct {

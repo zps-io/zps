@@ -1,12 +1,13 @@
 package zpm
 
 import (
-	"github.com/boltdb/bolt"
-	"errors"
-	"strings"
 	"bytes"
+	"errors"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/boltdb/bolt"
 	"github.com/solvent-io/zps/action"
 )
 

@@ -1,11 +1,12 @@
 package commands
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
-	"errors"
-	"fmt"
 )
 
 type ZpmPlanCommand struct {
@@ -63,7 +64,6 @@ func (z *ZpmPlanCommand) run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		z.Fatal(err.Error())
 	}
-
 
 	return nil
 }

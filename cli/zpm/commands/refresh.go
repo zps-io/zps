@@ -1,10 +1,11 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
-	"fmt"
 )
 
 type ZpmRefreshCommand struct {

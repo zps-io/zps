@@ -49,7 +49,7 @@ func (z *ZpmRemoveCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Setup ZPM transaction
-	transaction := zpm.NewTransaction(cfg.CurrentImage.Path, &zpm.Db{cfg.DbPath()},"remove")
+	transaction := zpm.NewTransaction(cfg.CurrentImage.Path, &zpm.Db{cfg.DbPath()}, "remove")
 	transaction.On("info", func(msg string) {
 		z.Info(msg)
 	})

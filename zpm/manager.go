@@ -4,23 +4,24 @@ import (
 	"errors"
 	"strings"
 
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/chuckpreslar/emission"
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zpm/fetcher"
 	"github.com/solvent-io/zps/zpm/publisher"
 	"github.com/solvent-io/zps/zps"
-	"crypto/sha256"
-	"encoding/hex"
-	"path/filepath"
-	"fmt"
-	"io/ioutil"
-	"os"
 )
 
 type Manager struct {
 	*emission.Emitter
 	config *config.ZpsConfig
-	db *Db
+	db     *Db
 }
 
 func NewManager(image string) (*Manager, error) {

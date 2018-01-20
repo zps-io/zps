@@ -3,10 +3,10 @@ package commands
 import (
 	"github.com/ryanuber/columnize"
 	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/zps"
-	"github.com/spf13/cobra"
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zpm"
+	"github.com/solvent-io/zps/zps"
+	"github.com/spf13/cobra"
 )
 
 type ZpmListCommand struct {

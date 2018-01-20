@@ -1,11 +1,12 @@
 package commands
 
 import (
+	"errors"
+
 	"github.com/ryanuber/columnize"
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
-	"errors"
 )
 
 type ZpmRepoContentsCommand struct {
