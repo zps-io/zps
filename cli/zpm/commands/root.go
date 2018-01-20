@@ -21,7 +21,6 @@ func NewZpmRootCommand() *ZpmRootCommand {
 	cmd.RunE = cmd.run
 
 	cmd.PersistentFlags().Bool("no-color", false, "Disable color")
-	cmd.PersistentFlags().String("root", "", "Override ZPS configuration root")
 	cmd.PersistentFlags().String("image", "", "ZPS image name/id")
 
 	cmd.AddCommand(NewZpmInstallCommand().Command)
