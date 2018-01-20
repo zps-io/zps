@@ -144,24 +144,14 @@ func (m *Manager) Refresh() error {
 		fe := fetcher.Get(r.Fetch.Uri, m.config.CachePath())
 
 		err := fe.Refresh()
+		if err == nil {
+			m.Emitter.Emit("refresh", r.Fetch.Uri.String())
+		}
 
 		return err
 	}
 
 	return nil
-}
-
-func (m *Manager) RepoList() ([]string, error) {
-	if len(m.config.Repos) == 0 {
-		return nil, nil
-	}
-
-	var repos []string
-	for _, repo := range m.config.Repos {
-		repos = append(repos, strings.Join([]string{repo.Name, repo.Fetch.Uri.String()}, "|"))
-	}
-
-	return repos, nil
 }
 
 func (m *Manager) RepoInit(name string) error {
@@ -176,4 +166,54 @@ func (m *Manager) RepoInit(name string) error {
 	}
 
 	return errors.New("Repo: " + name + " not found")
+}
+
+func (m *Manager) RepoContents(name string) ([]string, error) {
+	for _, repo := range m.config.Repos {
+		if name == repo.Name && repo.Publish.Uri != nil {
+			// Load meta from cache
+			hasher := sha256.New()
+			hasher.Write([]byte(repo.Fetch.Uri.String()))
+			repoId := hex.EncodeToString(hasher.Sum(nil))
+
+			// TODO fix
+			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
+
+			packagesfile := filepath.Join(m.config.CachePath(), fmt.Sprint(repoId, ".", osarch.String(), ".packages.json"))
+			meta := &zps.RepoMeta{}
+
+			pkgsbytes, err := ioutil.ReadFile(packagesfile)
+
+			if err == nil {
+				err = meta.Load(pkgsbytes)
+				if err != nil {
+					return nil, err
+				}
+			} else if !os.IsNotExist(err) {
+				return nil, err
+			}
+
+			var contents []string
+			for _, pkg := range meta.Repo.Solvables {
+				contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Uri().String()}, "|"))
+			}
+
+			return contents, err
+		}
+	}
+
+	return nil, errors.New("Repo: " + name + " not found")
+}
+
+func (m *Manager) RepoList() ([]string, error) {
+	if len(m.config.Repos) == 0 {
+		return nil, nil
+	}
+
+	var repos []string
+	for _, repo := range m.config.Repos {
+		repos = append(repos, strings.Join([]string{repo.Name, repo.Fetch.Uri.String()}, "|"))
+	}
+
+	return repos, nil
 }

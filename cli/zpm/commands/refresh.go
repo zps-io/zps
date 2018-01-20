@@ -4,6 +4,7 @@ import (
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
+	"fmt"
 )
 
 type ZpmRefreshCommand struct {
@@ -41,6 +42,10 @@ func (z *ZpmRefreshCommand) run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		z.Fatal(err.Error())
 	}
+
+	mgr.On("refresh", func(uri string) {
+		z.Info(fmt.Sprint("* refreshed ", uri))
+	})
 
 	err = mgr.Refresh()
 	if err != nil {

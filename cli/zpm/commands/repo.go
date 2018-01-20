@@ -21,6 +21,7 @@ func NewZpmRepoCommand() *ZpmRepoCommand {
 	cmd.RunE = cmd.run
 
 	cmd.AddCommand(NewZpmRepoInitCommand().Command)
+	cmd.AddCommand(NewZpmRepoContentsCommand().Command)
 	cmd.AddCommand(NewZpmRepoListCommand().Command)
 	return cmd
 }
