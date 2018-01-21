@@ -245,7 +245,7 @@ func (b *Builder) set() error {
 	zpkg.Category = ""
 
 	// TODO we will need this elsewhere so relocate later
-	b.filename = fmt.Sprintf("%s@%s-%s-%s.zpkg", uri.Name, uri.Version, zpkg.Os, zpkg.Arch)
+	b.filename = zps.ZpkgFileName(uri.Name, uri.Version.String(), zpkg.Os, zpkg.Arch)
 
 	return nil
 }

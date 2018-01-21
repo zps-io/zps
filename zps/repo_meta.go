@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"sort"
-
-	"fmt"
 )
 
 type RepoMeta struct {
@@ -73,7 +71,7 @@ func (r *RepoMeta) Prune(count int) ([]string, error) {
 
 	var files []string
 	for _, file := range pruned {
-		files = append(files, fmt.Sprintf("%s@%s-%s-%s.zpkg", file.Name(), file.Version().String(), file.Os(), file.Arch()))
+		files = append(files, ZpkgFileName(file.Name(), file.Version().String(), file.Os(), file.Arch()))
 	}
 
 	r.Repo.Solvables = result
