@@ -40,6 +40,29 @@ func NewManager(image string) (*Manager, error) {
 	return mgr, nil
 }
 
+func (m *Manager) List() ([]string, error) {
+	db := &Db{m.config.DbPath()}
+
+	packages, err := db.Packages()
+	if err != nil {
+		return nil, err
+	}
+
+	var output []string
+	for _, manifest := range packages {
+		pkg, _ := zps.NewPkgFromManifest(manifest)
+
+		output = append(output, pkg.Columns())
+	}
+
+	if len(packages) == 0 {
+		m.Emitter.Emit("warn", "No packages installed.")
+		return nil, nil
+	}
+
+	return output, nil
+}
+
 // TODO Entire function is a giant WIP
 func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 	if action != "install" && action != "remove" {

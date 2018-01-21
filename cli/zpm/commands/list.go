@@ -3,10 +3,11 @@ package commands
 import (
 	"github.com/ryanuber/columnize"
 	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/config"
+
 	"github.com/solvent-io/zps/zpm"
-	"github.com/solvent-io/zps/zps"
+
 	"github.com/spf13/cobra"
+
 )
 
 type ZpmListCommand struct {
@@ -39,31 +40,24 @@ func (z *ZpmListCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
 	var err error
 
-	// Load config
-	cfg, err := config.LoadConfig(image)
+	// Load manager
+	mgr, err := zpm.NewManager(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	db := &zpm.Db{cfg.DbPath()}
+	mgr.On("warn", func(err string) {
+		z.Warn(err)
+	})
 
-	packages, err := db.Packages()
+	list, err := mgr.List()
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	var output []string
-	for _, manifest := range packages {
-		pkg, _ := zps.NewPkgFromManifest(manifest)
-
-		output = append(output, pkg.Columns())
+	if list != nil {
+		z.Out(columnize.SimpleFormat(list))
 	}
-
-	if len(packages) == 0 {
-		z.Warn("No packages installed.")
-	} else {
-		z.Out(columnize.SimpleFormat(output))
-	}
-
+	
 	return nil
 }

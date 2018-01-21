@@ -244,7 +244,6 @@ func (b *Builder) set() error {
 	zpkg.Publisher = ""
 	zpkg.Category = ""
 
-	// TODO we will need this elsewhere so relocate later
 	b.filename = zps.ZpkgFileName(uri.Name, uri.Version.String(), zpkg.Os, zpkg.Arch)
 
 	return nil
