@@ -41,9 +41,7 @@ func NewManager(image string) (*Manager, error) {
 }
 
 func (m *Manager) List() ([]string, error) {
-	db := &Db{m.config.DbPath()}
-
-	packages, err := db.Packages()
+	packages, err := m.db.Packages()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +70,10 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 	var repos []*zps.Repo
 
 	// TODO load installed from current image
-	image := zps.NewRepo("installed", -1, true, []zps.Solvable{})
+	image, err := m.image()
+	if err != nil {
+		return nil, err
+	}
 
 	for _, r := range m.config.Repos {
 		if r.Enabled == true {
@@ -240,4 +241,22 @@ func (m *Manager) RepoList() ([]string, error) {
 	}
 
 	return repos, nil
+}
+
+func (m *Manager) image() (*zps.Repo, error) {
+	packages, err := m.db.Packages()
+	if err != nil {
+		return nil, err
+	}
+
+	var solvables zps.Solvables
+	for _, manifest := range packages {
+		pkg, _ := zps.NewPkgFromManifest(manifest)
+
+		solvables = append(solvables, pkg)
+	}
+
+	image := zps.NewRepo("installed", -1, true, solvables)
+
+	return image, nil
 }
