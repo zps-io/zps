@@ -6,6 +6,10 @@ import (
 )
 
 type Zpkg struct {
+	Name        string `json:"name,omitempty"`
+	Version     string `json:"version"`
+	Publisher   string `json:"publisher,omitempty"`
+	Category    string `json:"category,omitempty"`
 	Uri         string `json:"uri"`
 	Arch        string `json:"arch"`
 	Os          string `json:"os"`
@@ -18,13 +22,13 @@ func NewZpkg() *Zpkg {
 }
 
 func (z *Zpkg) Key() string {
-	return z.Uri
+	return z.Name
 }
 
 func (z *Zpkg) Columns() string {
 	return strings.Join(
 		[]string{
-			z.Uri,
+			z.Name,
 			z.Arch,
 		},
 		"|",
@@ -32,7 +36,7 @@ func (z *Zpkg) Columns() string {
 }
 
 func (z *Zpkg) Unique() string {
-	key := []string{"zpkg", z.Uri}
+	key := []string{"zpkg", z.Name}
 	return strings.Join(key, ":")
 }
 
@@ -43,7 +47,22 @@ func (z *Zpkg) Type() string {
 func (z *Zpkg) Validate() error {
 	var err error = nil
 
-	err = z.validateUri()
+	err = z.validateName()
+	if err != nil {
+		return err
+	}
+
+	err = z.validateVersion()
+	if err != nil {
+		return err
+	}
+
+	err = z.validatePublisher()
+	if err != nil {
+		return err
+	}
+
+	err = z.validateCategory()
 	if err != nil {
 		return err
 	}
@@ -80,9 +99,33 @@ func (z *Zpkg) Valid() bool {
 	return true
 }
 
-func (z *Zpkg) validateUri() error {
-	if z.Uri == "" {
-		return errors.New("action zpkg:uri required")
+func (z *Zpkg) validateName() error {
+	if z.Name == "" && z.Uri == "" {
+		return errors.New("action zpkg:name required")
+	}
+
+	return nil
+}
+
+func (z *Zpkg) validatePublisher() error {
+	if z.Publisher == "" && z.Uri == "" {
+		return errors.New("action zpkg:name required")
+	}
+
+	return nil
+}
+
+func (z *Zpkg) validateVersion() error {
+	if z.Version == "" && z.Uri == "" {
+		return errors.New("action zpkg:version required")
+	}
+
+	return nil
+}
+
+func (z *Zpkg) validateCategory() error {
+	if z.Category == "" && z.Uri == "" {
+		return errors.New("action zpkg:category required")
 	}
 
 	return nil

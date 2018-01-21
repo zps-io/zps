@@ -224,15 +224,25 @@ func (b *Builder) resolve() error {
 // Set file name and zpkg timestamp
 func (b *Builder) set() error {
 	zpkg := b.manifest.Section("zpkg")[0].(*action.Zpkg)
-	uri := zps.NewZpkgUri()
 
-	err := uri.Parse(zpkg.Uri)
+	uri := zps.NewZpkgUri()
+	uri.Name = zpkg.Name
+	uri.Publisher = zpkg.Publisher
+	uri.Category = zpkg.Category
+
+	err := uri.Version.Parse(zpkg.Version)
 	if err != nil {
 		return err
 	}
 
 	uri.Version.Timestamp = time.Now()
 	zpkg.Uri = uri.String()
+
+	// Unset uri component values
+	zpkg.Name = ""
+	zpkg.Version = ""
+	zpkg.Publisher = ""
+	zpkg.Category = ""
 
 	// TODO we will need this elsewhere so relocate later
 	b.filename = fmt.Sprintf("%s@%s-%s-%s.zpkg", uri.Name, uri.Version, zpkg.Os, zpkg.Arch)

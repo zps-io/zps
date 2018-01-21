@@ -20,6 +20,7 @@ type ZpkgUri struct {
 
 func NewZpkgUri() *ZpkgUri {
 	zu := &ZpkgUri{}
+	zu.Version = &Version{}
 	return zu
 }
 
