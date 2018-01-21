@@ -7,7 +7,6 @@ import (
 	"github.com/solvent-io/zps/zpm"
 
 	"github.com/spf13/cobra"
-
 )
 
 type ZpmListCommand struct {
@@ -58,6 +57,6 @@ func (z *ZpmListCommand) run(cmd *cobra.Command, args []string) error {
 	if list != nil {
 		z.Out(columnize.SimpleFormat(list))
 	}
-	
+
 	return nil
 }
