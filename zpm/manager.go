@@ -65,7 +65,6 @@ func (m *Manager) List() ([]string, error) {
 	return output, nil
 }
 
-// TODO Entire function is a giant WIP
 func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 	if action != "install" && action != "remove" {
 		return nil, errors.New("action must be either: install or remove")
@@ -83,6 +82,10 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 			return nil, err
 		}
 
+		if len(pool.WhatProvides(req)) == 0 {
+			return nil, errors.New(fmt.Sprint("No candidates found for ", arg))
+		}
+		
 		switch action {
 		case "install":
 			request.Install(req)
