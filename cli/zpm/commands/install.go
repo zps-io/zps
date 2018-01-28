@@ -1,16 +1,14 @@
 package commands
 
 import (
-	"net/url"
-
-	"path/filepath"
 
 	"errors"
 
 	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/config"
+
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
+	"fmt"
 )
 
 type ZpmInstallCommand struct {
@@ -46,34 +44,25 @@ func (z *ZpmInstallCommand) run(cmd *cobra.Command, args []string) error {
 		return errors.New("Must provide at least one package uri to install")
 	}
 
-	// Load config
-	cfg, err := config.LoadConfig(image)
+	// Load manager
+	mgr, err := zpm.NewManager(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	// Setup ZPM transaction
-	transaction := zpm.NewTransaction(cfg.CurrentImage.Path, &zpm.Db{cfg.DbPath()}, "install")
-	transaction.On("info", func(msg string) {
-		z.Info(msg)
-	})
-	transaction.On("warn", func(msg string) {
-		z.Warn(msg)
+	mgr.On("fetch", func(fetch string) {
+		z.Info(fmt.Sprint("* fetching -> ", fetch))
 	})
 
-	for _, arg := range args {
-		file, err := filepath.Abs(arg)
+	mgr.On("install", func(install string) {
+		z.Info(install)
+	})
 
-		uri, err := url.Parse(file)
-		if err != nil {
-			z.Fatal(err.Error())
-		}
+	mgr.On("remove", func(remove string) {
+		z.Info(remove)
+	})
 
-		transaction.AddUri(uri)
-	}
-
-	// Run ZPM transaction
-	err = transaction.Realize()
+	err = mgr.Install(args)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

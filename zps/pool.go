@@ -52,6 +52,10 @@ func (p *Pool) Contains(pkg *Pkg) bool {
 	return false
 }
 
+func (p *Pool) Location(index int) *Repo {
+	return p.repos[index]
+}
+
 func (p *Pool) WhatProvides(req *Requirement) Solvables {
 	var provides Solvables
 

@@ -34,6 +34,44 @@ func (f *FileFetcher) Refresh() error {
 	return nil
 }
 
+func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
+	var err error
+	osarch :=  &zps.OsArch{pkg.Os(), pkg.Arch()}
+	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
+	packagefile := filepath.Join(f.uri.Path, osarch.String(), zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch()))
+	cachefile := filepath.Join(f.cachePath, zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch()))
+
+	if _, err = os.Stat(lockfile); !os.IsNotExist(err) {
+		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
+	} else {
+		os.OpenFile(lockfile, os.O_RDONLY|os.O_CREATE, 0640)
+		defer os.Remove(lockfile)
+	}
+
+	s, err := os.OpenFile(packagefile, os.O_RDWR|os.O_CREATE, 0640)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	if _, err := os.Stat(cachefile); os.IsNotExist(err) {
+
+		d, err := os.Create(cachefile)
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(d, s); err != nil {
+			d.Close()
+			return err
+		}
+
+		return d.Close()
+	}
+
+	return nil
+}
+
 func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 

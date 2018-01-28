@@ -16,6 +16,7 @@ import (
 	"github.com/solvent-io/zps/zpm/fetcher"
 	"github.com/solvent-io/zps/zpm/publisher"
 	"github.com/solvent-io/zps/zps"
+	"net/url"
 )
 
 type Manager struct {
@@ -40,8 +41,63 @@ func NewManager(image string) (*Manager, error) {
 	return mgr, nil
 }
 
+// TODO: add support for installing from file and repo in one request
 func (m *Manager) Install(args []string) error {
-	return nil
+	pool, err := m.pool()
+	if err != nil {
+		return err
+	}
+
+	request := zps.NewRequest()
+	for _, arg := range args {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return err
+		}
+
+		if len(pool.WhatProvides(req)) == 0 {
+			return errors.New(fmt.Sprint("No candidates found for ", arg))
+		}
+
+		request.Install(req)
+	}
+
+	// TODO: configure policy
+	solver := zps.NewSolver(pool, zps.NewPolicy("updated"))
+
+	solution, err := solver.Solve(request)
+	if err != nil {
+		return err
+	}
+
+	for _, op := range solution.Operations() {
+		switch op.Operation {
+		case "install":
+			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
+			fe := fetcher.Get(uri, m.config.CachePath())
+			err = fe.Fetch(op.Package.(*zps.Pkg))
+			if err != nil {
+				return err
+			}
+
+			m.Emitter.Emit("fetch", fmt.Sprint(op.Package.Id()))
+		}
+
+	}
+
+	tr := NewTransaction(m.config.CurrentImage.Path, m.config.CachePath(), m.db)
+
+	tr.On("install", func(msg string){
+		m.Emit("install", msg)
+	})
+
+	tr.On("remove", func(msg string){
+		m.Emit("remove", msg)
+	})
+
+	err = tr.Realize(solution)
+
+	return err
 }
 
 func (m *Manager) List() ([]string, error) {
@@ -85,7 +141,7 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 		if len(pool.WhatProvides(req)) == 0 {
 			return nil, errors.New(fmt.Sprint("No candidates found for ", arg))
 		}
-		
+
 		switch action {
 		case "install":
 			request.Install(req)

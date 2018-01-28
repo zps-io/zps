@@ -1,143 +1,95 @@
 package zpm
 
 import (
-	"errors"
-	"fmt"
-	"net/url"
-	"sort"
-	"strings"
-
 	"golang.org/x/net/context"
-
-	"github.com/chuckpreslar/emission"
-	"github.com/solvent-io/zps/action"
-	"github.com/solvent-io/zps/provider"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
+	"github.com/chuckpreslar/emission"
+	"github.com/solvent-io/zps/action"
+	"path"
+	"sort"
+	"errors"
+	"fmt"
+	"strings"
+	"github.com/solvent-io/zps/provider"
 )
 
-// Simplistic for now as this will need to handle the various URIs and
-// engage the solver for dependency resolution in the future design
-// will also require more advanced URI handling/lookup
-// Also this is basically a big mess
 type Transaction struct {
 	*emission.Emitter
 
-	TargetPath string
-	Db         *Db
-	Phase      string
-	Uris       []*url.URL
-	Packages   []string
+	targetPath string
+	cachePath  string
+	db         *Db
 
+	solution   *zps.Solution
 	readers map[string]*zpkg.Reader
-	lookup  map[action.Action]*zps.Pkg
 }
 
-func NewTransaction(targetPath string, db *Db, phase string, uris ...*url.URL) *Transaction {
-	return &Transaction{emission.NewEmitter(), targetPath, db, phase, uris, nil, make(map[string]*zpkg.Reader), make(map[action.Action]*zps.Pkg)}
+func NewTransaction(targetPath string, cachePath string, db *Db) *Transaction {
+	return &Transaction{emission.NewEmitter(),targetPath, cachePath, db, nil,nil}
 }
 
-func (t *Transaction) AddUri(uri *url.URL) *Transaction {
-	t.Uris = append(t.Uris, uri)
-	return t
-}
+func (t *Transaction) Realize(solution *zps.Solution) error {
+	t.solution = solution
+	t.readers = make(map[string]*zpkg.Reader)
 
-func (t *Transaction) AddPackage(pkg string) *Transaction {
-	t.Packages = append(t.Packages, pkg)
-	return t
-}
-
-func (t *Transaction) Realize() error {
-	err := t.load()
+	err := t.loadReaders()
 	if err != nil {
 		return err
 	}
 
-	switch t.Phase {
-	case "install":
-		return t.install()
-	case "remove":
-		return t.remove()
-	default:
-		return nil
-	}
-}
-
-func (t *Transaction) install() error {
-	err := t.resolve()
+	err = t.solutionConflicts()
 	if err != nil {
 		return err
 	}
 
-	err = t.fetch()
+	err = t.imageConflicts()
 	if err != nil {
 		return err
 	}
 
-	if len(t.readers) == 0 {
-		t.Emit("warn", "After resolution no packages to install")
-		return nil
-	}
-
-	t.Emit("info", fmt.Sprint("Installing ", len(t.readers), " package(s)"))
-
-	for pkg, reader := range t.readers {
-		err = t.removePkg(pkg, true)
-		if err != nil {
-			return err
-		}
-
-		err = t.installPkg(reader)
-		if err != nil {
-			return err
+	// TODO refactor into an ordered operation plan based on graph deps
+	for _, operation := range t.solution.Operations() {
+		if operation.Operation == "remove" {
+			t.Emit("remove", fmt.Sprint("- removing ", operation.Package.Id()))
+			err = t.remove(operation.Package)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	return err
+	for _, operation := range t.solution.Operations() {
+		if operation.Operation == "install" {
+			t.Emit("install", fmt.Sprint("+ installing ", operation.Package.Id()))
+			err = t.install(operation.Package)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
-func (t *Transaction) remove() error {
-	var err error
-	t.Emit("info", fmt.Sprint("Removing ", len(t.Packages), " package(s)"))
-
-	for _, pkg := range t.Packages {
-		err = t.removePkg(pkg, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	return err
-}
-
-// Load readers eliminate dupes
-func (t *Transaction) load() error {
+func (t *Transaction) loadReaders() error {
 	var err error
 
 	// Read Manifests
-	for _, uri := range t.Uris {
-		reader := zpkg.NewReader(uri.Path, "")
+	for _, operation := range t.solution.Operations() {
+		if operation.Operation == "install" {
+			reader := zpkg.NewReader(path.Join(t.cachePath, zps.ZpkgFileName(operation.Package.Name(), operation.Package.Version().String(), operation.Package.Os(), operation.Package.Arch())), "")
 
-		err = reader.Read()
-		if err != nil {
-			return err
-		}
-
-		pkg, err := zps.NewPkgFromManifest(reader.Manifest)
-		if err != nil {
-			return err
-		}
-
-		if val, ok := t.readers[pkg.Name()]; ok {
-			prev, err := zps.NewPkgFromManifest(val.Manifest)
+			err = reader.Read()
 			if err != nil {
 				return err
 			}
 
-			if pkg.Version().GT(prev.Version()) {
-				t.readers[pkg.Name()] = reader
+			pkg, err := zps.NewPkgFromManifest(reader.Manifest)
+			if err != nil {
+				return err
 			}
-		} else {
+
 			t.readers[pkg.Name()] = reader
 		}
 	}
@@ -145,11 +97,11 @@ func (t *Transaction) load() error {
 	return err
 }
 
-func (t *Transaction) resolve() error {
+func (t *Transaction) solutionConflicts() error {
 	var err error
 	var fsActions action.Actions
+	lookup := make(map[action.Action]*zps.Pkg)
 
-	// Ensure there are not conflicting packages in the list
 	for _, reader := range t.readers {
 		pkg, err := zps.NewPkgFromManifest(reader.Manifest)
 		if err != nil {
@@ -159,75 +111,32 @@ func (t *Transaction) resolve() error {
 		actions := reader.Manifest.Section("dir", "file", "symlink")
 
 		// build lookup index, TODO revisit this
-		for _, action := range actions {
-			t.lookup[action] = pkg
+		for _, act := range actions {
+			lookup[act] = pkg
 		}
 
 		fsActions = append(fsActions, actions...)
 	}
 
 	sort.Sort(fsActions)
-	for index, action := range fsActions {
+	for index, act := range fsActions {
 		prev := index - 1
 		if prev != -1 {
-			if action.Key() == fsActions[prev].Key() && action.Type() != "dir" && fsActions[prev].Type() != "dir" {
+			if act.Key() == fsActions[prev].Key() && act.Type() != "dir" && fsActions[prev].Type() != "dir" {
 				return errors.New(fmt.Sprint(
 					"Package Conflicts:\n",
-					t.lookup[fsActions[prev]].Name(), " ", strings.ToUpper(fsActions[prev].Type()), " => ", fsActions[prev].Key(), "\n",
-					t.lookup[action].Name(), " ", strings.ToUpper(action.Type()), " => ", action.Key()))
+					lookup[fsActions[prev]].Name(), " ", strings.ToUpper(fsActions[prev].Type()), " => ", fsActions[prev].Key(), "\n",
+					lookup[act].Name(), " ", strings.ToUpper(act.Type()), " => ", act.Key()))
 			}
 		}
 	}
 
-	// Check package database
-	for _, reader := range t.readers {
-		current, err := zps.NewPkgFromManifest(reader.Manifest)
-		if err != nil {
-			return err
-		}
+	return err
+}
 
-		lookup, err := t.Db.GetPackage(current.Name())
-		if err != nil {
-			return err
-		}
+func (t *Transaction) imageConflicts() error {
+	var err error
 
-		if lookup != nil {
-			lns, err := zps.NewPkgFromManifest(lookup)
-			if err != nil {
-				return err
-			}
-
-			if lns.Version().GT(current.Version()) {
-				t.Emit(
-					"warn",
-					fmt.Sprint(
-						current.Name(),
-						"@",
-						lns.Version().String(),
-						" > candidate ",
-						current.Version().String(),
-						" skipping ..."))
-
-				reader.Close()
-				delete(t.readers, current.Name())
-			}
-
-			if lns.Version().EXQ(current.Version()) {
-				t.Emit(
-					"warn",
-					fmt.Sprint(
-						current.Name(),
-						"@",
-						lns.Version().String(),
-						" already installed skipping ..."))
-
-				reader.Close()
-				delete(t.readers, current.Name())
-			}
-		}
-	}
-
-	// Check file database
 	for _, reader := range t.readers {
 
 		pkg, err := zps.NewPkgFromManifest(reader.Manifest)
@@ -236,7 +145,7 @@ func (t *Transaction) resolve() error {
 		}
 
 		for _, action := range reader.Manifest.Section("dir", "file", "symlink") {
-			fsEntry, err := t.Db.GetFsEntry(action.Key())
+			fsEntry, err := t.db.GetFsEntry(action.Key())
 
 			if err != nil {
 				return err
@@ -258,23 +167,16 @@ func (t *Transaction) resolve() error {
 	return err
 }
 
-// This will fetch uris if required
-func (t *Transaction) fetch() error {
-
-	return nil
-}
-
-func (t *Transaction) installPkg(reader *zpkg.Reader) error {
+func (t *Transaction) install(pkg zps.Solvable) error {
+	reader := t.readers[pkg.Name()]
 	ctx := action.GetContext(action.NewOptions(), reader.Manifest)
 	ctx = context.WithValue(ctx, "payload", reader.Payload)
-	ctx.Value("options").(*action.Options).TargetPath = t.TargetPath
+	ctx.Value("options").(*action.Options).TargetPath = t.targetPath
 
 	pkg, err := zps.NewPkgFromManifest(reader.Manifest)
 	if err != nil {
 		return err
 	}
-
-	t.Emit("info", fmt.Sprint("+ ", pkg.Name(), "@", pkg.Version().String()))
 
 	var contents action.Actions
 	contents = reader.Manifest.Section("dir", "file", "symlink")
@@ -289,14 +191,14 @@ func (t *Transaction) installPkg(reader *zpkg.Reader) error {
 	}
 
 	// Add this to the package db
-	err = t.Db.PutPackage(pkg.Name(), reader.Manifest)
+	err = t.db.PutPackage(pkg.Name(), reader.Manifest)
 	if err != nil {
 		return err
 	}
 
 	// Add all the fs object to the fs db
 	for _, fsObject := range contents {
-		err = t.Db.PutFsEntry(fsObject.Key(), pkg.Name(), fsObject.Type())
+		err = t.db.PutFsEntry(fsObject.Key(), pkg.Name(), fsObject.Type())
 		if err != nil {
 			return err
 		}
@@ -305,22 +207,20 @@ func (t *Transaction) installPkg(reader *zpkg.Reader) error {
 	return err
 }
 
-func (t *Transaction) removePkg(pkg string, quiet bool) error {
-	lookup, err := t.Db.GetPackage(pkg)
+func (t *Transaction) remove(pkg zps.Solvable) error {
+	lookup, err := t.db.GetPackage(pkg.Name())
 	if err != nil {
 		return err
 	}
 
 	if lookup != nil {
 		ctx := action.GetContext(action.NewOptions(), lookup)
-		ctx.Value("options").(*action.Options).TargetPath = t.TargetPath
+		ctx.Value("options").(*action.Options).TargetPath = t.targetPath
 
 		pkg, err := zps.NewPkgFromManifest(lookup)
 		if err != nil {
 			return err
 		}
-
-		t.Emit("info", fmt.Sprint("[red]- ", pkg.Name(), "@", pkg.Version().String()))
 
 		var contents action.Actions
 		contents = lookup.Section("dir", "file", "symlink")
@@ -336,23 +236,20 @@ func (t *Transaction) removePkg(pkg string, quiet bool) error {
 		}
 
 		// Remove from the package db
-		err = t.Db.DelPackage(pkg.Name())
+		err = t.db.DelPackage(pkg.Name())
 		if err != nil {
 			return err
 		}
 
 		// Remove fs objects from fs db
 		for _, fsObject := range contents {
-			err = t.Db.DelFsEntry(fsObject.Key(), pkg.Name())
+			err = t.db.DelFsEntry(fsObject.Key(), pkg.Name())
 			if err != nil {
 				return err
 			}
-		}
-	} else {
-		if quiet == false {
-			t.Emit("warn", fmt.Sprint("~ ", pkg, " not installed"))
 		}
 	}
 
 	return err
 }
+

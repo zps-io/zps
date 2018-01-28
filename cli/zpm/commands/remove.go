@@ -4,9 +4,8 @@ import (
 	"errors"
 
 	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/config"
-	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
+	"github.com/solvent-io/zps/zpm"
 )
 
 type ZpmRemoveCommand struct {
@@ -42,26 +41,8 @@ func (z *ZpmRemoveCommand) run(cmd *cobra.Command, args []string) error {
 		return errors.New("Must provide at least one package uri to remove")
 	}
 
-	// Load config
-	cfg, err := config.LoadConfig(image)
-	if err != nil {
-		z.Fatal(err.Error())
-	}
-
-	// Setup ZPM transaction
-	transaction := zpm.NewTransaction(cfg.CurrentImage.Path, &zpm.Db{cfg.DbPath()}, "remove")
-	transaction.On("info", func(msg string) {
-		z.Info(msg)
-	})
-	transaction.On("warn", func(msg string) {
-		z.Warn(msg)
-	})
-
-	for _, arg := range args {
-		transaction.AddPackage(arg)
-	}
-
-	err = transaction.Realize()
+	// Load manager
+	_, err := zpm.NewManager(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
