@@ -11,12 +11,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"net/url"
+
 	"github.com/chuckpreslar/emission"
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zpm/fetcher"
 	"github.com/solvent-io/zps/zpm/publisher"
 	"github.com/solvent-io/zps/zps"
-	"net/url"
 )
 
 type Manager struct {
@@ -87,11 +88,11 @@ func (m *Manager) Install(args []string) error {
 
 	tr := NewTransaction(m.config.CurrentImage.Path, m.config.CachePath(), m.db)
 
-	tr.On("install", func(msg string){
+	tr.On("install", func(msg string) {
 		m.Emit("install", msg)
 	})
 
-	tr.On("remove", func(msg string){
+	tr.On("remove", func(msg string) {
 		m.Emit("remove", msg)
 	})
 

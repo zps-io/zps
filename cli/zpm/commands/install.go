@@ -1,14 +1,14 @@
 package commands
 
 import (
-
 	"errors"
 
 	"github.com/solvent-io/zps/cli"
 
+	"fmt"
+
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
-	"fmt"
 )
 
 type ZpmInstallCommand struct {

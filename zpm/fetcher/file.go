@@ -36,7 +36,7 @@ func (f *FileFetcher) Refresh() error {
 
 func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	var err error
-	osarch :=  &zps.OsArch{pkg.Os(), pkg.Arch()}
+	osarch := &zps.OsArch{pkg.Os(), pkg.Arch()}
 	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
 	packagefile := filepath.Join(f.uri.Path, osarch.String(), zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch()))
 	cachefile := filepath.Join(f.cachePath, zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch()))

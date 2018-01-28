@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/solvent-io/zps/cli"
-	"github.com/spf13/cobra"
 	"github.com/solvent-io/zps/zpm"
+	"github.com/spf13/cobra"
 )
 
 type ZpmRemoveCommand struct {

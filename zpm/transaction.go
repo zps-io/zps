@@ -1,17 +1,18 @@
 package zpm
 
 import (
-	"golang.org/x/net/context"
-	"github.com/solvent-io/zps/zpkg"
-	"github.com/solvent-io/zps/zps"
-	"github.com/chuckpreslar/emission"
-	"github.com/solvent-io/zps/action"
-	"path"
-	"sort"
 	"errors"
 	"fmt"
+	"path"
+	"sort"
 	"strings"
+
+	"github.com/chuckpreslar/emission"
+	"github.com/solvent-io/zps/action"
 	"github.com/solvent-io/zps/provider"
+	"github.com/solvent-io/zps/zpkg"
+	"github.com/solvent-io/zps/zps"
+	"golang.org/x/net/context"
 )
 
 type Transaction struct {
@@ -21,12 +22,12 @@ type Transaction struct {
 	cachePath  string
 	db         *Db
 
-	solution   *zps.Solution
-	readers map[string]*zpkg.Reader
+	solution *zps.Solution
+	readers  map[string]*zpkg.Reader
 }
 
 func NewTransaction(targetPath string, cachePath string, db *Db) *Transaction {
-	return &Transaction{emission.NewEmitter(),targetPath, cachePath, db, nil,nil}
+	return &Transaction{emission.NewEmitter(), targetPath, cachePath, db, nil, nil}
 }
 
 func (t *Transaction) Realize(solution *zps.Solution) error {
@@ -252,4 +253,3 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 
 	return err
 }
-

@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"net/url"
+
 	"github.com/solvent-io/zps/zps"
 )
 
