@@ -51,7 +51,7 @@ func (z *ZpmInstallCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	mgr.On("fetch", func(fetch string) {
-		z.Info(fmt.Sprint("* fetching -> ", fetch))
+		z.Info(fmt.Sprint("* fetching ", fetch))
 	})
 
 	mgr.On("noop", func(noop string) {

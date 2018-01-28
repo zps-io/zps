@@ -51,17 +51,33 @@ func (t *Transaction) Realize(solution *zps.Solution) error {
 
 	// TODO refactor into an ordered operation plan based on graph deps
 	for _, operation := range t.solution.Operations() {
-		if operation.Operation == "remove" {
+		switch operation.Operation {
+		case "remove":
 			t.Emit("remove", fmt.Sprint("- removing ", operation.Package.Id()))
 			err = t.remove(operation.Package)
 			if err != nil {
 				return err
 			}
-		}
-	}
+		case "install":
+			// check if another version is installed and remove
+			lookup, err := t.db.GetPackage(operation.Package.Name())
+			if err != nil {
+				return err
+			}
 
-	for _, operation := range t.solution.Operations() {
-		if operation.Operation == "install" {
+			if lookup != nil {
+				lns, err := zps.NewPkgFromManifest(lookup)
+				if err != nil {
+					return err
+				}
+
+				t.Emit("remove", fmt.Sprint("[red]- removing ", lns.Id()))
+				err = t.remove(operation.Package)
+				if err != nil {
+					return err
+				}
+			}
+
 			t.Emit("install", fmt.Sprint("+ installing ", operation.Package.Id()))
 			err = t.install(operation.Package)
 			if err != nil {
