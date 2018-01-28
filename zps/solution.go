@@ -26,6 +26,16 @@ func (s *Solution) Names() []string {
 	return s.names
 }
 
+func (s *Solution) Noop() bool {
+	for _, op := range s.operations {
+		if op.Operation != "noop" {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (s *Solution) Operations() []*Operation {
 	return s.operations
 }

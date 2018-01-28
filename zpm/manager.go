@@ -82,8 +82,13 @@ func (m *Manager) Install(args []string) error {
 			}
 
 			m.Emitter.Emit("fetch", fmt.Sprint(op.Package.Id()))
+		case "noop":
+			m.Emit("noop", fmt.Sprint("-> using ", op.Package.Id()))
 		}
+	}
 
+	if solution.Noop() {
+		return nil
 	}
 
 	tr := NewTransaction(m.config.CurrentImage.Path, m.config.CachePath(), m.db)
@@ -161,6 +166,8 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 
 	for _, op := range solution.Operations() {
 		switch op.Operation {
+		case "noop":
+			m.Emitter.Emit("noop", op.Package.Id())
 		case "install":
 			m.Emitter.Emit("install", op.Package.Id())
 		case "remove":

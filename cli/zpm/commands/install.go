@@ -54,6 +54,10 @@ func (z *ZpmInstallCommand) run(cmd *cobra.Command, args []string) error {
 		z.Info(fmt.Sprint("* fetching -> ", fetch))
 	})
 
+	mgr.On("noop", func(noop string) {
+		z.Warn(noop)
+	})
+
 	mgr.On("install", func(install string) {
 		z.Info(install)
 	})

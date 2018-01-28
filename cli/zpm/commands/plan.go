@@ -52,6 +52,10 @@ func (z *ZpmPlanCommand) run(cmd *cobra.Command, args []string) error {
 		z.Info(fmt.Sprint("- ", pkg))
 	})
 
+	mgr.On("noop", func(pkg string) {
+		z.Warn(fmt.Sprint("-> ", pkg))
+	})
+
 	if cmd.Flags().Arg(0) == "" {
 		return errors.New("plan action required")
 	}

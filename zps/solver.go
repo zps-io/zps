@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/solvent-io/sat"
+	//"github.com/davecgh/go-spew/spew"
 )
 
 type Solver struct {
@@ -59,11 +60,16 @@ func (s *Solver) addClauses() {
 			candidate := s.policy.SelectRequest(s.pool.WhatProvides(job.Requirement()))
 
 			if candidate != nil {
+				clause = sat.NewVariable(candidate.Id())
+				/* comment out for now
+
 				if candidate.Priority() == -1 {
 					clause = sat.NewVariable(candidate.Id()).Not()
+
 				} else {
 					clause = sat.NewVariable(candidate.Id())
 				}
+				*/
 			}
 
 			s.solver.AddClause(clause)
@@ -141,6 +147,7 @@ func (s *Solver) generateSolutions() {
 
 		s.solutions = append(s.solutions, *solution)
 	}
+	//spew.Dump(s.solutions)
 	sort.Sort(s.solutions)
 }
 

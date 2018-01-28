@@ -53,6 +53,12 @@ func (u *UpdatedPolicy) SelectRequest(solvables Solvables) Solvable {
 	sort.Sort(solvables)
 
 	for _, solvable := range solvables {
+		if len(solvables) > 1 && solvable.Priority() == -1 {
+			if solvables[1].Version().GT(solvables[0].Version()) {
+				return solvables[1]
+			}
+		}
+
 		return solvable
 	}
 
