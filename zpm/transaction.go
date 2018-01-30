@@ -53,7 +53,7 @@ func (t *Transaction) Realize(solution *zps.Solution) error {
 	for _, operation := range t.solution.Operations() {
 		switch operation.Operation {
 		case "remove":
-			t.Emit("remove", fmt.Sprint("- removing ", operation.Package.Id()))
+			t.Emit("remove", fmt.Sprint("[red]- removing ", operation.Package.Id()))
 			err = t.remove(operation.Package)
 			if err != nil {
 				return err

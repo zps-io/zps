@@ -49,7 +49,7 @@ func (z *ZpmPlanCommand) run(cmd *cobra.Command, args []string) error {
 	})
 
 	mgr.On("remove", func(pkg string) {
-		z.Info(fmt.Sprint("- ", pkg))
+		z.Info(fmt.Sprint("[red]- ", pkg))
 	})
 
 	mgr.On("noop", func(pkg string) {

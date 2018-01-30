@@ -208,6 +208,45 @@ func (m *Manager) Refresh() error {
 	return nil
 }
 
+func (m *Manager) Remove(args []string) error {
+	pool, err := m.pool()
+	if err != nil {
+		return err
+	}
+
+	request := zps.NewRequest()
+	for _, arg := range args {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return err
+		}
+
+		if len(pool.WhatProvides(req)) == 0 {
+			return errors.New(fmt.Sprint("No removal candidates found for ", arg))
+		}
+
+		request.Remove(req)
+	}
+
+	// TODO: configure policy
+	solver := zps.NewSolver(pool, zps.NewPolicy("updated"))
+
+	solution, err := solver.Solve(request)
+	if err != nil {
+		return err
+	}
+
+	tr := NewTransaction(m.config.CurrentImage.Path, m.config.CachePath(), m.db)
+
+	tr.On("remove", func(msg string) {
+		m.Emit("remove", msg)
+	})
+
+	err = tr.Realize(solution)
+
+	return err
+}
+
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Name && repo.Publish.Uri != nil {

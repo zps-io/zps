@@ -42,7 +42,16 @@ func (z *ZpmRemoveCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load manager
-	_, err := zpm.NewManager(image)
+	mgr, err := zpm.NewManager(image)
+	if err != nil {
+		z.Fatal(err.Error())
+	}
+
+	mgr.On("remove", func(remove string) {
+		z.Info(remove)
+	})
+
+	err = mgr.Remove(args)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

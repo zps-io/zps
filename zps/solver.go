@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/solvent-io/sat"
 	//"github.com/davecgh/go-spew/spew"
+	"github.com/solvent-io/sat"
 )
 
 type Solver struct {
@@ -61,19 +61,18 @@ func (s *Solver) addClauses() {
 
 			if candidate != nil {
 				clause = sat.NewVariable(candidate.Id())
-				/* comment out for now
-
-				if candidate.Priority() == -1 {
-					clause = sat.NewVariable(candidate.Id()).Not()
-
-				} else {
-					clause = sat.NewVariable(candidate.Id())
-				}
-				*/
+				s.solver.AddClause(clause)
+				s.addReqClauses(candidate)
 			}
+		case "remove":
+			var clause sat.LiteralEncoder
+			candidate := s.pool.Installed(job.Requirement())
 
-			s.solver.AddClause(clause)
-			s.addReqClauses(candidate)
+			if candidate != nil {
+				clause = sat.NewVariable(candidate.Id()).Not()
+				s.solver.AddClause(clause)
+				s.addRmClauses(candidate)
+			}
 		default:
 			continue
 		}
@@ -114,6 +113,13 @@ func (s *Solver) addReqClauses(solvable Solvable) {
 		default:
 			continue
 		}
+	}
+}
+
+func (s *Solver) addRmClauses(solvable Solvable) {
+	for _, dep := range s.pool.WhatDepends(solvable.Name()){
+		clause := sat.NewVariable(dep.Id()).Not()
+		s.solver.AddClause(clause)
 	}
 }
 
