@@ -117,9 +117,11 @@ func (s *Solver) addReqClauses(solvable Solvable) {
 }
 
 func (s *Solver) addRmClauses(solvable Solvable) {
-	for _, dep := range s.pool.WhatDepends(solvable.Name()){
+	for _, dep := range s.pool.WhatDepends(solvable.Name()) {
 		clause := sat.NewVariable(dep.Id()).Not()
 		s.solver.AddClause(clause)
+		// recurse
+		s.addRmClauses(dep)
 	}
 }
 

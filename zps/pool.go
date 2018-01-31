@@ -3,11 +3,10 @@ package zps
 import (
 	"errors"
 	"sort"
-
 )
 
 type Pool struct {
-	index map[string]Solvables
+	index  map[string]Solvables
 	rindex map[string]Solvables
 
 	Solvables Solvables
