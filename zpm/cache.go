@@ -3,10 +3,10 @@ package zpm
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"hash"
-	"path/filepath"
-	"os"
 	"fmt"
+	"hash"
+	"os"
+	"path/filepath"
 )
 
 type Cache struct {

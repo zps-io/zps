@@ -3,8 +3,9 @@ package zps
 import (
 	"strings"
 
-	"github.com/solvent-io/zps/action"
 	"fmt"
+
+	"github.com/solvent-io/zps/action"
 )
 
 type Pkg struct {

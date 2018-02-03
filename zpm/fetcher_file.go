@@ -8,14 +8,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/solvent-io/zps/zps"
 	"github.com/nightlyone/lockfile"
-
+	"github.com/solvent-io/zps/zps"
 )
 
 type FileFetcher struct {
-	uri       *url.URL
-	cache     *Cache
+	uri   *url.URL
+	cache *Cache
 }
 
 func NewFileFetcher(uri *url.URL, cache *Cache) *FileFetcher {
