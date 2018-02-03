@@ -1,10 +1,7 @@
-package fetcher
+package zpm
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -12,15 +9,17 @@ import (
 	"path/filepath"
 
 	"github.com/solvent-io/zps/zps"
+	"github.com/nightlyone/lockfile"
+
 )
 
 type FileFetcher struct {
 	uri       *url.URL
-	cachePath string
+	cache     *Cache
 }
 
-func NewFileFetcher(uri *url.URL, cachePath string) *FileFetcher {
-	return &FileFetcher{uri, cachePath}
+func NewFileFetcher(uri *url.URL, cache *Cache) *FileFetcher {
+	return &FileFetcher{uri, cache}
 }
 
 func (f *FileFetcher) Refresh() error {
@@ -37,25 +36,28 @@ func (f *FileFetcher) Refresh() error {
 func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	var err error
 	osarch := &zps.OsArch{pkg.Os(), pkg.Arch()}
-	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
-	packagefile := filepath.Join(f.uri.Path, osarch.String(), zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch()))
-	cachefile := filepath.Join(f.cachePath, zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch()))
+	packagefile := zps.ZpkgFileName(pkg.Name(), pkg.Version().String(), pkg.Os(), pkg.Arch())
+	repofile := filepath.Join(f.uri.Path, osarch.String(), packagefile)
+	cachefile := f.cache.GetFile(packagefile)
 
-	if _, err = os.Stat(lockfile); !os.IsNotExist(err) {
-		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
-	} else {
-		os.OpenFile(lockfile, os.O_RDONLY|os.O_CREATE, 0640)
-		defer os.Remove(lockfile)
+	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
+	if err != nil {
+		return err
 	}
 
-	s, err := os.OpenFile(packagefile, os.O_RDWR|os.O_CREATE, 0640)
+	err = lock.TryLock()
+	if err != nil {
+		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
+	}
+	defer lock.Unlock()
+
+	s, err := os.OpenFile(repofile, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 
-	if _, err := os.Stat(cachefile); os.IsNotExist(err) {
-
+	if !f.cache.Exists(cachefile) {
 		d, err := os.Create(cachefile)
 		if err != nil {
 			return err
@@ -75,16 +77,23 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 
-	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
 	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
 	meta := &zps.RepoMeta{}
 
-	if _, err = os.Stat(lockfile); !os.IsNotExist(err) {
-		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
-	} else {
-		os.OpenFile(lockfile, os.O_RDONLY|os.O_CREATE, 0640)
-		defer os.Remove(lockfile)
+	if _, err = os.Stat(filepath.Join(f.uri.Path, osarch.String())); os.IsNotExist(err) {
+		return nil
 	}
+
+	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
+	if err != nil {
+		return err
+	}
+
+	err = lock.TryLock()
+	if err != nil {
+		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
+	}
+	defer lock.Unlock()
 
 	pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
@@ -94,19 +103,13 @@ func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 			return err
 		}
 
-		// TODO migrate this functionality
-		hasher := sha256.New()
-		hasher.Write([]byte(f.uri.String()))
-
-		repoId := hex.EncodeToString(hasher.Sum(nil))
-
 		s, err := os.OpenFile(packagesfile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}
 		defer s.Close()
 
-		d, err := os.Create(filepath.Join(f.cachePath, fmt.Sprint(repoId, ".", osarch.String(), ".packages.json")))
+		d, err := os.Create(f.cache.GetPackages(osarch.String(), f.uri.String()))
 		if err != nil {
 			return err
 		}

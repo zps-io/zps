@@ -1,4 +1,4 @@
-package fetcher
+package zpm
 
 import (
 	"net/url"
@@ -11,10 +11,10 @@ type Fetcher interface {
 	Fetch(pkg *zps.Pkg) error
 }
 
-func Get(uri *url.URL, cachePath string) Fetcher {
+func NewFetcher(uri *url.URL, cache *Cache) Fetcher {
 	switch uri.Scheme {
 	case "file":
-		return NewFileFetcher(uri, cachePath)
+		return NewFileFetcher(uri, cache)
 	default:
 		return nil
 	}

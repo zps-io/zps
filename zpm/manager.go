@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,9 +12,8 @@ import (
 	"net/url"
 
 	"github.com/chuckpreslar/emission"
+	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/config"
-	"github.com/solvent-io/zps/zpm/fetcher"
-	"github.com/solvent-io/zps/zpm/publisher"
 	"github.com/solvent-io/zps/zps"
 )
 
@@ -24,6 +21,8 @@ type Manager struct {
 	*emission.Emitter
 	config *config.ZpsConfig
 	db     *Db
+	cache  *Cache
+	lock   lockfile.Lockfile
 }
 
 func NewManager(image string) (*Manager, error) {
@@ -37,13 +36,25 @@ func NewManager(image string) (*Manager, error) {
 		return nil, err
 	}
 
+	mgr.lock, err = lockfile.New(filepath.Join(mgr.config.LockPath(), "zpm.lock"))
+	if err != nil {
+		return nil, err
+	}
+
 	mgr.db = &Db{mgr.config.DbPath()}
+	mgr.cache = NewCache(mgr.config.CachePath())
 
 	return mgr, nil
 }
 
 // TODO: add support for installing from file and repo in one request
 func (m *Manager) Install(args []string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	pool, err := m.pool()
 	if err != nil {
 		return err
@@ -75,7 +86,7 @@ func (m *Manager) Install(args []string) error {
 		switch op.Operation {
 		case "install":
 			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
-			fe := fetcher.Get(uri, m.config.CachePath())
+			fe := NewFetcher(uri, m.cache)
 			err = fe.Fetch(op.Package.(*zps.Pkg))
 			if err != nil {
 				return err
@@ -107,6 +118,12 @@ func (m *Manager) Install(args []string) error {
 }
 
 func (m *Manager) List() ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	packages, err := m.db.Packages()
 	if err != nil {
 		return nil, err
@@ -128,6 +145,12 @@ func (m *Manager) List() ([]string, error) {
 }
 
 func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	if action != "install" && action != "remove" {
 		return nil, errors.New("action must be either: install or remove")
 	}
@@ -182,7 +205,7 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
 		if repo == r.Name && r.Publish.Uri != nil {
-			pb := publisher.Get(r.Publish.Uri, r.Publish.Prune)
+			pb := NewPublisher(r.Publish.Uri, r.Publish.Prune)
 
 			err := pb.Publish(pkgs...)
 
@@ -194,8 +217,14 @@ func (m *Manager) Publish(repo string, pkgs ...string) error {
 }
 
 func (m *Manager) Refresh() error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	for _, r := range m.config.Repos {
-		fe := fetcher.Get(r.Fetch.Uri, m.config.CachePath())
+		fe := NewFetcher(r.Fetch.Uri, m.cache)
 
 		err := fe.Refresh()
 		if err == nil {
@@ -209,6 +238,12 @@ func (m *Manager) Refresh() error {
 }
 
 func (m *Manager) Remove(args []string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	pool, err := m.pool()
 	if err != nil {
 		return err
@@ -250,7 +285,7 @@ func (m *Manager) Remove(args []string) error {
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Name && repo.Publish.Uri != nil {
-			pb := publisher.Get(repo.Publish.Uri, repo.Publish.Prune)
+			pb := NewPublisher(repo.Publish.Uri, repo.Publish.Prune)
 
 			err := pb.Init()
 
@@ -262,17 +297,19 @@ func (m *Manager) RepoInit(name string) error {
 }
 
 func (m *Manager) RepoContents(name string) ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	for _, repo := range m.config.Repos {
-		if name == repo.Name && repo.Publish.Uri != nil {
-			// Load meta from cache
-			hasher := sha256.New()
-			hasher.Write([]byte(repo.Fetch.Uri.String()))
-			repoId := hex.EncodeToString(hasher.Sum(nil))
+		if name == repo.Name && repo.Fetch.Uri != nil {
 
 			// TODO fix
 			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
 
-			packagesfile := filepath.Join(m.config.CachePath(), fmt.Sprint(repoId, ".", osarch.String(), ".packages.json"))
+			packagesfile := m.cache.GetPackages(osarch.String(), repo.Fetch.Uri.String())
 			meta := &zps.RepoMeta{}
 
 			pkgsbytes, err := ioutil.ReadFile(packagesfile)
@@ -299,6 +336,12 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 }
 
 func (m *Manager) RepoList() ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	if len(m.config.Repos) == 0 {
 		return nil, nil
 	}
@@ -341,15 +384,10 @@ func (m *Manager) pool() (*zps.Pool, error) {
 		if r.Enabled == true {
 			repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, []zps.Solvable{})
 
-			// Load meta from cache
-			hasher := sha256.New()
-			hasher.Write([]byte(r.Fetch.Uri.String()))
-			repoId := hex.EncodeToString(hasher.Sum(nil))
-
 			// TODO fix
 			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
 
-			packagesfile := filepath.Join(m.config.CachePath(), fmt.Sprint(repoId, ".", osarch.String(), ".packages.json"))
+			packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
 			meta := &zps.RepoMeta{}
 
 			pkgsbytes, err := ioutil.ReadFile(packagesfile)

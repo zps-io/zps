@@ -1,4 +1,4 @@
-package publisher
+package zpm
 
 import (
 	"net/url"
@@ -9,7 +9,7 @@ type Publisher interface {
 	Publish(...string) error
 }
 
-func Get(uri *url.URL, prune int) Publisher {
+func NewPublisher(uri *url.URL, prune int) Publisher {
 	switch uri.Scheme {
 	case "file":
 		return NewFilePublisher(uri, prune)

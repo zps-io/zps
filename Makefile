@@ -43,6 +43,7 @@ deps:
 	go get github.com/blang/semver
 	go get github.com/solvent-io/sat
 	go get github.com/davecgh/go-spew/spew
+	go get github.com/nightlyone/lockfile
 
 zps: clean deps
 	mkdir -p dist/etc/zps/image.d
