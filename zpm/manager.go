@@ -321,6 +321,8 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 				}
 			} else if !os.IsNotExist(err) {
 				return nil, err
+			} else if os.IsNotExist(err) {
+				return nil, errors.New("No repo metadata found, perhaps run refresh?")
 			}
 
 			var contents []string
@@ -399,6 +401,8 @@ func (m *Manager) pool() (*zps.Pool, error) {
 				}
 			} else if !os.IsNotExist(err) {
 				return nil, err
+			} else if os.IsNotExist(err) {
+				return nil, errors.New("No repo metadata found, perhaps run refresh?")
 			}
 
 			for _, pkg := range meta.Repo.Solvables {
