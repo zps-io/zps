@@ -23,6 +23,7 @@ func NewZpmRootCommand() *ZpmRootCommand {
 	cmd.PersistentFlags().Bool("no-color", false, "Disable color")
 	cmd.PersistentFlags().String("image", "", "ZPS image name/id")
 
+	cmd.AddCommand(NewZpmCacheCommand().Command)
 	cmd.AddCommand(NewZpmInstallCommand().Command)
 	cmd.AddCommand(NewZpmListCommand().Command)
 	cmd.AddCommand(NewZpmPlanCommand().Command)

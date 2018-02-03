@@ -47,6 +47,26 @@ func NewManager(image string) (*Manager, error) {
 	return mgr, nil
 }
 
+func (m *Manager) Clean() error {
+	err := m.cache.Clean()
+	if err != nil {
+		return err
+	}
+
+	m.Emit("clean", fmt.Sprint("* cleaned ", m.cache.path))
+	return nil
+}
+
+func (m *Manager) Clear() error {
+	err := m.cache.Clear()
+	if err != nil {
+		return err
+	}
+
+	m.Emit("clear", fmt.Sprint("* cleared ", m.cache.path))
+	return nil
+}
+
 // TODO: add support for installing from file and repo in one request
 func (m *Manager) Install(args []string) error {
 	err := m.lock.TryLock()
@@ -419,8 +439,4 @@ func (m *Manager) pool() (*zps.Pool, error) {
 	}
 
 	return pool, nil
-}
-
-func (m *Manager) scan(files []string) (*zps.Repo, error) {
-	return nil, nil
 }
