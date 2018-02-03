@@ -3,7 +3,6 @@ package zpm
 import (
 	"errors"
 	"fmt"
-	"path"
 	"sort"
 	"strings"
 
@@ -19,15 +18,15 @@ type Transaction struct {
 	*emission.Emitter
 
 	targetPath string
-	cachePath  string
+	cache      *Cache
 	db         *Db
 
 	solution *zps.Solution
 	readers  map[string]*zpkg.Reader
 }
 
-func NewTransaction(targetPath string, cachePath string, db *Db) *Transaction {
-	return &Transaction{emission.NewEmitter(), targetPath, cachePath, db, nil, nil}
+func NewTransaction(targetPath string, cache *Cache, db *Db) *Transaction {
+	return &Transaction{emission.NewEmitter(), targetPath, cache, db, nil, nil}
 }
 
 func (t *Transaction) Realize(solution *zps.Solution) error {
@@ -95,7 +94,7 @@ func (t *Transaction) loadReaders() error {
 	// Read Manifests
 	for _, operation := range t.solution.Operations() {
 		if operation.Operation == "install" {
-			reader := zpkg.NewReader(path.Join(t.cachePath, zps.ZpkgFileName(operation.Package.Name(), operation.Package.Version().String(), operation.Package.Os(), operation.Package.Arch())), "")
+			reader := zpkg.NewReader(t.cache.GetFile(operation.Package.(*zps.Pkg).FileName()), "")
 
 			err = reader.Read()
 			if err != nil {

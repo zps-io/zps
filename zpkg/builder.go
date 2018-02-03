@@ -244,7 +244,12 @@ func (b *Builder) set() error {
 	zpkg.Publisher = ""
 	zpkg.Category = ""
 
-	b.filename = zps.ZpkgFileName(uri.Name, uri.Version.String(), zpkg.Os, zpkg.Arch)
+	pkg, err := zps.NewPkgFromManifest(b.manifest)
+	if err != nil {
+		return err
+	}
+
+	b.filename = pkg.FileName()
 
 	return nil
 }

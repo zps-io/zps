@@ -102,7 +102,7 @@ func (m *Manager) Install(args []string) error {
 		return nil
 	}
 
-	tr := NewTransaction(m.config.CurrentImage.Path, m.config.CachePath(), m.db)
+	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.db)
 
 	tr.On("install", func(msg string) {
 		m.Emit("install", msg)
@@ -271,7 +271,7 @@ func (m *Manager) Remove(args []string) error {
 		return err
 	}
 
-	tr := NewTransaction(m.config.CurrentImage.Path, m.config.CachePath(), m.db)
+	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.db)
 
 	tr.On("remove", func(msg string) {
 		m.Emit("remove", msg)

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/solvent-io/zps/action"
+	"fmt"
 )
 
 type Pkg struct {
@@ -177,6 +178,10 @@ func (p *Pkg) Satisfies(req *Requirement) bool {
 	}
 
 	return false
+}
+
+func (p *Pkg) FileName() string {
+	return fmt.Sprintf("%s@%s-%s-%s.zpkg", p.Name(), p.Version().String(), p.Os(), p.Arch())
 }
 
 func (p *Pkg) Json() *JsonPkg {
