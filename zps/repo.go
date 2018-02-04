@@ -1,20 +1,19 @@
 package zps
 
 import (
+	"encoding/json"
 	"sort"
 	"time"
-	"encoding/json"
 )
 
 type Repo struct {
-	Uri       string
-	Priority  int
-	Enabled   bool
-	Updated time.Time
+	Uri      string
+	Priority int
+	Enabled  bool
+	Updated  time.Time
 
 	solvables Solvables
-	index map[string]Solvables
-
+	index     map[string]Solvables
 }
 
 type Repos []*Repo
