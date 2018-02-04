@@ -111,7 +111,7 @@ func (p *Pool) populate() {
 			continue
 		}
 
-		for _, solvable := range repo.Solvables {
+		for _, solvable := range repo.Solvables() {
 			solvable.SetPriority(repo.Priority)
 			solvable.SetLocation(index)
 

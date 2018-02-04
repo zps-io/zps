@@ -330,12 +330,12 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
 
 			packagesfile := m.cache.GetPackages(osarch.String(), repo.Fetch.Uri.String())
-			meta := &zps.RepoMeta{}
+			repo := &zps.Repo{}
 
 			pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
 			if err == nil {
-				err = meta.Load(pkgsbytes)
+				err = repo.Load(pkgsbytes)
 				if err != nil {
 					return nil, err
 				}
@@ -346,7 +346,7 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 			}
 
 			var contents []string
-			for _, pkg := range meta.Repo.Solvables {
+			for _, pkg := range repo.Solvables() {
 				contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Uri().String()}, "|"))
 			}
 
@@ -410,12 +410,10 @@ func (m *Manager) pool() (*zps.Pool, error) {
 			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
 
 			packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
-			meta := &zps.RepoMeta{}
-
 			pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
 			if err == nil {
-				err = meta.Load(pkgsbytes)
+				err = repo.Load(pkgsbytes)
 				if err != nil {
 					return nil, err
 				}
@@ -423,10 +421,6 @@ func (m *Manager) pool() (*zps.Pool, error) {
 				return nil, err
 			} else if os.IsNotExist(err) {
 				return nil, errors.New("No repo metadata found, perhaps run refresh?")
-			}
-
-			for _, pkg := range meta.Repo.Solvables {
-				repo.Solvables = append(repo.Solvables, pkg)
 			}
 
 			repos = append(repos, repo)

@@ -8,6 +8,8 @@ type Solvable interface {
 	Arch() string
 	Os() string
 
+	FileName() string
+
 	Location() int
 	SetLocation(location int)
 

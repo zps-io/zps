@@ -94,7 +94,7 @@ func (t *Transaction) loadReaders() error {
 	// Read Manifests
 	for _, operation := range t.solution.Operations() {
 		if operation.Operation == "install" {
-			reader := zpkg.NewReader(t.cache.GetFile(operation.Package.(*zps.Pkg).FileName()), "")
+			reader := zpkg.NewReader(t.cache.GetFile(operation.Package.FileName()), "")
 
 			err = reader.Read()
 			if err != nil {

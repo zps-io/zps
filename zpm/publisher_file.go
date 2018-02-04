@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
 )
@@ -67,21 +68,24 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
 	var err error
 
-	lockfile := filepath.Join(f.uri.Path, osarch.String(), ".lock")
 	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
-	meta := &zps.RepoMeta{}
+	repo := &zps.Repo{}
 
-	if _, err = os.Stat(lockfile); !os.IsNotExist(err) {
-		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
-	} else {
-		os.OpenFile(lockfile, os.O_RDONLY|os.O_CREATE, 0640)
-		defer os.Remove(lockfile)
+	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
+	if err != nil {
+		return err
 	}
+
+	err = lock.TryLock()
+	if err != nil {
+		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
+	}
+	defer lock.Unlock()
 
 	pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
 	if err == nil {
-		err = meta.Load(pkgsbytes)
+		err = repo.Load(pkgsbytes)
 		if err != nil {
 			return err
 		}
@@ -89,15 +93,16 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 		return err
 	}
 
-	meta.Add(zpkgs...)
+	// TODO don't upload rejects
+	repo.Add(zpkgs...)
 
-	rmFiles, err := meta.Prune(f.prune)
+	rmFiles, err := repo.Prune(f.prune)
 	if err != nil {
 		return err
 	}
 
-	if len(meta.Repo.Solvables) > 0 {
-		json, err := meta.Json()
+	if len(repo.Solvables()) > 0 {
+		json, err := repo.Json()
 		if err != nil {
 			return err
 		}
@@ -111,8 +116,8 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 			}
 		}
 
-		for _, file := range rmFiles {
-			os.Remove(filepath.Join(f.uri.Path, osarch.String(), file))
+		for _, pkg := range rmFiles {
+			os.Remove(filepath.Join(f.uri.Path, osarch.String(), pkg.FileName()))
 		}
 
 		err = ioutil.WriteFile(packagesfile, json, 0640)

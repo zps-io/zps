@@ -77,7 +77,7 @@ func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 
 	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
-	meta := &zps.RepoMeta{}
+	repo := &zps.Repo{}
 
 	if _, err = os.Stat(filepath.Join(f.uri.Path, osarch.String())); os.IsNotExist(err) {
 		return nil
@@ -97,7 +97,7 @@ func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
 	if err == nil {
-		err = meta.Load(pkgsbytes)
+		err = repo.Load(pkgsbytes)
 		if err != nil {
 			return err
 		}
