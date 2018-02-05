@@ -26,12 +26,12 @@ func (c *Cache) Exists(name string) bool {
 	return true
 }
 
-func (c *Cache) GetConfig(osarch string, uri string) string {
+func (c *Cache) GetConfig(uri string) string {
 	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), ".config.json"))
 }
 
 func (c *Cache) GetPackages(osarch string, uri string) string {
-	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), ".packages.json"))
+	return filepath.Join(c.path, fmt.Sprint(c.getId(uri),"-", osarch, ".packages.json"))
 }
 
 func (c *Cache) GetFile(name string) string {

@@ -325,29 +325,33 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 
 	for _, repo := range m.config.Repos {
 		if name == repo.Name && repo.Fetch.Uri != nil {
+			var contents []string
+			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
-			// TODO fix
-			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
+			for _, osarch := range osArches {
+				packagesfile := m.cache.GetPackages(osarch.String(), repo.Fetch.Uri.String())
+				repo := &zps.Repo{}
 
-			packagesfile := m.cache.GetPackages(osarch.String(), repo.Fetch.Uri.String())
-			repo := &zps.Repo{}
+				pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
-			pkgsbytes, err := ioutil.ReadFile(packagesfile)
-
-			if err == nil {
-				err = repo.Load(pkgsbytes)
-				if err != nil {
+				if err == nil {
+					err = repo.Load(pkgsbytes)
+					if err != nil {
+						return nil, err
+					}
+				} else if !os.IsNotExist(err) {
 					return nil, err
+				} else if os.IsNotExist(err) {
+					continue
 				}
-			} else if !os.IsNotExist(err) {
-				return nil, err
-			} else if os.IsNotExist(err) {
-				return nil, errors.New("No repo metadata found, perhaps run refresh?")
+
+				for _, pkg := range repo.Solvables() {
+					contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Uri().String()}, "|"))
+				}
 			}
 
-			var contents []string
-			for _, pkg := range repo.Solvables() {
-				contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Uri().String()}, "|"))
+			if len(contents) == 0 {
+				return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 			}
 
 			return contents, err
@@ -404,27 +408,31 @@ func (m *Manager) pool() (*zps.Pool, error) {
 
 	for _, r := range m.config.Repos {
 		if r.Enabled == true {
-			repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, []zps.Solvable{})
+			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
-			// TODO fix
-			osarch := &zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch}
+			for _, osarch := range osArches {
+				repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, []zps.Solvable{})
+				packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
+				pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
-			packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
-			pkgsbytes, err := ioutil.ReadFile(packagesfile)
-
-			if err == nil {
-				err = repo.Load(pkgsbytes)
-				if err != nil {
+				if err == nil {
+					err = repo.Load(pkgsbytes)
+					if err != nil {
+						return nil, err
+					}
+				} else if !os.IsNotExist(err) {
 					return nil, err
+				} else if os.IsNotExist(err) {
+					continue
 				}
-			} else if !os.IsNotExist(err) {
-				return nil, err
-			} else if os.IsNotExist(err) {
-				return nil, errors.New("No repo metadata found, perhaps run refresh?")
-			}
 
-			repos = append(repos, repo)
+				repos = append(repos, repo)
+			}
 		}
+	}
+
+	if len(repos) == 0 {
+		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
 	pool, err := zps.NewPool(image, repos...)

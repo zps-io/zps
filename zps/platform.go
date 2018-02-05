@@ -26,9 +26,10 @@ func (slice OsArches) Swap(i, j int) {
 
 func supportedPlatforms() map[string][]string {
 	return map[string][]string{
-		"darwin":  {"x86_64"},
-		"freebsd": {"arm64", "x86_64"},
-		"linux":   {"arm64", "x86_64"},
+		"any":     {"any", "arm64", "x68_64"},
+		"darwin":  {"any", "x86_64"},
+		"freebsd": {"any", "arm64", "x86_64"},
+		"linux":   {"any", "arm64", "x86_64"},
 	}
 }
 
@@ -43,6 +44,17 @@ func Platforms() OsArches {
 	sort.Sort(platforms)
 
 	return platforms
+}
+
+func ExpandOsArch(osarch *OsArch) OsArches {
+	var osArches OsArches
+
+	osArches = append(osArches, osarch)
+	osArches = append(osArches, &OsArch{"any", "any"})
+	osArches = append(osArches, &OsArch{osarch.Os, "any"})
+	osArches = append(osArches, &OsArch{"any", osarch.Arch})
+
+	return osArches
 }
 
 func (oa *OsArch) String() string {
