@@ -92,9 +92,13 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	} else if !os.IsNotExist(err) {
 		return err
 	}
+	
+	rejects := repo.Add(zpkgs...)
+	rejectIndex := make(map[string]bool)
 
-	// TODO don't upload rejects
-	repo.Add(zpkgs...)
+	for _, r := range rejects {
+		rejectIndex[r.FileName()] = true
+	}
 
 	rmFiles, err := repo.Prune(f.prune)
 	if err != nil {
@@ -110,9 +114,11 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 		os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
 
 		for _, file := range pkgFiles {
-			err = f.upload(file, filepath.Join(f.uri.Path, osarch.String(), filepath.Base(file)))
-			if err != nil {
-				return err
+			if !rejectIndex[filepath.Base(file)] {
+				err = f.upload(file, filepath.Join(f.uri.Path, osarch.String(), filepath.Base(file)))
+				if err != nil {
+					return err
+				}
 			}
 		}
 
