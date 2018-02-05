@@ -31,7 +31,7 @@ func (c *Cache) GetConfig(uri string) string {
 }
 
 func (c *Cache) GetPackages(osarch string, uri string) string {
-	return filepath.Join(c.path, fmt.Sprint(c.getId(uri),"-", osarch, ".packages.json"))
+	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), "-", osarch, ".packages.json"))
 }
 
 func (c *Cache) GetFile(name string) string {

@@ -3,7 +3,7 @@ CONFIG='mode = "ancillary"'
 
 define REPO
 name = "Test Repo"
-priority = 0
+priority = 10
 enabled = true
 
 fetch {

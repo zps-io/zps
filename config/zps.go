@@ -236,7 +236,7 @@ func (z *ZpsConfig) LoadRepos() error {
 		if val, ok := repoMap["priority"]; ok {
 			repo.Priority = val.(int)
 		} else {
-			repo.Priority = 0
+			repo.Priority = 10
 		}
 
 		if val, ok := repoMap["fetch"]; ok {
