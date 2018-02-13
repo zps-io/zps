@@ -331,7 +331,7 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 			return nil, err
 		}
 
-		if name == repoConfig[name] && repo.Fetch.Uri != nil {
+		if name == repoConfig["name"] && repo.Fetch.Uri != nil {
 			var contents []string
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
@@ -474,7 +474,7 @@ func (m *Manager) pool() (*zps.Pool, error) {
 func (m *Manager) repoConfig(uri string) (map[string]string, error) {
 	config := make(map[string]string)
 	configfile := m.cache.GetConfig(uri)
-	
+
 	configbytes, err := ioutil.ReadFile(configfile)
 	if err != nil {
 		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
