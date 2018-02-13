@@ -23,6 +23,7 @@ func NewZpmRepoCommand() *ZpmRepoCommand {
 	cmd.AddCommand(NewZpmRepoInitCommand().Command)
 	cmd.AddCommand(NewZpmRepoContentsCommand().Command)
 	cmd.AddCommand(NewZpmRepoListCommand().Command)
+	cmd.AddCommand(NewZpmRepoUpdateCommand().Command)
 	return cmd
 }
 

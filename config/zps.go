@@ -215,12 +215,6 @@ func (z *ZpsConfig) LoadRepos() error {
 			return nil
 		}
 
-		if val, ok := repoMap["name"]; ok {
-			repo.Name = val.(string)
-		} else {
-			return errors.New(fmt.Sprint("config: repo name required in ", rconfig))
-		}
-
 		if val, ok := repoMap["enabled"]; ok {
 			repo.Enabled = val.(bool)
 		} else {
@@ -260,6 +254,12 @@ func (z *ZpsConfig) LoadRepos() error {
 				}
 			} else {
 				return errors.New(fmt.Sprint("config: repo publish.uri required in ", rconfig))
+			}
+
+			if val, ok := val.([]map[string]interface{})[0]["name"]; ok {
+				repo.Publish.Name = val.(string)
+			} else {
+				return errors.New(fmt.Sprint("config: repo publish.name required in ", rconfig))
 			}
 
 			if prune, ok := val.([]map[string]interface{})[0]["prune"]; ok {

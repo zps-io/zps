@@ -15,6 +15,7 @@ import (
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zps"
+	"encoding/json"
 )
 
 type Manager struct {
@@ -224,8 +225,8 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
-		if repo == r.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(r.Publish.Uri, r.Publish.Prune)
+		if repo == r.Publish.Name && r.Publish.Uri != nil {
+			pb := NewPublisher(r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
 			err := pb.Publish(pkgs...)
 
@@ -304,8 +305,8 @@ func (m *Manager) Remove(args []string) error {
 
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
-		if name == repo.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(repo.Publish.Uri, repo.Publish.Prune)
+		if name == repo.Publish.Name && repo.Publish.Uri != nil {
+			pb := NewPublisher(repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
 			err := pb.Init()
 
@@ -324,7 +325,13 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 	defer m.lock.Unlock()
 
 	for _, repo := range m.config.Repos {
-		if name == repo.Name && repo.Fetch.Uri != nil {
+
+		repoConfig, err := m.repoConfig(repo.Fetch.Uri.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if name == repoConfig[name] && repo.Fetch.Uri != nil {
 			var contents []string
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
@@ -374,10 +381,31 @@ func (m *Manager) RepoList() ([]string, error) {
 
 	var repos []string
 	for _, repo := range m.config.Repos {
-		repos = append(repos, strings.Join([]string{repo.Name, repo.Fetch.Uri.String()}, "|"))
+		name := "<no meta>"
+		repoConfig, _ := m.repoConfig(repo.Fetch.Uri.String())
+
+		if repoConfig != nil {
+			name = repoConfig["name"]
+		}
+
+		repos = append(repos, strings.Join([]string{name, repo.Fetch.Uri.String()}, "|"))
 	}
 
 	return repos, nil
+}
+
+func (m *Manager) RepoUpdate(name string) error {
+	for _, repo := range m.config.Repos {
+		if name == repo.Publish.Name && repo.Publish.Uri != nil {
+			pb := NewPublisher(repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+
+			err := pb.Update()
+
+			return err
+		}
+	}
+
+	return errors.New("Repo: " + name + " not found")
 }
 
 func (m *Manager) image() (*zps.Repo, error) {
@@ -441,4 +469,20 @@ func (m *Manager) pool() (*zps.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func (m *Manager) repoConfig(uri string) (map[string]string, error) {
+	config := make(map[string]string)
+	configfile := m.cache.GetConfig(uri)
+	
+	configbytes, err := ioutil.ReadFile(configfile)
+	if err != nil {
+		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
+	}
+
+	err = json.Unmarshal(configbytes, &config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
 }

@@ -12,15 +12,17 @@ import (
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
+	"encoding/json"
 )
 
 type FilePublisher struct {
 	uri   *url.URL
+	name string
 	prune int
 }
 
-func NewFilePublisher(uri *url.URL, prune int) *FilePublisher {
-	return &FilePublisher{uri, prune}
+func NewFilePublisher(uri *url.URL, name string, prune int) *FilePublisher {
+	return &FilePublisher{uri, name, prune}
 }
 
 func (f *FilePublisher) Init() error {
@@ -30,7 +32,15 @@ func (f *FilePublisher) Init() error {
 		os.RemoveAll(filepath.Join(f.uri.Path, osarch.String()))
 	}
 
-	return nil
+	err := f.configure()
+
+	return err
+}
+
+func (f *FilePublisher) Update() error {
+	err := f.configure()
+
+	return err
 }
 
 func (f *FilePublisher) Publish(pkgs ...string) error {
@@ -92,7 +102,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	
+
 	rejects := repo.Add(zpkgs...)
 	rejectIndex := make(map[string]bool)
 
@@ -169,4 +179,24 @@ func (f *FilePublisher) upload(file string, dest string) error {
 	}
 
 	return d.Close()
+}
+
+// Temporary
+func (f *FilePublisher) configure() error {
+	configfile := filepath.Join(f.uri.Path, "config.json")
+
+	config := make(map[string]string)
+	config["name"] = f.name
+
+	result, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(configfile, result, 0640)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

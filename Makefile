@@ -2,7 +2,6 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 CONFIG='mode = "ancillary"'
 
 define REPO
-name = "Test Repo"
 priority = 10
 enabled = true
 
@@ -12,6 +11,7 @@ fetch {
 
 publish {
 	uri = "file://$(ROOT_DIR)/test/testrepo"
+	name = "Test Repo"
 	prune = 3
 }
 endef

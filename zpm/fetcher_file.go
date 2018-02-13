@@ -22,6 +22,24 @@ func NewFileFetcher(uri *url.URL, cache *Cache) *FileFetcher {
 }
 
 func (f *FileFetcher) Refresh() error {
+	configfile := filepath.Join(f.uri.Path, "config.json")
+
+	s, err := os.OpenFile(configfile, os.O_RDWR|os.O_CREATE, 0640)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	d, err := os.Create(f.cache.GetConfig(f.uri.String()))
+	if err != nil {
+		return err
+	}
+
+	defer d.Close()
+	if _, err := io.Copy(d, s); err != nil {
+		return err
+	}
+
 	for _, osarch := range zps.Platforms() {
 		err := f.refresh(osarch)
 		if err != nil {

@@ -3,7 +3,6 @@ package config
 import "net/url"
 
 type RepoConfig struct {
-	Name     string
 	Priority int
 	Enabled  bool
 
@@ -17,5 +16,6 @@ type FetchConfig struct {
 
 type PublishConfig struct {
 	Uri   *url.URL
+	Name  string
 	Prune int
 }
