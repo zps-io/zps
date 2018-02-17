@@ -121,7 +121,7 @@ func (m *Manager) Install(args []string) error {
 
 			m.Emitter.Emit("fetch", fmt.Sprint(op.Package.Id()))
 		case "noop":
-			m.Emit("noop", fmt.Sprint("-> using ", op.Package.Id()))
+			m.Emit("noop", fmt.Sprint("> using ", op.Package.Id()))
 		}
 	}
 

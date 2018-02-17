@@ -53,7 +53,7 @@ func (z *ZpmPlanCommand) run(cmd *cobra.Command, args []string) error {
 	})
 
 	mgr.On("noop", func(pkg string) {
-		z.Warn(fmt.Sprint("-> ", pkg))
+		z.Warn(fmt.Sprint("> ", pkg))
 	})
 
 	if cmd.Flags().Arg(0) == "" {

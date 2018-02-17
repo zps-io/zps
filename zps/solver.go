@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/solvent-io/sat"
-
 )
 
 type Solver struct {
