@@ -103,6 +103,11 @@ func (s *Solution) Graph() ([]*Operation, error) {
 		return nil, err
 	}
 
+	// reverse removes
+	for i, j := 0, len(removes)-1; i < j; i, j = i+1, j-1 {
+		removes[i], removes[j] = removes[j], removes[i]
+	}
+
 	installs, err := topo.Sort(s.installGraph)
 	if err != nil {
 		return nil, err
