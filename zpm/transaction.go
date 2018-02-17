@@ -48,8 +48,12 @@ func (t *Transaction) Realize(solution *zps.Solution) error {
 		return err
 	}
 
-	// TODO refactor into an ordered operation plan based on graph deps
-	for _, operation := range t.solution.Operations() {
+	operations, err := t.solution.Graph()
+	if err != nil {
+		return err
+	}
+
+	for _, operation := range operations {
 		switch operation.Operation {
 		case "remove":
 			t.Emit("remove", fmt.Sprint("[red]- removing ", operation.Package.Id()))

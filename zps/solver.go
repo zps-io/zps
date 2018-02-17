@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	//"github.com/davecgh/go-spew/spew"
 	"github.com/solvent-io/sat"
+
 )
 
 type Solver struct {
@@ -127,7 +127,7 @@ func (s *Solver) addRmClauses(solvable Solvable) {
 
 func (s *Solver) generateSolutions() {
 	for _, satSol := range s.satSolutions {
-		solution := &Solution{}
+		solution := NewSolution()
 		keys := make([]string, 0)
 
 		for key := range *satSol {
@@ -155,7 +155,7 @@ func (s *Solver) generateSolutions() {
 
 		s.solutions = append(s.solutions, *solution)
 	}
-	//spew.Dump(s.solutions)
+
 	sort.Sort(s.solutions)
 }
 

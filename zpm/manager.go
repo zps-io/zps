@@ -11,11 +11,12 @@ import (
 
 	"net/url"
 
+	"encoding/json"
+
 	"github.com/chuckpreslar/emission"
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zps"
-	"encoding/json"
 )
 
 type Manager struct {
@@ -103,7 +104,12 @@ func (m *Manager) Install(args []string) error {
 		return err
 	}
 
-	for _, op := range solution.Operations() {
+	operations, err := solution.Graph()
+	if err != nil {
+		return err
+	}
+
+	for _, op := range operations {
 		switch op.Operation {
 		case "install":
 			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
@@ -208,7 +214,12 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 		return nil, err
 	}
 
-	for _, op := range solution.Operations() {
+	operations, err := solution.Graph()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, op := range operations {
 		switch op.Operation {
 		case "noop":
 			m.Emitter.Emit("noop", op.Package.Id())

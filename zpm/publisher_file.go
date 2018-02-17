@@ -9,15 +9,16 @@ import (
 	"io"
 	"io/ioutil"
 
+	"encoding/json"
+
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
-	"encoding/json"
 )
 
 type FilePublisher struct {
 	uri   *url.URL
-	name string
+	name  string
 	prune int
 }
 
