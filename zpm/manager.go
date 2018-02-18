@@ -129,15 +129,7 @@ func (m *Manager) Install(args []string) error {
 		return nil
 	}
 
-	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.state)
-
-	tr.On("install", func(msg string) {
-		m.Emit("install", msg)
-	})
-
-	tr.On("remove", func(msg string) {
-		m.Emit("remove", msg)
-	})
+	tr := NewTransaction(m.Emitter, m.config.CurrentImage.Path, m.cache, m.state)
 
 	err = tr.Realize(solution)
 
@@ -303,11 +295,7 @@ func (m *Manager) Remove(args []string) error {
 		return err
 	}
 
-	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.state)
-
-	tr.On("remove", func(msg string) {
-		m.Emit("remove", msg)
-	})
+	tr := NewTransaction(m.Emitter, m.config.CurrentImage.Path, m.cache, m.state)
 
 	err = tr.Realize(solution)
 

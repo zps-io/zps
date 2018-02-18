@@ -3,10 +3,11 @@ package commands
 import (
 	"errors"
 
+	"fmt"
+
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
-	"fmt"
 )
 
 type ZpmPublishCommand struct {

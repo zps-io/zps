@@ -11,10 +11,10 @@ import (
 
 	"encoding/json"
 
+	"github.com/chuckpreslar/emission"
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
-	"github.com/chuckpreslar/emission"
 )
 
 type FilePublisher struct {
@@ -25,7 +25,7 @@ type FilePublisher struct {
 }
 
 func NewFilePublisher(emitter *emission.Emitter, uri *url.URL, name string, prune int) *FilePublisher {
-	return &FilePublisher{ emitter, uri, name, prune}
+	return &FilePublisher{emitter, uri, name, prune}
 }
 
 func (f *FilePublisher) Init() error {

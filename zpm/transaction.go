@@ -25,8 +25,8 @@ type Transaction struct {
 	readers  map[string]*zpkg.Reader
 }
 
-func NewTransaction(targetPath string, cache *Cache, state *State) *Transaction {
-	return &Transaction{emission.NewEmitter(), targetPath, cache, state, nil, nil}
+func NewTransaction(emitter *emission.Emitter, targetPath string, cache *Cache, state *State) *Transaction {
+	return &Transaction{emitter, targetPath, cache, state, nil, nil}
 }
 
 func (t *Transaction) Realize(solution *zps.Solution) error {
