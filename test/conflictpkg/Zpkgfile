@@ -1,0 +1,22 @@
+zpkg {
+  name = "conflictpkg"
+  publisher = "solvent"
+  category = "test"
+  version = "0.0.2"
+  summary = "Zpkg conflict pkg"
+  description = "The long description of the Zpkg conflict package, that is long, because it needs to be long."
+  os = "darwin"
+  arch = "x86_64"
+}
+
+meta {
+  namespace = "vcs"
+  name = "uri"
+  value = "https://github.com/solvent-io/conflictpkg"
+}
+
+file {
+  path = "barf.txt"
+  mode = "0755"
+  owner = "taco"
+}
