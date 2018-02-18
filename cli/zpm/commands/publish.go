@@ -6,6 +6,7 @@ import (
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpm"
 	"github.com/spf13/cobra"
+	"fmt"
 )
 
 type ZpmPublishCommand struct {
@@ -50,6 +51,10 @@ func (z *ZpmPublishCommand) run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		z.Fatal(err.Error())
 	}
+
+	mgr.On("publish", func(pkg string) {
+		z.Info(fmt.Sprint("* published ", pkg))
+	})
 
 	err = mgr.Publish(cmd.Flags().Arg(0), cmd.Flags().Args()[1:]...)
 	if err != nil {

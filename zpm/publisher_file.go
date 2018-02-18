@@ -14,16 +14,18 @@ import (
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
+	"github.com/chuckpreslar/emission"
 )
 
 type FilePublisher struct {
+	*emission.Emitter
 	uri   *url.URL
 	name  string
 	prune int
 }
 
-func NewFilePublisher(uri *url.URL, name string, prune int) *FilePublisher {
-	return &FilePublisher{uri, name, prune}
+func NewFilePublisher(emitter *emission.Emitter, uri *url.URL, name string, prune int) *FilePublisher {
+	return &FilePublisher{ emitter, uri, name, prune}
 }
 
 func (f *FilePublisher) Init() error {
@@ -126,6 +128,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 
 		for _, file := range pkgFiles {
 			if !rejectIndex[filepath.Base(file)] {
+				f.Emit("publish", file)
 				err = f.upload(file, filepath.Join(f.uri.Path, osarch.String(), filepath.Base(file)))
 				if err != nil {
 					return err
