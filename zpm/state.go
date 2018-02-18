@@ -1,19 +1,19 @@
 package zpm
 
 import (
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/coreos/bbolt"
 	"github.com/solvent-io/zps/action"
-	"path/filepath"
-	"time"
-	"strings"
-
 )
 
 type State struct {
-	Path string
+	Path     string
 	Packages *StatePackages
-	Objects *StateObjects
+	Objects  *StateObjects
 }
 
 type StatePackages struct {
@@ -25,19 +25,19 @@ type StateObjects struct {
 }
 
 type PkgEntry struct {
-	Name string `storm:"id"`
+	Name     string `storm:"id"`
 	Manifest []byte
 }
 
 type FsEntry struct {
-	Key string `storm:"id"`
+	Key  string `storm:"id"`
 	Path string `storm:"index"`
-	Pkg string `storm:"index"`
+	Pkg  string `storm:"index"`
 	Type string `storm:"index"`
 }
 
 func NewState(path string) *State {
-	state := &State{Path:path}
+	state := &State{Path: path}
 	state.Packages = &StatePackages{}
 	state.Packages.getDb = state.getDb
 
@@ -70,7 +70,6 @@ func (s *StatePackages) All() ([]*action.Manifest, error) {
 	}
 	defer db.Close()
 
-
 	var entries []*PkgEntry
 	var packages []*action.Manifest
 
@@ -95,7 +94,6 @@ func (s *StatePackages) Get(name string) (*action.Manifest, error) {
 		return nil, err
 	}
 	defer db.Close()
-
 
 	var entry PkgEntry
 	pkg := action.NewManifest()
@@ -149,7 +147,6 @@ func (s *StateObjects) All() ([]*FsEntry, error) {
 	}
 	defer db.Close()
 
-
 	var entries []*FsEntry
 
 	err = db.All(&entries)
@@ -163,7 +160,6 @@ func (s *StateObjects) Get(path string) ([]*FsEntry, error) {
 		return nil, err
 	}
 	defer db.Close()
-
 
 	var entries []*FsEntry
 
@@ -195,5 +191,3 @@ func (s *StateObjects) Put(path string, pkg string, typ string) error {
 
 	return err
 }
-
-
