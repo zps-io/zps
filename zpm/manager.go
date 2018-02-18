@@ -407,6 +407,49 @@ func (m *Manager) RepoUpdate(name string) error {
 	return errors.New("Repo: " + name + " not found")
 }
 
+func (m *Manager) TransActionList() ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	transactions, err := m.state.Transactions.All()
+	if err != nil {
+		return nil, err
+	}
+
+	var output []string
+	seen := make(map[string]bool)
+	for index, t := range transactions {
+		if !seen[t.Id] {
+			if index != 0 {
+				output = append(output, "")
+			}
+			output = append(output, strings.Join([]string{"[white]"+t.Id, t.Date.Format("Mon Jan 2 15:04:05 MST 2006")}, "|"))
+			seen[t.Id] = true
+		}
+
+		var op string
+		if t.Operation == "install" {
+			op = "[green]+ "
+		}
+
+		if t.Operation == "remove" {
+			op = "[red]- "
+		}
+
+		output = append(output, fmt.Sprint(op, t.PkgId))
+	}
+
+	if len(transactions) == 0 {
+		m.Emitter.Emit("warn", "No transactions found.")
+		return nil, nil
+	}
+
+	return output, nil
+}
+
 func (m *Manager) image() (*zps.Repo, error) {
 	packages, err := m.state.Packages.All()
 	if err != nil {

@@ -11,9 +11,10 @@ import (
 )
 
 type State struct {
-	Path     string
-	Packages *StatePackages
-	Objects  *StateObjects
+	Path         string
+	Packages     *StatePackages
+	Objects      *StateObjects
+	Transactions *StateTransactions
 }
 
 type StatePackages struct {
@@ -21,6 +22,10 @@ type StatePackages struct {
 }
 
 type StateObjects struct {
+	getDb func() (*storm.DB, error)
+}
+
+type StateTransactions struct {
 	getDb func() (*storm.DB, error)
 }
 
@@ -36,6 +41,14 @@ type FsEntry struct {
 	Type string `storm:"index"`
 }
 
+type TransactionEntry struct {
+	Key       string `storm:"id"`
+	Id        string `storm:"index"`
+	PkgId     string
+	Operation string
+	Date      *time.Time `storm:"index"`
+}
+
 func NewState(path string) *State {
 	state := &State{Path: path}
 	state.Packages = &StatePackages{}
@@ -43,6 +56,9 @@ func NewState(path string) *State {
 
 	state.Objects = &StateObjects{}
 	state.Objects.getDb = state.getDb
+
+	state.Transactions = &StateTransactions{}
+	state.Transactions.getDb = state.getDb
 
 	return state
 }
@@ -52,6 +68,13 @@ func NewFsEntry(path string, pkg string, typ string) *FsEntry {
 	fs.Key = strings.Join([]string{path, pkg}, "\x00")
 
 	return fs
+}
+
+func NewTransactionEntry(id string, pkgId string, operation string, date *time.Time) *TransactionEntry {
+	ts := &TransactionEntry{Id: id, PkgId: pkgId, Operation: operation, Date: date}
+	ts.Key = strings.Join([]string{id, pkgId}, "\x00")
+
+	return ts
 }
 
 func (s *State) getDb() (*storm.DB, error) {
@@ -188,6 +211,48 @@ func (s *StateObjects) Put(path string, pkg string, typ string) error {
 	defer db.Close()
 
 	err = db.Save(NewFsEntry(path, pkg, typ))
+
+	return err
+}
+
+// mo moo
+
+func (s *StateTransactions) All() ([]*TransactionEntry, error) {
+	db, err := s.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*TransactionEntry
+
+	err = db.AllByIndex("Date", &entries)
+
+	return entries, nil
+}
+
+func (s *StateTransactions) Get(id string) ([]*TransactionEntry, error) {
+	db, err := s.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*TransactionEntry
+
+	err = db.Find("Id", id, &entries)
+
+	return entries, nil
+}
+
+func (s *StateTransactions) Put(id string, pkgId string, operation string, date *time.Time) error {
+	db, err := s.getDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	err = db.Save(NewTransactionEntry(id, pkgId, operation, date))
 
 	return err
 }

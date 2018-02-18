@@ -6,7 +6,10 @@ import (
 	"sort"
 	"strings"
 
+	"time"
+
 	"github.com/chuckpreslar/emission"
+	"github.com/segmentio/ksuid"
 	"github.com/solvent-io/zps/action"
 	"github.com/solvent-io/zps/provider"
 	"github.com/solvent-io/zps/zpkg"
@@ -23,10 +26,13 @@ type Transaction struct {
 
 	solution *zps.Solution
 	readers  map[string]*zpkg.Reader
+
+	id   ksuid.KSUID
+	date time.Time
 }
 
 func NewTransaction(emitter *emission.Emitter, targetPath string, cache *Cache, state *State) *Transaction {
-	return &Transaction{emitter, targetPath, cache, state, nil, nil}
+	return &Transaction{emitter, targetPath, cache, state, nil, nil, ksuid.New(), time.Now()}
 }
 
 func (t *Transaction) Realize(solution *zps.Solution) error {
@@ -79,10 +85,22 @@ func (t *Transaction) Realize(solution *zps.Solution) error {
 				if err != nil {
 					return err
 				}
+
+				err = t.state.Transactions.Put(t.id.String(), lns.Id(), "remove", &t.date)
+				if err != nil {
+					return err
+				}
 			}
 
 			t.Emit("install", fmt.Sprint("+ installing ", operation.Package.Id()))
 			err = t.install(operation.Package)
+			if err != nil {
+				return err
+			}
+		}
+
+		if operation.Operation != "noop" {
+			err = t.state.Transactions.Put(t.id.String(), operation.Package.Id(), operation.Operation, &t.date)
 			if err != nil {
 				return err
 			}
