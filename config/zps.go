@@ -81,7 +81,7 @@ func (z *ZpsConfig) ConfigPath() string {
 	return filepath.Join(z.CurrentImage.Path, "etc", "zps")
 }
 
-func (z *ZpsConfig) DbPath() string {
+func (z *ZpsConfig) StatePath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
 }
 

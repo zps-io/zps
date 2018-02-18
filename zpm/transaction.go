@@ -19,14 +19,14 @@ type Transaction struct {
 
 	targetPath string
 	cache      *Cache
-	db         *Db
+	state      *State
 
 	solution *zps.Solution
 	readers  map[string]*zpkg.Reader
 }
 
-func NewTransaction(targetPath string, cache *Cache, db *Db) *Transaction {
-	return &Transaction{emission.NewEmitter(), targetPath, cache, db, nil, nil}
+func NewTransaction(targetPath string, cache *Cache, state *State) *Transaction {
+	return &Transaction{emission.NewEmitter(), targetPath, cache, state, nil, nil}
 }
 
 func (t *Transaction) Realize(solution *zps.Solution) error {
@@ -63,7 +63,7 @@ func (t *Transaction) Realize(solution *zps.Solution) error {
 			}
 		case "install":
 			// check if another version is installed and remove
-			lookup, err := t.db.GetPackage(operation.Package.Name())
+			lookup, err := t.state.Packages.Get(operation.Package.Name())
 			if err != nil {
 				return err
 			}
@@ -165,21 +165,23 @@ func (t *Transaction) imageConflicts() error {
 		}
 
 		for _, action := range reader.Manifest.Section("dir", "file", "symlink") {
-			fsEntry, err := t.db.GetFsEntry(action.Key())
+			fsEntries, err := t.state.Objects.Get(action.Key())
 
 			if err != nil {
 				return err
 			}
 
-			if fsEntry != nil && !fsEntry.Contains(pkg.Name()) && fsEntry.Type != "dir" && action.Type() != "dir" {
-				return errors.New(fmt.Sprint(
-					fsEntry.Type,
-					" ",
-					fsEntry.Path,
-					" from installed pkg(s) ",
-					fsEntry.ProvidedBy(),
-					" conflicts with candidate ",
-					pkg.Name()))
+			for _, entry := range fsEntries {
+				if entry.Pkg != pkg.Name() && entry.Type != "dir" && action.Type() != "dir" {
+					return errors.New(fmt.Sprint(
+						entry.Type,
+						" ",
+						entry.Path,
+						" from installed pkg ",
+						entry.Pkg,
+						" conflicts with candidate ",
+						pkg.Name()))
+				}
 			}
 		}
 	}
@@ -211,14 +213,14 @@ func (t *Transaction) install(pkg zps.Solvable) error {
 	}
 
 	// Add this to the package db
-	err = t.db.PutPackage(pkg.Name(), reader.Manifest)
+	err = t.state.Packages.Put(pkg.Name(), reader.Manifest)
 	if err != nil {
 		return err
 	}
 
 	// Add all the fs object to the fs db
 	for _, fsObject := range contents {
-		err = t.db.PutFsEntry(fsObject.Key(), pkg.Name(), fsObject.Type())
+		err = t.state.Objects.Put(fsObject.Key(), pkg.Name(), fsObject.Type())
 		if err != nil {
 			return err
 		}
@@ -228,7 +230,7 @@ func (t *Transaction) install(pkg zps.Solvable) error {
 }
 
 func (t *Transaction) remove(pkg zps.Solvable) error {
-	lookup, err := t.db.GetPackage(pkg.Name())
+	lookup, err := t.state.Packages.Get(pkg.Name())
 	if err != nil {
 		return err
 	}
@@ -256,14 +258,14 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 		}
 
 		// Remove from the package db
-		err = t.db.DelPackage(pkg.Name())
+		err = t.state.Packages.Del(pkg.Name())
 		if err != nil {
 			return err
 		}
 
 		// Remove fs objects from fs db
 		for _, fsObject := range contents {
-			err = t.db.DelFsEntry(fsObject.Key(), pkg.Name())
+			err = t.state.Objects.Del(fsObject.Key(), pkg.Name())
 			if err != nil {
 				return err
 			}

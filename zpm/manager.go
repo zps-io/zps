@@ -22,7 +22,7 @@ import (
 type Manager struct {
 	*emission.Emitter
 	config *config.ZpsConfig
-	db     *Db
+	state  *State
 	cache  *Cache
 	lock   lockfile.Lockfile
 }
@@ -43,7 +43,7 @@ func NewManager(image string) (*Manager, error) {
 		return nil, err
 	}
 
-	mgr.db = &Db{mgr.config.DbPath()}
+	mgr.state = NewState(mgr.config.StatePath())
 	mgr.cache = NewCache(mgr.config.CachePath())
 
 	return mgr, nil
@@ -129,7 +129,7 @@ func (m *Manager) Install(args []string) error {
 		return nil
 	}
 
-	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.db)
+	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.state)
 
 	tr.On("install", func(msg string) {
 		m.Emit("install", msg)
@@ -151,7 +151,7 @@ func (m *Manager) List() ([]string, error) {
 	}
 	defer m.lock.Unlock()
 
-	packages, err := m.db.Packages()
+	packages, err := m.state.Packages.All()
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func (m *Manager) Remove(args []string) error {
 		return err
 	}
 
-	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.db)
+	tr := NewTransaction(m.config.CurrentImage.Path, m.cache, m.state)
 
 	tr.On("remove", func(msg string) {
 		m.Emit("remove", msg)
@@ -420,7 +420,7 @@ func (m *Manager) RepoUpdate(name string) error {
 }
 
 func (m *Manager) image() (*zps.Repo, error) {
-	packages, err := m.db.Packages()
+	packages, err := m.state.Packages.All()
 	if err != nil {
 		return nil, err
 	}

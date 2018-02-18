@@ -32,7 +32,7 @@ deps:
 	go get github.com/naegelejd/go-acl/os/group
 	go get github.com/lunixbochs/struc
 	go get github.com/dsnet/compress
-	go get github.com/boltdb/bolt/...
+	go get github.com/coreos/bbolt/...
 	go get github.com/chuckpreslar/emission
 	go get github.com/spf13/cobra/cobra
 	go get github.com/mitchellh/colorstring
@@ -43,6 +43,7 @@ deps:
 	go get github.com/blang/semver
 	go get github.com/solvent-io/sat
 	go get gonum.org/v1/gonum/graph
+	go get github.com/asdine/storm
 	go get github.com/davecgh/go-spew/spew
 	go get github.com/nightlyone/lockfile
 

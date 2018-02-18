@@ -92,8 +92,10 @@ func (s *Solution) Graph() ([]*Operation, error) {
 				edge := s.installGraph.NewEdge(s.nameMap[req.Name].Node, op.Node)
 				s.installGraph.SetEdge(edge)
 			case "remove":
-				edge := s.removeGraph.NewEdge(s.nameMap[req.Name].Node, op.Node)
-				s.removeGraph.SetEdge(edge)
+				if s.nameMap[req.Name] != nil {
+					edge := s.removeGraph.NewEdge(s.nameMap[req.Name].Node, op.Node)
+					s.removeGraph.SetEdge(edge)
+				}
 			}
 		}
 	}
