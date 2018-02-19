@@ -8,19 +8,18 @@ import (
 )
 
 type Ui struct {
-	color bool
-
 	out *log.Logger
 
 	debug *log.Logger
 	info  *log.Logger
 	warn  *log.Logger
 	error *log.Logger
+
+	colorize *colorstring.Colorize
 }
 
 func NewUi() *Ui {
 	ui := &Ui{}
-	ui.color = true
 
 	ui.out = log.New(os.Stdout, "", 0)
 
@@ -29,24 +28,20 @@ func NewUi() *Ui {
 	ui.warn = log.New(os.Stdout, "", 0)
 	ui.error = log.New(os.Stderr, "", 0)
 
+	ui.colorize = &colorstring.Colorize{Colors: colorstring.DefaultColors}
 	return ui
 }
 
 func (u *Ui) NoColor(disable bool) *Ui {
-	if disable {
-		u.color = false
-	} else {
-		u.color = true
-	}
+
+	u.colorize.Disable = disable
 
 	return u
 }
 
 func (u *Ui) Colorize(list []string) []string {
 	for index := range list {
-		if u.color {
-			list[index] = colorstring.Color(list[index])
-		}
+		list[index] = u.colorize.Color(list[index])
 	}
 
 	return list
@@ -57,35 +52,19 @@ func (u *Ui) Out(content string) {
 }
 
 func (u *Ui) Debug(content string) {
-	if u.color {
-		u.info.Println(colorstring.Color("[magenta]" + content))
-	} else {
-		u.info.Println(content)
-	}
+	u.info.Println(u.colorize.Color("[magenta]" + content))
 }
 
 func (u *Ui) Info(content string) {
-	if u.color {
-		u.info.Println(colorstring.Color("[green]" + content))
-	} else {
-		u.info.Println(content)
-	}
+	u.info.Println(u.colorize.Color("[green]" + content))
 }
 
 func (u *Ui) Warn(content string) {
-	if u.color {
-		u.warn.Println(colorstring.Color("[yellow]" + content))
-	} else {
-		u.warn.Println(content)
-	}
+	u.warn.Println(u.colorize.Color("[yellow]" + content))
 }
 
 func (u *Ui) Error(content string) {
-	if u.color {
-		u.error.Println(colorstring.Color("[red]" + content))
-	} else {
-		u.error.Println(content)
-	}
+	u.error.Println(u.colorize.Color("[red]" + content))
 }
 
 func (u *Ui) Fatal(content string) {
@@ -95,17 +74,9 @@ func (u *Ui) Fatal(content string) {
 
 // Color shortcuts
 func (u *Ui) Yellow(content string) {
-	if u.color {
-		u.info.Println(colorstring.Color("[yellow]" + content))
-	} else {
-		u.info.Println(content)
-	}
+	u.info.Println(u.colorize.Color("[yellow]" + content))
 }
 
 func (u *Ui) Blue(content string) {
-	if u.color {
-		u.info.Println(colorstring.Color("[blue]" + content))
-	} else {
-		u.info.Println(content)
-	}
+	u.info.Println(u.colorize.Color("[blue]" + content))
 }

@@ -194,9 +194,9 @@ func (m *Manager) List() ([]string, error) {
 
 		var line string
 		if frozen[pkg.Id()] {
-			line = "[blue]*|"+pkg.Columns()
+			line = "[blue]*|" + pkg.Columns()
 		} else {
-			line = "[white]~|"+pkg.Columns()
+			line = "[white]~|" + pkg.Columns()
 		}
 
 		output = append(output, line)
