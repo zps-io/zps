@@ -435,6 +435,36 @@ func (m *Manager) RepoUpdate(name string) error {
 	return errors.New("Repo: " + name + " not found")
 }
 
+func (m *Manager) Thaw(args []string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	pool, err := m.pool()
+	if err != nil {
+		return err
+	}
+
+	for _, arg := range args {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return err
+		}
+
+		target := pool.Installed(req)
+		if target == nil {
+			m.Emit("error", fmt.Sprint("Thaw candidate ", arg, " not installed."))
+		} else {
+			m.state.Frozen.Del(target.Id())
+			m.Emit("thaw", fmt.Sprint("[yellow]* thawed ", target.Id()))
+		}
+	}
+
+	return nil
+}
+
 func (m *Manager) TransActionList() ([]string, error) {
 	err := m.lock.TryLock()
 	if err != nil {
