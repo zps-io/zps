@@ -84,6 +84,8 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
 	repo := &zps.Repo{}
 
+	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
+
 	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
 	if err != nil {
 		return err
@@ -124,8 +126,6 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 			return err
 		}
 
-		os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
-
 		for _, file := range pkgFiles {
 			if !rejectIndex[filepath.Base(file)] {
 				f.Emit("publish", file)
@@ -145,7 +145,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 			return err
 		}
 	} else {
-		os.Remove(packagesfile)
+		os.RemoveAll(filepath.Join(f.uri.Path, osarch.String()))
 	}
 
 	return nil

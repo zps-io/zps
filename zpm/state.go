@@ -12,9 +12,14 @@ import (
 
 type State struct {
 	Path         string
+	Frozen       *StateFrozen
 	Packages     *StatePackages
 	Objects      *StateObjects
 	Transactions *StateTransactions
+}
+
+type StateFrozen struct {
+	getDb func() (*storm.DB, error)
 }
 
 type StatePackages struct {
@@ -34,6 +39,10 @@ type PkgEntry struct {
 	Manifest []byte
 }
 
+type FrozenEntry struct {
+	PkgId string `storm:"id"`
+}
+
 type FsEntry struct {
 	Key  string `storm:"id"`
 	Path string `storm:"index"`
@@ -51,6 +60,9 @@ type TransactionEntry struct {
 
 func NewState(path string) *State {
 	state := &State{Path: path}
+	state.Frozen = &StateFrozen{}
+	state.Frozen.getDb = state.getDb
+
 	state.Packages = &StatePackages{}
 	state.Packages.getDb = state.getDb
 
@@ -215,8 +227,6 @@ func (s *StateObjects) Put(path string, pkg string, typ string) error {
 	return err
 }
 
-// mo moo
-
 func (s *StateTransactions) All() ([]*TransactionEntry, error) {
 	db, err := s.getDb()
 	if err != nil {
@@ -253,6 +263,44 @@ func (s *StateTransactions) Put(id string, pkgId string, operation string, date 
 	defer db.Close()
 
 	err = db.Save(NewTransactionEntry(id, pkgId, operation, date))
+
+	return err
+}
+
+func (s *StateFrozen) All() ([]*FrozenEntry, error) {
+	db, err := s.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*FrozenEntry
+
+	err = db.All(&entries)
+
+	return entries, nil
+}
+
+func (s *StateFrozen) Del(pkgId string) error {
+	db, err := s.getDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	err = db.DeleteStruct(&FrozenEntry{pkgId})
+
+	return err
+}
+
+func (s *StateFrozen) Put(pkgId string) error {
+	db, err := s.getDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	err = db.Save(&FrozenEntry{pkgId})
 
 	return err
 }

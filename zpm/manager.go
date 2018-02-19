@@ -254,11 +254,9 @@ func (m *Manager) Refresh() error {
 		if err == nil {
 			m.Emitter.Emit("refresh", r.Fetch.Uri.String())
 		}
-
-		return err
 	}
 
-	return nil
+	return err
 }
 
 func (m *Manager) Remove(args []string) error {
@@ -426,7 +424,7 @@ func (m *Manager) TransActionList() ([]string, error) {
 			if index != 0 {
 				output = append(output, "")
 			}
-			output = append(output, strings.Join([]string{"[white]"+t.Id, t.Date.Format("Mon Jan 2 15:04:05 MST 2006")}, "|"))
+			output = append(output, strings.Join([]string{"[white]" + t.Id, t.Date.Format("Mon Jan 2 15:04:05 MST 2006")}, "|"))
 			seen[t.Id] = true
 		}
 
@@ -505,7 +503,17 @@ func (m *Manager) pool() (*zps.Pool, error) {
 		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
-	pool, err := zps.NewPool(image, repos...)
+	frozenEntries, err := m.state.Frozen.All()
+	if err != nil {
+		return nil, err
+	}
+
+	frozen := make(map[string]bool)
+	for _, entry := range frozenEntries {
+		frozen[entry.PkgId] = true
+	}
+
+	pool, err := zps.NewPool(image, frozen, repos...)
 	if err != nil {
 		return nil, err
 	}

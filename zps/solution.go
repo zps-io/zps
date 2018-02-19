@@ -16,8 +16,11 @@ type Solution struct {
 	installRoot graph.Node
 	removeRoot  graph.Node
 
-	operationMap map[graph.Node]*Operation
-	nameMap      map[string]*Operation
+	installOpMap map[graph.Node]*Operation
+	removeOpMap  map[graph.Node]*Operation
+
+	installMap map[string]*Operation
+	removeMap  map[string]*Operation
 }
 
 func NewSolution() *Solution {
@@ -28,8 +31,11 @@ func NewSolution() *Solution {
 
 	solution.installRoot = solution.installGraph.NewNode()
 	solution.removeRoot = solution.removeGraph.NewNode()
-	solution.operationMap = make(map[graph.Node]*Operation)
-	solution.nameMap = make(map[string]*Operation)
+	solution.installOpMap = make(map[graph.Node]*Operation)
+	solution.removeOpMap = make(map[graph.Node]*Operation)
+
+	solution.installMap = make(map[string]*Operation)
+	solution.removeMap = make(map[string]*Operation)
 
 	return solution
 }
@@ -40,17 +46,17 @@ func (s *Solution) AddOperation(operation *Operation) {
 		s.names = append(s.names, operation.Package.Name())
 	}
 
-	s.nameMap[operation.Package.Name()] = operation
-
 	switch operation.Operation {
 	case "install", "noop":
 		operation.Node = s.installGraph.NewNode()
 		s.installGraph.AddNode(operation.Node)
-		s.operationMap[operation.Node] = operation
+		s.installOpMap[operation.Node] = operation
+		s.installMap[operation.Package.Name()] = operation
 	case "remove":
 		operation.Node = s.removeGraph.NewNode()
 		s.removeGraph.AddNode(operation.Node)
-		s.operationMap[operation.Node] = operation
+		s.removeOpMap[operation.Node] = operation
+		s.removeMap[operation.Package.Name()] = operation
 	}
 }
 
@@ -89,11 +95,11 @@ func (s *Solution) Graph() ([]*Operation, error) {
 		for _, req := range op.Package.Requirements() {
 			switch op.Operation {
 			case "install", "noop":
-				edge := s.installGraph.NewEdge(s.nameMap[req.Name].Node, op.Node)
+				edge := s.installGraph.NewEdge(s.installMap[req.Name].Node, op.Node)
 				s.installGraph.SetEdge(edge)
 			case "remove":
-				if s.nameMap[req.Name] != nil {
-					edge := s.removeGraph.NewEdge(s.nameMap[req.Name].Node, op.Node)
+				if s.removeMap[req.Name] != nil {
+					edge := s.removeGraph.NewEdge(s.removeMap[req.Name].Node, op.Node)
 					s.removeGraph.SetEdge(edge)
 				}
 			}
@@ -115,11 +121,12 @@ func (s *Solution) Graph() ([]*Operation, error) {
 		return nil, err
 	}
 
-	for _, node := range append(removes, installs...) {
-		if s.operationMap[node] == nil {
-			continue
-		}
-		operations = append(operations, s.operationMap[node])
+	for _, node := range removes {
+		operations = append(operations, s.removeOpMap[node])
+	}
+
+	for _, node := range installs {
+		operations = append(operations, s.installOpMap[node])
 	}
 
 	return operations, nil

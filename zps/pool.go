@@ -8,14 +8,19 @@ import (
 type Pool struct {
 	index  map[string]Solvables
 	rindex map[string]Solvables
+	frozen map[string]bool
 
 	Solvables Solvables
 
 	repos Repos
 }
 
-func NewPool(image *Repo, repos ...*Repo) (*Pool, error) {
-	pool := &Pool{index: make(map[string]Solvables), rindex: make(map[string]Solvables)}
+func NewPool(image *Repo, frozen map[string]bool, repos ...*Repo) (*Pool, error) {
+	pool := &Pool{index: make(map[string]Solvables), rindex: make(map[string]Solvables), frozen: frozen}
+
+	if pool.frozen == nil {
+		pool.frozen = make(map[string]bool)
+	}
 
 	if image == nil {
 		errors.New("zps.Pool: Image must not be nil, can be empty repository")
@@ -61,7 +66,7 @@ func (p *Pool) Installed(req *Requirement) Solvable {
 
 	if _, ok := p.index[req.Name]; ok {
 		for index, candidate := range p.index[req.Name] {
-			if candidate.Satisfies(req) && candidate.Priority() == -1 {
+			if candidate.Satisfies(req) && candidate.Priority() <= -1 {
 				return p.index[req.Name][index]
 			}
 		}
@@ -74,7 +79,7 @@ func (p *Pool) Image() Solvables {
 	var image Solvables
 
 	for index, solvable := range p.Solvables {
-		if solvable.Priority() == -1 {
+		if solvable.Priority() <= -1 {
 			image = append(image, p.Solvables[index])
 		}
 	}
@@ -112,7 +117,11 @@ func (p *Pool) populate() {
 		}
 
 		for _, solvable := range repo.Solvables() {
-			solvable.SetPriority(repo.Priority)
+			if p.frozen[solvable.Id()] {
+				solvable.SetPriority(-2)
+			} else {
+				solvable.SetPriority(repo.Priority)
+			}
 			solvable.SetLocation(index)
 
 			p.Solvables = append(p.Solvables, solvable)

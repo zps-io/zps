@@ -140,7 +140,7 @@ func (s *Solver) generateSolutions() {
 			pkg := s.policy.SelectRequest(s.pool.WhatProvides(req))
 
 			if satSol.Value(key) {
-				if pkg.Priority() != -1 {
+				if pkg.Priority() > -1 {
 					solution.AddOperation(NewOperation("install", pkg))
 				} else {
 					solution.AddOperation(NewOperation("noop", pkg))

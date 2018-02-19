@@ -1,7 +1,7 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 CONFIG='mode = "ancillary"'
 
-define REPO
+define REPO_A
 priority = 10
 enabled = true
 
@@ -16,7 +16,23 @@ publish {
 }
 endef
 
-export REPO
+define REPO_B
+priority = 10
+enabled = true
+
+fetch {
+	uri = "file://$(ROOT_DIR)/test/anotherrepo"
+}
+
+publish {
+	uri = "file://$(ROOT_DIR)/test/anotherrepo"
+	name = "Another Repo"
+	prune = 3
+}
+endef
+
+export REPO_A
+export REPO_B
 
 
 all: zps
@@ -55,7 +71,8 @@ zps: clean deps
 	mkdir -p dist/var/lib/zps
 	mkdir -p dist/var/cache/zps
 	echo $(CONFIG) > dist/etc/zps/main.conf
-	echo "$$REPO" > dist/etc/zps/repo.d/testrepo.conf
+	echo "$$REPO_A" > dist/etc/zps/repo.d/testrepo.conf
+	echo "$$REPO_B" > dist/etc/zps/repo.d/anotherrepo.conf
 	go build -o dist/usr/bin/zps github.com/solvent-io/zps/cli/zps
 	ln dist/usr/bin/zps dist/usr/bin/zpkg
 	ln dist/usr/bin/zps dist/usr/bin/zpm
