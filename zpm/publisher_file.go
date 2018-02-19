@@ -15,7 +15,6 @@ import (
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
-	"github.com/davecgh/go-spew/spew"
 )
 
 type FilePublisher struct {
