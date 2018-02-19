@@ -15,6 +15,7 @@ import (
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
+	"github.com/davecgh/go-spew/spew"
 )
 
 type FilePublisher struct {
@@ -118,6 +119,10 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	rmFiles, err := repo.Prune(f.prune)
 	if err != nil {
 		return err
+	}
+spew.Dump(rejectIndex)
+	for _, r := range rmFiles {
+		rejectIndex[r.FileName()] = true
 	}
 
 	if len(repo.Solvables()) > 0 {
