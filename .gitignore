@@ -6,6 +6,7 @@ extract/
 test/extract
 test/proto
 test/testrepo
+test/anotherrepo
 sat/
 *.iml
 .idea/
