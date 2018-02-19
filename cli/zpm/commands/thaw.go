@@ -53,7 +53,7 @@ func (z *ZpmThawCommand) run(cmd *cobra.Command, args []string) error {
 	})
 
 	mgr.On("thaw", func(thaw string) {
-		z.Info(thaw)
+		z.Yellow(thaw)
 	})
 
 	err = mgr.Thaw(args)

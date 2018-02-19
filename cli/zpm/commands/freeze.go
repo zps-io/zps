@@ -53,7 +53,7 @@ func (z *ZpmFreezeCommand) run(cmd *cobra.Command, args []string) error {
 	})
 
 	mgr.On("freeze", func(freeze string) {
-		z.Info(freeze)
+		z.Blue(freeze)
 	})
 
 	err = mgr.Freeze(args)

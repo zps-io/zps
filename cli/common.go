@@ -44,7 +44,9 @@ func (u *Ui) NoColor(disable bool) *Ui {
 
 func (u *Ui) Colorize(list []string) []string {
 	for index := range list {
-		list[index] = colorstring.Color(list[index])
+		if u.color {
+			list[index] = colorstring.Color(list[index])
+		}
 	}
 
 	return list
@@ -89,4 +91,21 @@ func (u *Ui) Error(content string) {
 func (u *Ui) Fatal(content string) {
 	u.Error(content)
 	os.Exit(1)
+}
+
+// Color shortcuts
+func (u *Ui) Yellow(content string) {
+	if u.color {
+		u.info.Println(colorstring.Color("[yellow]" + content))
+	} else {
+		u.info.Println(content)
+	}
+}
+
+func (u *Ui) Blue(content string) {
+	if u.color {
+		u.info.Println(colorstring.Color("[blue]" + content))
+	} else {
+		u.info.Println(content)
+	}
 }

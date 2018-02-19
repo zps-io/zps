@@ -92,7 +92,7 @@ func (m *Manager) Freeze(args []string) error {
 			m.Emit("error", fmt.Sprint("Freeze candidate ", arg, " not installed."))
 		} else {
 			m.state.Frozen.Put(target.Id())
-			m.Emit("freeze", fmt.Sprint("[blue]* froze ", target.Id()))
+			m.Emit("freeze", fmt.Sprint("* froze ", target.Id()))
 		}
 	}
 
@@ -198,8 +198,6 @@ func (m *Manager) List() ([]string, error) {
 		} else {
 			line = "[white]~|"+pkg.Columns()
 		}
-
-
 
 		output = append(output, line)
 	}
@@ -477,7 +475,7 @@ func (m *Manager) Thaw(args []string) error {
 			m.Emit("error", fmt.Sprint("Thaw candidate ", arg, " not installed."))
 		} else {
 			m.state.Frozen.Del(target.Id())
-			m.Emit("thaw", fmt.Sprint("[yellow]* thawed ", target.Id()))
+			m.Emit("thaw", fmt.Sprint("* thawed ", target.Id()))
 		}
 	}
 
