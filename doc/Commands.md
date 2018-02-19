@@ -7,7 +7,6 @@ zpm - manage z package system image
   - update
   - plan
   - refresh
-  - clean
   - freeze
   - thaw
   - list
@@ -20,6 +19,7 @@ zpm - manage z package system image
   - info
   - contents
   - graph
+  - status
   
   - publisher
   - identity
@@ -34,6 +34,8 @@ zpm - manage z package system image
   - repo
   - image
   - env
+  
+  - cache
   
   - sign
   - validate

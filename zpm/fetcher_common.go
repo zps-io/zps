@@ -15,6 +15,8 @@ func NewFetcher(uri *url.URL, cache *Cache) Fetcher {
 	switch uri.Scheme {
 	case "file":
 		return NewFileFetcher(uri, cache)
+	case "local":
+		return NewLocalFetcher(uri, cache)
 	default:
 		return nil
 	}
