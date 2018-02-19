@@ -178,11 +178,30 @@ func (m *Manager) List() ([]string, error) {
 		return nil, err
 	}
 
+	fentries, err := m.state.Frozen.All()
+	if err != nil {
+		return nil, err
+	}
+
+	frozen := make(map[string]bool)
+	for _, entry := range fentries {
+		frozen[entry.PkgId] = true
+	}
+
 	var output []string
 	for _, manifest := range packages {
 		pkg, _ := zps.NewPkgFromManifest(manifest)
 
-		output = append(output, pkg.Columns())
+		var line string
+		if frozen[pkg.Id()] {
+			line = "[blue]*|"+pkg.Columns()
+		} else {
+			line = "[white]~|"+pkg.Columns()
+		}
+
+
+
+		output = append(output, line)
 	}
 
 	if len(packages) == 0 {

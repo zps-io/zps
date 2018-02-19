@@ -55,7 +55,7 @@ func (z *ZpmListCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	if list != nil {
-		z.Out(columnize.SimpleFormat(list))
+		z.Out(columnize.SimpleFormat(z.Colorize(list)))
 	}
 
 	return nil

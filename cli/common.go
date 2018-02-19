@@ -42,6 +42,14 @@ func (u *Ui) NoColor(disable bool) *Ui {
 	return u
 }
 
+func (u *Ui) Colorize(list []string) []string {
+	for index := range list {
+		list[index] = colorstring.Color(list[index])
+	}
+
+	return list
+}
+
 func (u *Ui) Out(content string) {
 	u.out.Print(content)
 }
