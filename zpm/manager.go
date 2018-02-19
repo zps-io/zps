@@ -49,7 +49,7 @@ func NewManager(image string) (*Manager, error) {
 	return mgr, nil
 }
 
-func (m *Manager) Clean() error {
+func (m *Manager) CacheClean() error {
 	err := m.cache.Clean()
 	if err != nil {
 		return err
@@ -59,13 +59,43 @@ func (m *Manager) Clean() error {
 	return nil
 }
 
-func (m *Manager) Clear() error {
+func (m *Manager) CacheClear() error {
 	err := m.cache.Clear()
 	if err != nil {
 		return err
 	}
 
 	m.Emit("clear", fmt.Sprint("* cleared ", m.cache.path))
+	return nil
+}
+
+func (m *Manager) Freeze(args []string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	pool, err := m.pool()
+	if err != nil {
+		return err
+	}
+
+	for _, arg := range args {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return err
+		}
+
+		target := pool.Installed(req)
+		if target == nil {
+			m.Emit("error", fmt.Sprint("Freeze candidate ", arg, " not installed."))
+		} else {
+			m.state.Frozen.Put(target.Id())
+			m.Emit("freeze", fmt.Sprint("[blue]* froze ", target.Id()))
+		}
+	}
+
 	return nil
 }
 
@@ -278,7 +308,7 @@ func (m *Manager) Remove(args []string) error {
 			return err
 		}
 
-		if len(pool.WhatProvides(req)) == 0 {
+		if pool.Installed(req) == nil {
 			return errors.New(fmt.Sprint("No removal candidates found for ", arg))
 		}
 

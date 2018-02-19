@@ -25,6 +25,12 @@ func NewPolicy(method string) Policy {
 }
 
 func (u *UpdatedPolicy) PruneProvides(solvables Solvables) Solvables {
+	sort.Sort(solvables)
+
+	if solvables[0].Priority() == -2 {
+		return Solvables{solvables[0]}
+	}
+
 	return solvables
 }
 
@@ -32,7 +38,7 @@ func (u *UpdatedPolicy) SelectRequest(solvables Solvables) Solvable {
 	sort.Sort(solvables)
 
 	for _, solvable := range solvables {
-		if len(solvables) > 1 && solvable.Priority() <= -1 {
+		if len(solvables) > 1 && solvable.Priority() == -1 {
 			if solvables[1].Version().GT(solvables[0].Version()) {
 				return solvables[1]
 			}

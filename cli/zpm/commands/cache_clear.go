@@ -45,7 +45,7 @@ func (z *ZpmCacheClearCommand) run(cmd *cobra.Command, args []string) error {
 		z.Info(clear)
 	})
 
-	err = mgr.Clear()
+	err = mgr.CacheClear()
 	if err != nil {
 		z.Fatal(err.Error())
 	}

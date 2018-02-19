@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/solvent-io/sat"
+	//"github.com/davecgh/go-spew/spew"
 )
 
 type Solver struct {

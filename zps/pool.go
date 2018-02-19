@@ -63,7 +63,6 @@ func (p *Pool) Location(index int) *Repo {
 }
 
 func (p *Pool) Installed(req *Requirement) Solvable {
-
 	if _, ok := p.index[req.Name]; ok {
 		for index, candidate := range p.index[req.Name] {
 			if candidate.Satisfies(req) && candidate.Priority() <= -1 {

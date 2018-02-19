@@ -24,6 +24,7 @@ func NewZpmRootCommand() *ZpmRootCommand {
 	cmd.PersistentFlags().String("image", "", "ZPS image name/id")
 
 	cmd.AddCommand(NewZpmCacheCommand().Command)
+	cmd.AddCommand(NewZpmFreezeCommand().Command)
 	cmd.AddCommand(NewZpmInstallCommand().Command)
 	cmd.AddCommand(NewZpmListCommand().Command)
 	cmd.AddCommand(NewZpmPlanCommand().Command)
