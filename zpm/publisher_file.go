@@ -120,7 +120,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	if err != nil {
 		return err
 	}
-spew.Dump(rejectIndex)
+
 	for _, r := range rmFiles {
 		rejectIndex[r.FileName()] = true
 	}
