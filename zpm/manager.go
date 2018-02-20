@@ -112,6 +112,10 @@ func (m *Manager) Install(args []string) error {
 		return err
 	}
 
+	if pool.RepoCount() <= 1 {
+		return errors.New("No repo metadata found. Please run zpm refresh.")
+	}
+
 	request := zps.NewRequest()
 	for _, arg := range args {
 		req, err := zps.NewRequirementFromSimpleString(arg)
@@ -173,36 +177,25 @@ func (m *Manager) List() ([]string, error) {
 	}
 	defer m.lock.Unlock()
 
-	packages, err := m.state.Packages.All()
+	pool, err := m.pool()
 	if err != nil {
 		return nil, err
-	}
-
-	fentries, err := m.state.Frozen.All()
-	if err != nil {
-		return nil, err
-	}
-
-	frozen := make(map[string]bool)
-	for _, entry := range fentries {
-		frozen[entry.PkgId] = true
 	}
 
 	var output []string
-	for _, manifest := range packages {
-		pkg, _ := zps.NewPkgFromManifest(manifest)
+	for _, pkg := range pool.Image() {
 
 		var line string
-		if frozen[pkg.Id()] {
-			line = "[blue]*|" + pkg.Columns()
+		if pool.Frozen(pkg.Id()) {
+			line = "[blue]*|" + pkg.(*zps.Pkg).Columns()
 		} else {
-			line = "[white]~|" + pkg.Columns()
+			line = "[white]~|" + pkg.(*zps.Pkg).Columns()
 		}
 
 		output = append(output, line)
 	}
 
-	if len(packages) == 0 {
+	if len(output) == 0 {
 		m.Emitter.Emit("warn", "No packages installed.")
 		return nil, nil
 	}
@@ -224,6 +217,10 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 	pool, err := m.pool()
 	if err != nil {
 		return nil, err
+	}
+
+	if pool.RepoCount() <= 1 {
+		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
 	request := zps.NewRequest()
@@ -574,10 +571,6 @@ func (m *Manager) pool() (*zps.Pool, error) {
 				repos = append(repos, repo)
 			}
 		}
-	}
-
-	if len(repos) == 0 {
-		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
 	frozenEntries, err := m.state.Frozen.All()

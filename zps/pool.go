@@ -37,8 +37,6 @@ func NewPool(image *Repo, frozen map[string]bool, repos ...*Repo) (*Pool, error)
 
 		// Sort by priority
 		sort.Sort(pool.repos)
-	} else {
-		return nil, errors.New("zps.Pool: Pool must have at least one repository")
 	}
 
 	pool.populate()
@@ -74,6 +72,10 @@ func (p *Pool) Installed(req *Requirement) Solvable {
 	return nil
 }
 
+func (p *Pool) Frozen(id string) bool {
+	return p.frozen[id]
+}
+
 func (p *Pool) Image() Solvables {
 	var image Solvables
 
@@ -84,6 +86,10 @@ func (p *Pool) Image() Solvables {
 	}
 
 	return image
+}
+
+func (p *Pool) RepoCount() int {
+	return len(p.repos)
 }
 
 func (p *Pool) WhatDepends(name string) Solvables {
@@ -116,12 +122,12 @@ func (p *Pool) populate() {
 		}
 
 		for _, solvable := range repo.Solvables() {
-			if p.frozen[solvable.Id()] {
-				solvable.SetPriority(-2)
-			} else {
-				solvable.SetPriority(repo.Priority)
-			}
+			solvable.SetPriority(repo.Priority)
 			solvable.SetLocation(index)
+
+			if p.frozen[solvable.Id()] && solvable.Priority() == -1 {
+				solvable.SetPriority(-2)
+			}
 
 			p.Solvables = append(p.Solvables, solvable)
 			p.index[solvable.Name()] = append(p.index[solvable.Name()], solvable)
