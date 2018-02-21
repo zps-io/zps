@@ -14,8 +14,8 @@ type LocalFetcher struct {
 	cache *Cache
 }
 
-func NewLocalFetcher(uri *url.URL, cache *Cache) *FileFetcher {
-	return &FileFetcher{uri, cache}
+func NewLocalFetcher(uri *url.URL, cache *Cache) *LocalFetcher {
+	return &LocalFetcher{uri, cache}
 }
 
 func (f *LocalFetcher) Refresh() error {

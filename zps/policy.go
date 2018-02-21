@@ -25,6 +25,10 @@ func NewPolicy(method string) Policy {
 }
 
 func (u *UpdatedPolicy) PruneProvides(solvables Solvables) Solvables {
+	if len(solvables) == 0 {
+		return solvables
+	}
+
 	sort.Sort(solvables)
 
 	if solvables[0].Priority() == -2 {

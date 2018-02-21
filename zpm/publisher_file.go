@@ -35,15 +35,11 @@ func (f *FilePublisher) Init() error {
 		os.RemoveAll(filepath.Join(f.uri.Path, osarch.String()))
 	}
 
-	err := f.configure()
-
-	return err
+	return f.configure()
 }
 
 func (f *FilePublisher) Update() error {
-	err := f.configure()
-
-	return err
+	return f.configure()
 }
 
 func (f *FilePublisher) Publish(pkgs ...string) error {
@@ -201,10 +197,5 @@ func (f *FilePublisher) configure() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(configfile, result, 0640)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(configfile, result, 0640)
 }

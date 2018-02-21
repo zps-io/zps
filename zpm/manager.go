@@ -16,6 +16,7 @@ import (
 	"github.com/chuckpreslar/emission"
 	"github.com/nightlyone/lockfile"
 	"github.com/solvent-io/zps/config"
+	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
 )
 
@@ -99,7 +100,6 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
-// TODO: add support for installing from file and repo in one request
 func (m *Manager) Install(args []string) error {
 	err := m.lock.TryLock()
 	if err != nil {
@@ -107,7 +107,9 @@ func (m *Manager) Install(args []string) error {
 	}
 	defer m.lock.Unlock()
 
-	pool, err := m.pool()
+	reqs, files, err := m.splitReqsFiles(args)
+
+	pool, err := m.pool(files...)
 	if err != nil {
 		return err
 	}
@@ -117,7 +119,7 @@ func (m *Manager) Install(args []string) error {
 	}
 
 	request := zps.NewRequest()
-	for _, arg := range args {
+	for _, arg := range reqs {
 		req, err := zps.NewRequirementFromSimpleString(arg)
 		if err != nil {
 			return err
@@ -540,12 +542,19 @@ func (m *Manager) image() (*zps.Repo, error) {
 	return image, nil
 }
 
-func (m *Manager) pool() (*zps.Pool, error) {
+func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 	var repos []*zps.Repo
 
 	image, err := m.image()
 	if err != nil {
 		return nil, err
+	}
+
+	if len(files) > 0 {
+		repos, err = m.fileRepos(files...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, r := range m.config.Repos {
@@ -591,6 +600,35 @@ func (m *Manager) pool() (*zps.Pool, error) {
 	return pool, nil
 }
 
+func (m *Manager) fileRepos(files ...string) ([]*zps.Repo, error) {
+	var repos []*zps.Repo
+	index := make(map[string]*zps.Repo)
+
+	for _, file := range files {
+		path := filepath.Dir(file)
+
+		if index[path] == nil {
+			index[path] = zps.NewRepo("local://"+path, 0, true, nil)
+			repos = append(repos, index[path])
+		}
+
+		reader := zpkg.NewReader(file, "")
+		err := reader.Read()
+		if err != nil {
+			return nil, err
+		}
+
+		pkg, err := zps.NewPkgFromManifest(reader.Manifest)
+		if err != nil {
+			return nil, err
+		}
+
+		index[path].Add(pkg)
+	}
+
+	return repos, nil
+}
+
 func (m *Manager) repoConfig(uri string) (map[string]string, error) {
 	config := make(map[string]string)
 	configfile := m.cache.GetConfig(uri)
@@ -605,4 +643,35 @@ func (m *Manager) repoConfig(uri string) (map[string]string, error) {
 		return nil, err
 	}
 	return config, nil
+}
+
+func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
+	var reqs []string
+	var files []string
+
+	for _, item := range args {
+		if _, err := os.Stat(item); err == nil {
+			if filepath.Ext(item) == ".zpkg" {
+				// TODO an extra package read
+				reader := zpkg.NewReader(item, "")
+				err := reader.Read()
+				if err != nil {
+					return reqs, files, err
+				}
+
+				pkg, err := zps.NewPkgFromManifest(reader.Manifest)
+				if err != nil {
+					return reqs, files, err
+				}
+
+				reqs = append(reqs, pkg.Id())
+				files = append(files, item)
+
+			}
+		} else {
+			reqs = append(reqs, item)
+		}
+	}
+
+	return reqs, files, nil
 }
