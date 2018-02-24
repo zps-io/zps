@@ -100,6 +100,33 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
+func (m *Manager) Info(pkgName string) ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	manifest, err := m.state.Packages.Get(pkgName)
+	if err != nil {
+		return nil, errors.New(fmt.Sprint(pkgName, " not installed"))
+	}
+
+	pkg, err := zps.NewPkgFromManifest(manifest)
+
+	return []string{
+		strings.Join([]string{"URI:", pkg.Uri().String()}, "|"),
+		strings.Join([]string{"Name:", pkg.Name()}, "|"),
+		strings.Join([]string{"Publisher:", pkg.Uri().Publisher}, "|"),
+		strings.Join([]string{"Category:", pkg.Uri().Category}, "|"),
+		strings.Join([]string{"Version:", pkg.Version().Semver.String()}, "|"),
+		strings.Join([]string{"Timestamp:", pkg.Version().Timestamp.String()}, "|"),
+		strings.Join([]string{"Arch:", pkg.Arch()}, "|"),
+		strings.Join([]string{"Summary:", pkg.Summary()}, "|"),
+		strings.Join([]string{"Description: ", pkg.Description()}, "|"),
+	}, err
+}
+
 func (m *Manager) Install(args []string) error {
 	err := m.lock.TryLock()
 	if err != nil {

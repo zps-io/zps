@@ -25,6 +25,7 @@ func NewZpmRootCommand() *ZpmRootCommand {
 
 	cmd.AddCommand(NewZpmCacheCommand().Command)
 	cmd.AddCommand(NewZpmFreezeCommand().Command)
+	cmd.AddCommand(NewZpmInfoCommand().Command)
 	cmd.AddCommand(NewZpmInstallCommand().Command)
 	cmd.AddCommand(NewZpmListCommand().Command)
 	cmd.AddCommand(NewZpmPlanCommand().Command)
