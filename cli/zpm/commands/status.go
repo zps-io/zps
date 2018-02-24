@@ -51,13 +51,20 @@ func (z *ZpmStatusCommand) run(cmd *cobra.Command, args []string) error {
 		z.Fatal(err.Error())
 	}
 
-	info, err := mgr.Status(cmd.Flags().Arg(0))
+	status, versions, err := mgr.Status(cmd.Flags().Arg(0))
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	if info != nil {
-		z.Out(columnize.SimpleFormat(z.Colorize(info)))
+	var output []string
+	if status != "" {
+		output = append(output, "Status:|" + status)
+		output = append(output, "Versions:|")
+		z.Out(columnize.SimpleFormat(z.Colorize(output)))
+	}
+
+	if len(versions) > 0 {
+		z.Out(columnize.SimpleFormat(z.Colorize(versions)))
 	}
 
 	return nil
