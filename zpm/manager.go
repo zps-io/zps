@@ -13,13 +13,14 @@ import (
 
 	"encoding/json"
 
+	"sort"
+
 	"github.com/chuckpreslar/emission"
 	"github.com/nightlyone/lockfile"
+	"github.com/solvent-io/zps/action"
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
-	"sort"
-	"github.com/solvent-io/zps/action"
 )
 
 type Manager struct {
@@ -537,6 +538,54 @@ func (m *Manager) Thaw(args []string) error {
 	}
 
 	return nil
+}
+
+func (m *Manager) Status(query string) ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	pool, err := m.pool()
+	if err != nil {
+		return nil, err
+	}
+
+	var output []string
+	var packages []string
+	var status string
+
+	req, err := zps.NewRequirementFromSimpleString(query)
+	if err != nil {
+		return nil, err
+	}
+
+	status = "Uninstalled"
+
+	for _, pkg := range pool.WhatProvides(req) {
+		var line string
+		if pool.Frozen(pkg.Id()) && pkg.Location() == 0 {
+			status = "Frozen"
+			line = "[blue]*|" + pkg.(*zps.Pkg).Columns()
+		} else if pkg.Priority() == -1 {
+			status = "Installed"
+			line = "[yellow]~|" + pkg.(*zps.Pkg).Columns()
+		} else {
+			line = "[white]-|" + pkg.(*zps.Pkg).Columns()
+		}
+		packages = append(packages, line)
+	}
+
+	if len(packages) == 0 {
+		return nil, errors.New(fmt.Sprint("pkg: ", query, " unavailable"))
+	}
+
+	output = append(output, strings.Join([]string{"Status:", status}, "|"))
+	output = append(output, "Versions:")
+	output = append(output, packages...)
+
+	return output, nil
 }
 
 func (m *Manager) TransActionList() ([]string, error) {
