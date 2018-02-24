@@ -18,6 +18,8 @@ import (
 	"github.com/solvent-io/zps/config"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/solvent-io/zps/zps"
+	"sort"
+	"github.com/solvent-io/zps/action"
 )
 
 type Manager struct {
@@ -68,6 +70,35 @@ func (m *Manager) CacheClear() error {
 
 	m.Emit("clear", fmt.Sprint("* cleared ", m.cache.path))
 	return nil
+}
+
+func (m *Manager) Contents(pkgName string) ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	manifest, err := m.state.Packages.Get(pkgName)
+	if err != nil {
+		return nil, err
+	}
+
+	if manifest == nil {
+		return nil, errors.New(fmt.Sprint(pkgName, " not installed"))
+	}
+
+	var contents action.Actions
+	contents = manifest.Section("dir", "symlink", "file")
+
+	sort.Sort(contents)
+
+	var output []string
+	for _, fsObject := range contents {
+		output = append(output, fsObject.Columns())
+	}
+
+	return output, nil
 }
 
 func (m *Manager) Freeze(args []string) error {
