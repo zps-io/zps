@@ -194,6 +194,7 @@ func (z *ZpsConfig) LoadRepos() error {
 		return nil
 	}
 
+	// Todo raise a warning for bad file, continue instead of returning
 	for _, rconfig := range repoConfigs {
 		var repoMap map[string]interface{}
 		repo := &RepoConfig{}
@@ -202,23 +203,17 @@ func (z *ZpsConfig) LoadRepos() error {
 
 		bytes, err := ioutil.ReadFile(rconfig)
 		if err != nil {
-			return nil
+			continue
 		}
 
 		repoHcl, err := hcl.Parse(string(bytes))
 		if err != nil {
-			return nil
+			continue
 		}
 
 		err = hcl.DecodeObject(&repoMap, repoHcl)
 		if err != nil {
-			return nil
-		}
-
-		if val, ok := repoMap["enabled"]; ok {
-			repo.Enabled = val.(bool)
-		} else {
-			repo.Enabled = true
+			continue
 		}
 
 		if val, ok := repoMap["enabled"]; ok {
@@ -231,6 +226,12 @@ func (z *ZpsConfig) LoadRepos() error {
 			repo.Priority = val.(int)
 		} else {
 			repo.Priority = 10
+		}
+
+		if val, ok := repoMap["channels"]; ok {
+			for _, ch := range val.([]interface{}) {
+				repo.Channels = append(repo.Channels, fmt.Sprint(ch))
+			}
 		}
 
 		if val, ok := repoMap["fetch"]; ok {

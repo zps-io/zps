@@ -16,6 +16,9 @@ type Solvable interface {
 	Priority() int
 	SetPriority(priority int)
 
+	SetChannels(...string)
+	Channels() []string
+
 	Satisfies(*Requirement) bool
 }
 

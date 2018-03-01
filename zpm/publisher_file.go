@@ -42,6 +42,21 @@ func (f *FilePublisher) Update() error {
 	return f.configure()
 }
 
+func (f *FilePublisher) Channel(pkg string, channel string) error {
+
+
+	for _, osarch := range zps.Platforms() {
+
+		err := f.channel(osarch, pkg, channel)
+		if err != nil {
+			return err
+			}
+
+	}
+
+	return nil
+}
+
 func (f *FilePublisher) Publish(pkgs ...string) error {
 	zpkgs := make(map[string]*zps.Pkg)
 	for _, file := range pkgs {
@@ -68,6 +83,58 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) error {
+	var err error
+
+	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
+	repo := &zps.Repo{}
+
+	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
+
+	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
+	if err != nil {
+		return err
+	}
+
+	err = lock.TryLock()
+	if err != nil {
+		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
+	}
+	defer lock.Unlock()
+
+	pkgsbytes, err := ioutil.ReadFile(packagesfile)
+
+	if err == nil {
+		err = repo.Load(pkgsbytes)
+		if err != nil {
+			return err
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	if len(repo.Solvables()) > 0 {
+		for _, solvable := range repo.Solvables() {
+			if solvable.Id() == pkg {
+				solvable.SetChannels(channel)
+				f.Emit("channel", pkg)
+			}
+		}
+
+		jsn, err := repo.Json()
+		if err != nil {
+			return err
+		}
+
+		err = ioutil.WriteFile(packagesfile, jsn, 0640)
+		if err != nil {
+			return err
 		}
 	}
 

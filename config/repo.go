@@ -6,6 +6,8 @@ type RepoConfig struct {
 	Priority int
 	Enabled  bool
 
+	Channels []string
+
 	Fetch   *FetchConfig
 	Publish *PublishConfig
 }

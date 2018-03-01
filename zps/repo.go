@@ -12,6 +12,7 @@ type Repo struct {
 	Enabled  bool
 	Updated  time.Time
 
+	channels  map[string]bool
 	solvables Solvables
 	index     map[string]Solvables
 }
@@ -23,9 +24,13 @@ type JsonRepo struct {
 	Packages []*JsonPkg `json:"packages"`
 }
 
-func NewRepo(uri string, priority int, enabled bool, solvables Solvables) *Repo {
-	repo := &Repo{Uri: uri, Priority: priority, Enabled: enabled, solvables: solvables}
+func NewRepo(uri string, priority int, enabled bool, channels []string, solvables Solvables) *Repo {
+	repo := &Repo{Uri: uri, Priority: priority, Enabled: enabled, channels: make(map[string]bool), solvables: solvables}
 	repo.Index()
+
+	for _, ch := range channels {
+		repo.channels[ch] = true
+	}
 
 	return repo
 }
@@ -114,6 +119,21 @@ func (r *Repo) Load(bytes []byte) error {
 }
 
 func (r *Repo) Solvables() Solvables {
+	if len(r.channels) > 0 {
+		var filtered Solvables
+
+		for index, solvable := range r.solvables {
+			for _, ch := range solvable.Channels() {
+				if r.channels[ch] {
+					filtered = append(filtered, r.solvables[index])
+					break
+				}
+			}
+		}
+
+		return filtered
+	}
+
 	return r.solvables
 }
 

@@ -31,8 +31,28 @@ publish {
 }
 endef
 
+define REPO_F
+priority = 10
+enabled = true
+
+channels = [
+	"spoon"
+]
+
+fetch {
+	uri = "file://$(ROOT_DIR)/test/filterrepo"
+}
+
+publish {
+	uri = "file://$(ROOT_DIR)/test/filterrepo"
+	name = "Filtered Repo"
+	prune = 3
+}
+endef
+
 export REPO_A
 export REPO_B
+export REPO_F
 
 
 all: zps
@@ -73,6 +93,7 @@ zps: clean deps
 	echo $(CONFIG) > dist/etc/zps/main.conf
 	echo "$$REPO_A" > dist/etc/zps/repo.d/testrepo.conf
 	echo "$$REPO_B" > dist/etc/zps/repo.d/anotherrepo.conf
+	echo "$$REPO_F" > dist/etc/zps/repo.d/filteredrepo.conf
 	go build -o dist/usr/bin/zps github.com/solvent-io/zps/cli/zps
 	ln dist/usr/bin/zps dist/usr/bin/zpkg
 	ln dist/usr/bin/zps dist/usr/bin/zpm

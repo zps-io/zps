@@ -73,6 +73,20 @@ func (m *Manager) CacheClear() error {
 	return nil
 }
 
+func (m *Manager) Channel(repo string, pkg string, channel string) error {
+	for _, r := range m.config.Repos {
+		if repo == r.Publish.Name && r.Publish.Uri != nil {
+			pb := NewPublisher(m.Emitter, r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+
+			err := pb.Channel(pkg, channel)
+
+			return err
+		}
+	}
+
+	return errors.New("Repo: " + repo + " not found")
+}
+
 func (m *Manager) Contents(pkgName string) ([]string, error) {
 	err := m.lock.TryLock()
 	if err != nil {
@@ -639,7 +653,7 @@ func (m *Manager) image() (*zps.Repo, error) {
 		solvables = append(solvables, pkg)
 	}
 
-	image := zps.NewRepo("installed", -1, true, solvables)
+	image := zps.NewRepo("installed", -1, true, nil, solvables)
 
 	return image, nil
 }
@@ -664,7 +678,7 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
 			for _, osarch := range osArches {
-				repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, []zps.Solvable{})
+				repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, r.Channels, []zps.Solvable{})
 				packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
 				pkgsbytes, err := ioutil.ReadFile(packagesfile)
 
@@ -710,7 +724,7 @@ func (m *Manager) fileRepos(files ...string) ([]*zps.Repo, error) {
 		path := filepath.Dir(file)
 
 		if index[path] == nil {
-			index[path] = zps.NewRepo("local://"+path, 0, true, nil)
+			index[path] = zps.NewRepo("local://"+path, 0, true, nil, nil)
 			repos = append(repos, index[path])
 		}
 

@@ -18,6 +18,8 @@ type Pkg struct {
 	summary     string
 	description string
 
+	channels []string
+
 	location int
 	priority int
 }
@@ -30,6 +32,8 @@ type JsonPkg struct {
 	Os          string `json:"os"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
+
+	Channels    []string `json:"channels,omitempty"`
 }
 
 func NewPkg(uri string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
@@ -38,7 +42,7 @@ func NewPkg(uri string, reqs []*Requirement, arch string, os string, summary str
 	if err != nil {
 		return nil, err
 	}
-	return &Pkg{u, reqs, arch, os, summary, description, 0, 0}, nil
+	return &Pkg{u, reqs, arch, os, summary, description, nil, 0, 0}, nil
 }
 
 func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
@@ -55,6 +59,7 @@ func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
 	pkg.os = jpkg.Os
 	pkg.summary = jpkg.Summary
 	pkg.description = jpkg.Description
+	pkg.channels = jpkg.Channels
 
 	for _, jreq := range jpkg.Requirements {
 		req, err := NewRequirementFromJson(jreq)
@@ -181,6 +186,24 @@ func (p *Pkg) Satisfies(req *Requirement) bool {
 	return false
 }
 
+func (p *Pkg) SetChannels(channels ...string) {
+	if len(channels) == 0 {
+		p.channels = nil
+		return
+	}
+
+	if channels[0] == "" {
+		p.channels = nil
+		return
+	}
+
+	p.channels = append(p.channels, channels...)
+}
+
+func (p *Pkg) Channels() []string {
+	return p.channels
+}
+
 func (p *Pkg) FileName() string {
 	return fmt.Sprintf("%s@%s-%s-%s.zpkg", p.Name(), p.Version().String(), p.Os(), p.Arch())
 }
@@ -192,6 +215,7 @@ func (p *Pkg) Json() *JsonPkg {
 	json.Description = p.description
 	json.Summary = p.summary
 	json.Uri = p.uri.String()
+	json.Channels = p.channels
 
 	for index := range p.reqs {
 		json.Requirements = append(json.Requirements, p.reqs[index].Json())

@@ -9,6 +9,7 @@ import (
 type Publisher interface {
 	Init() error
 	Update() error
+	Channel(pkg string, channel string) error
 	Publish(...string) error
 }
 
