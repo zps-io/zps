@@ -5,14 +5,14 @@ import (
 	"errors"
 	"sort"
 	"strings"
-
-	"github.com/hashicorp/hcl"
-	"github.com/hashicorp/hcl/hcl/ast"
+	"github.com/hashicorp/hcl2/hcl"
+	"github.com/hashicorp/hcl2/hclparse"
+	"github.com/hashicorp/hcl2/gohcl"
 )
 
 type Manifest struct {
 	Actions Actions
-	Zpf     *ast.File
+	Zpf     *hcl.BodyContent
 
 	index map[string]int
 }
@@ -32,17 +32,50 @@ func NewManifest() *Manifest {
 	return manifest
 }
 
-func (m *Manifest) Load(zhcl string) error {
+func (m *Manifest) Load(from string, zhcl []byte) error {
 	var err error
+	var diag hcl.Diagnostics
+	var zpf *hcl.File
 
-	m.Zpf, err = hcl.Parse(zhcl)
-	if err != nil {
-		return err
+	parser := hclparse.NewParser()
+
+	if from == "hcl" {
+		zpf, diag = parser.ParseHCL(zhcl, "manifest.hcl")
+		if diag.HasErrors() {
+			return diag
+		}
+	} else if from == "json" {
+		zpf, diag = parser.ParseJSON(zhcl, "manifest.hcl")
+		if diag.HasErrors() {
+			return diag
+		}
 	}
 
-	_, ok := m.Zpf.Node.(*ast.ObjectList)
-	if !ok {
-		return errors.New("Zpkgfile doesn't contain a root object")
+	m.Zpf, diag = zpf.Body.Content(&hcl.BodySchema{
+		Blocks: []hcl.BlockHeaderSchema{
+			{
+				Type: "zpkg",
+			},
+			{
+				Type: "requirement",
+			},
+			{
+				Type: "meta",
+			},
+			{
+				Type: "dir",
+			},
+			{
+				Type: "file",
+			},
+			{
+				Type: "symLink",
+			},
+		},
+	})
+
+	if diag.HasErrors() {
+		return errors.New("invalid manifest schema")
 	}
 
 	err = m.LoadZpkg()
@@ -131,19 +164,19 @@ func (m *Manifest) Index() {
 // Section loaders
 
 func (m *Manifest) LoadZpkg() error {
-	actions, _ := m.Zpf.Node.(*ast.ObjectList)
+	actions := m.Zpf.Blocks.OfType("zpkg")
 
-	if zpkg := actions.Filter("zpkg"); len(zpkg.Items) > 0 {
-		for _, item := range zpkg.Items {
-			var object *Zpkg
+	if len(actions) > 0 {
+		for _, item := range actions {
+			var object Zpkg
 
-			err := hcl.DecodeObject(&object, item.Val)
+			err := gohcl.DecodeBody(item.Body, nil, &object)
 			if err != nil {
 				return err
 			}
 
 			if object.Valid() {
-				m.Add(object)
+				m.Add(&object)
 			} else {
 				return errors.New("invalid zpkg action")
 			}
@@ -155,19 +188,19 @@ func (m *Manifest) LoadZpkg() error {
 }
 
 func (m *Manifest) LoadRequirement() error {
-	actions, _ := m.Zpf.Node.(*ast.ObjectList)
+	actions := m.Zpf.Blocks.OfType("requirement")
 
-	if requirement := actions.Filter("requirement"); len(requirement.Items) > 0 {
-		for _, item := range requirement.Items {
-			var object *Requirement
+	if len(actions) > 0 {
+		for _, item := range actions {
+			var object Requirement
 
-			err := hcl.DecodeObject(&object, item.Val)
+			err := gohcl.DecodeBody(item.Body, nil, &object)
 			if err != nil {
 				return err
 			}
 
 			if object.Valid() {
-				m.Add(object)
+				m.Add(&object)
 			} else {
 				return errors.New("invalid requirement action")
 			}
@@ -178,19 +211,19 @@ func (m *Manifest) LoadRequirement() error {
 }
 
 func (m *Manifest) LoadMeta() error {
-	actions, _ := m.Zpf.Node.(*ast.ObjectList)
+	actions := m.Zpf.Blocks.OfType("meta")
 
-	if meta := actions.Filter("meta"); len(meta.Items) > 0 {
-		for _, item := range meta.Items {
-			var object *Meta
+	if len(actions) > 0 {
+		for _, item := range actions {
+			var object Meta
 
-			err := hcl.DecodeObject(&object, item.Val)
+			err := gohcl.DecodeBody(item.Body, nil, &object)
 			if err != nil {
 				return err
 			}
 
 			if object.Valid() {
-				m.Add(object)
+				m.Add(&object)
 			} else {
 				return errors.New("invalid meta action")
 			}
@@ -201,19 +234,19 @@ func (m *Manifest) LoadMeta() error {
 }
 
 func (m *Manifest) LoadDir() error {
-	actions, _ := m.Zpf.Node.(*ast.ObjectList)
+	actions := m.Zpf.Blocks.OfType("dir")
 
-	if dir := actions.Filter("dir"); len(dir.Items) > 0 {
-		for _, item := range dir.Items {
-			var object *Dir
+	if len(actions) > 0 {
+		for _, item := range actions {
+			var object Dir
 
-			err := hcl.DecodeObject(&object, item.Val)
+			err := gohcl.DecodeBody(item.Body, nil, &object)
 			if err != nil {
 				return err
 			}
 
 			if object.Valid() {
-				m.Add(object)
+				m.Add(&object)
 			} else {
 				return errors.New("invalid dir action")
 			}
@@ -224,19 +257,19 @@ func (m *Manifest) LoadDir() error {
 }
 
 func (m *Manifest) LoadFile() error {
-	actions, _ := m.Zpf.Node.(*ast.ObjectList)
+	actions := m.Zpf.Blocks.OfType("file")
 
-	if file := actions.Filter("file"); len(file.Items) > 0 {
-		for _, item := range file.Items {
-			var object *File
+	if len(actions) > 0 {
+		for _, item := range actions {
+			var object File
 
-			err := hcl.DecodeObject(&object, item.Val)
+			err := gohcl.DecodeBody(item.Body, nil, &object)
 			if err != nil {
 				return err
 			}
 
 			if object.Valid() {
-				m.Add(object)
+				m.Add(&object)
 			} else {
 				return errors.New("invalid file action")
 			}
@@ -247,19 +280,19 @@ func (m *Manifest) LoadFile() error {
 }
 
 func (m *Manifest) LoadSymLink() error {
-	actions, _ := m.Zpf.Node.(*ast.ObjectList)
+	actions := m.Zpf.Blocks.OfType("symlink")
 
-	if symlink := actions.Filter("symlink"); len(symlink.Items) > 0 {
-		for _, item := range symlink.Items {
-			var object *SymLink
+	if len(actions) > 0 {
+		for _, item := range actions {
+			var object SymLink
 
-			err := hcl.DecodeObject(&object, item.Val)
+			err := gohcl.DecodeBody(item.Body, nil, &object)
 			if err != nil {
 				return err
 			}
 
 			if object.Valid() {
-				m.Add(object)
+				m.Add(&object)
 			} else {
 				return errors.New("invalid symlink action")
 			}

@@ -19,6 +19,7 @@ import (
 	"github.com/solvent-io/zps/zpkg/payload"
 	"github.com/solvent-io/zps/zps"
 	"golang.org/x/net/context"
+
 )
 
 type Builder struct {
@@ -152,7 +153,8 @@ func (b *Builder) loadZpkgfile() error {
 		return err
 	}
 
-	if b.manifest.Load(string(zpfbytes)) != nil {
+	err = b.manifest.Load("hcl", zpfbytes)
+	if err != nil {
 		return err
 	}
 

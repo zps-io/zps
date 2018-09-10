@@ -112,7 +112,7 @@ func (s *StatePackages) All() ([]*action.Manifest, error) {
 
 	for _, pkg := range entries {
 		manifest := action.NewManifest()
-		err := manifest.Load(string(pkg.Manifest))
+		err := manifest.Load("json", pkg.Manifest)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func (s *StatePackages) Get(name string) (*action.Manifest, error) {
 		return nil, err
 	}
 
-	err = pkg.Load(string(entry.Manifest))
+	err = pkg.Load("json", entry.Manifest)
 	if err != nil {
 		return nil, err
 	}

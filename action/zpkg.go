@@ -6,15 +6,15 @@ import (
 )
 
 type Zpkg struct {
-	Name        string `json:"name,omitempty"`
-	Version     string `json:"version"`
-	Publisher   string `json:"publisher,omitempty"`
-	Category    string `json:"category,omitempty"`
+	Name        string `json:"name,omitempty" hcl:"name"`
+	Version     string `json:"version" hcl:"version"`
+	Publisher   string `json:"publisher,omitempty" hcl:"publisher"`
+	Category    string `json:"category,omitempty" hcl:"category"`
 	Uri         string `json:"uri"`
-	Arch        string `json:"arch"`
-	Os          string `json:"os"`
-	Summary     string `json:"summary"`
-	Description string `json:"description"`
+	Arch        string `json:"arch" hcl:"arch"`
+	Os          string `json:"os" hcl:"os"`
+	Summary     string `json:"summary" hcl:"summary"`
+	Description string `json:"description" hcl:"description"`
 }
 
 func NewZpkg() *Zpkg {

@@ -5,9 +5,9 @@ import (
 )
 
 type Meta struct {
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-	Value     string `json:"value"`
+	Namespace string `json:"namespace" hcl:"namespace"`
+	Name      string `json:"name" hcl:"name"`
+	Value     string `json:"value" hcl:"value"`
 }
 
 func NewMeta() *Meta {

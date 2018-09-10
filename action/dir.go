@@ -5,8 +5,8 @@ import (
 )
 
 type Dir struct {
-	Path  string `json:"path"`
-	Owner string `json:"owner"`
+	Path  string `json:"path" hcl:"path"`
+	Owner string `json:"owner" hcl:"path,attr"`
 	Group string `json:"group"`
 	Mode  string `json:"mode"`
 }

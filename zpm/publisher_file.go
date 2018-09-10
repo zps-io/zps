@@ -44,13 +44,12 @@ func (f *FilePublisher) Update() error {
 
 func (f *FilePublisher) Channel(pkg string, channel string) error {
 
-
 	for _, osarch := range zps.Platforms() {
 
 		err := f.channel(osarch, pkg, channel)
 		if err != nil {
 			return err
-			}
+		}
 
 	}
 

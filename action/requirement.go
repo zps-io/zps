@@ -5,10 +5,10 @@ import (
 )
 
 type Requirement struct {
-	Name      string `json:"name"`
-	Method    string `json:"method"`
-	Operation string `json:"operation,omitempty"`
-	Version   string `json:"version,omitempty"`
+	Name      string `json:"name" hcl:"name"`
+	Method    string `json:"method" hcl:"method"`
+	Operation string `json:"operation,omitempty" hcl:"operation"`
+	Version   string `json:"version,omitempty" hcl:"version"`
 }
 
 func NewRequirement() *Requirement {

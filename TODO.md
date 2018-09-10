@@ -11,7 +11,6 @@ TODO
 
 ### Milestone 1
 
-- Switch to kingpin for cli
 - Freeze support
 - Uri handler repository abstraction first type should be file system path
 - Static Repositories

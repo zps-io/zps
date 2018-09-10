@@ -74,7 +74,7 @@ func (r *Reader) Read() error {
 		return err
 	}
 
-	err = r.Manifest.Load(manifestBytes.String())
+	err = r.Manifest.Load("json", manifestBytes.Bytes())
 	if err != nil {
 		return err
 	}

@@ -74,6 +74,7 @@ deps:
 	go get github.com/mitchellh/colorstring
 	go get github.com/hashicorp/hcl
 	go get github.com/hashicorp/hil
+	go get github.com/hashicorp/hcl2/...
 	go get github.com/hashicorp/go-multierror
 	go get github.com/ryanuber/columnize
 	go get github.com/blang/semver

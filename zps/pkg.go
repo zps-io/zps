@@ -33,7 +33,7 @@ type JsonPkg struct {
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
 
-	Channels    []string `json:"channels,omitempty"`
+	Channels []string `json:"channels,omitempty"`
 }
 
 func NewPkg(uri string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
