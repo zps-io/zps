@@ -25,11 +25,11 @@ type FileUnix struct {
 	phaseMap map[string]string
 }
 
-func NewFileUnix(file action.Action, phaseMap map[string]string, emitter *emission.Emitter) *FileUnix {
+func NewFileUnix(file action.Action, phaseMap map[string]string, emitter *emission.Emitter) Provider {
 	return &FileUnix{emitter, file.(*action.File), phaseMap}
 }
 
-func (f *FileUnix) Realize(phase string, ctx context.Context) error {
+func (f *FileUnix) Realize(ctx context.Context) error {
 	switch f.phaseMap[Phase(ctx)] {
 	case "install":
 		return f.install(ctx)

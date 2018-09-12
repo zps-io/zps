@@ -40,7 +40,7 @@ func (m *Manifest) Add(action Action) {
 	}
 }
 
-func (m *Manifest) Section(filters ...string) []Action {
+func (m *Manifest) Section(filters ...string) Actions {
 	var items []Action
 
 	for _, filter := range filters {
@@ -69,6 +69,20 @@ func (m *Manifest) Section(filters ...string) []Action {
 	}
 
 	return items
+}
+
+func (m *Manifest) Actions() Actions {
+	var actions Actions
+
+	fs := m.Section("Dir", "File", "SymLink")
+	sort.Sort(fs)
+
+	actions = append(actions, m.Zpkg)
+	actions = append(actions, m.Section("Tag")...)
+	actions = append(actions, m.Section("Requirement")...)
+	actions = append(actions, fs...)
+
+	return actions
 }
 
 func (m *Manifest) Validate() error {

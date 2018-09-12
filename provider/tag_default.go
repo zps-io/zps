@@ -15,7 +15,7 @@ type TagDefault struct {
 	phaseMap map[string]string
 }
 
-func NewTagDefault(tag action.Action, phaseMap map[string]string, emitter *emission.Emitter) *TagDefault {
+func NewTagDefault(tag action.Action, phaseMap map[string]string, emitter *emission.Emitter) Provider {
 	return &TagDefault{emitter, tag.(*action.Tag), phaseMap}
 }
 

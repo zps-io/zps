@@ -14,7 +14,7 @@ type ZpkgDefault struct {
 	phaseMap map[string]string
 }
 
-func NewZpkgDefault(zpkg action.Action, phaseMap map[string]string, emitter *emission.Emitter) *ZpkgDefault {
+func NewZpkgDefault(zpkg action.Action, phaseMap map[string]string, emitter *emission.Emitter) Provider {
 	return &ZpkgDefault{emitter, zpkg.(*action.Zpkg), phaseMap}
 }
 

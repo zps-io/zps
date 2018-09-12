@@ -11,6 +11,9 @@ import (
 type Pkg struct {
 	reqs []*Requirement
 
+	name        string
+	version     *Version
+
 	arch        string
 	os          string
 	summary     string
@@ -23,8 +26,10 @@ type Pkg struct {
 }
 
 type JsonPkg struct {
-	Uri          string             `json:"uri"`
 	Requirements []*JsonRequirement `json:"requirements,omitempty"`
+
+	Name        string `json:"name"`
+	Version     string `json:"version"`
 
 	Arch        string `json:"arch"`
 	Os          string `json:"os"`
@@ -34,25 +39,26 @@ type JsonPkg struct {
 	Channels []string `json:"channels,omitempty"`
 }
 
-func NewPkg(uri string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
-	u := NewZpkgUri()
-	err := u.Parse(uri)
+func NewPkg(name string, version string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
+	ver := &Version{}
+	err := ver.Parse(version)
 	if err != nil {
 		return nil, err
 	}
-	return &Pkg{u, reqs, arch, os, summary, description, nil, 0, 0}, nil
+	return &Pkg{reqs, name, ver,arch, os, summary, description, nil, 0, 0}, nil
 }
 
 func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
 	pkg := &Pkg{}
 
-	uri := NewZpkgUri()
-	err := uri.Parse(jpkg.Uri)
+	version := &Version{}
+	err := version.Parse(jpkg.Version)
 	if err != nil {
 		return nil, err
 	}
 
-	pkg.uri = uri
+	pkg.name = jpkg.Name
+	pkg.version = version
 	pkg.arch = jpkg.Arch
 	pkg.os = jpkg.Os
 	pkg.summary = jpkg.Summary
@@ -73,15 +79,15 @@ func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
 
 func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 	pkg := &Pkg{}
-	zpkg := manifest.Section("zpkg")[0].(*action.Zpkg)
+	zpkg := manifest.Zpkg
 
-	uri := NewZpkgUri()
-	err := uri.Parse(zpkg.Uri)
+	version := &Version{}
+	err := version.Parse(zpkg.Version)
 	if err != nil {
 		return nil, err
 	}
 
-	pkg.uri = uri
+	pkg.version = version
 	pkg.arch = zpkg.Arch
 	pkg.os = zpkg.Os
 	pkg.summary = zpkg.Summary
@@ -116,15 +122,11 @@ func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 }
 
 func (p *Pkg) Id() string {
-	return strings.Join([]string{p.uri.Name, p.uri.Version.String()}, "@")
-}
-
-func (p *Pkg) Uri() *ZpkgUri {
-	return p.uri
+	return strings.Join([]string{p.name, p.version.String()}, "@")
 }
 
 func (p *Pkg) Name() string {
-	return p.uri.Name
+	return p.name
 }
 
 func (p *Pkg) Summary() string {
@@ -136,7 +138,7 @@ func (p *Pkg) Description() string {
 }
 
 func (p *Pkg) Version() *Version {
-	return p.uri.Version
+	return p.version
 }
 
 func (p *Pkg) Requirements() []*Requirement {
@@ -172,13 +174,13 @@ func (p *Pkg) Satisfies(req *Requirement) bool {
 	case 3:
 		return true
 	case 2:
-		return p.uri.Version.EXQ(req.Version)
+		return p.version.EXQ(req.Version)
 	case 1:
-		return p.uri.Version.GTE(req.Version)
+		return p.version.GTE(req.Version)
 	case 0:
-		return p.uri.Version.EQ(req.Version)
+		return p.version.EQ(req.Version)
 	case -1:
-		return p.uri.Version.LTE(req.Version)
+		return p.version.LTE(req.Version)
 	}
 
 	return false
@@ -208,11 +210,14 @@ func (p *Pkg) FileName() string {
 
 func (p *Pkg) Json() *JsonPkg {
 	json := &JsonPkg{}
+
+	json.Name = p.name
+	json.Version = p.version.String()
+
 	json.Arch = p.arch
 	json.Os = p.os
 	json.Description = p.description
 	json.Summary = p.summary
-	json.Uri = p.uri.String()
 	json.Channels = p.channels
 
 	for index := range p.reqs {

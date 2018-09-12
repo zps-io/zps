@@ -24,7 +24,7 @@ type DirUnix struct {
 	phaseMap map[string]string
 }
 
-func NewDirUnix(dir action.Action, phaseMap map[string]string, emitter *emission.Emitter) *DirUnix {
+func NewDirUnix(dir action.Action, phaseMap map[string]string, emitter *emission.Emitter) Provider {
 	return &DirUnix{emitter, dir.(*action.Dir), phaseMap}
 }
 

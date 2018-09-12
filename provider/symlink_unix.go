@@ -23,7 +23,7 @@ type SymLinkUnix struct {
 	phaseMap map[string]string
 }
 
-func NewSymLinkUnix(symlink action.Action, phaseMap map[string]string, emitter *emission.Emitter) *SymLinkUnix {
+func NewSymLinkUnix(symlink action.Action, phaseMap map[string]string, emitter *emission.Emitter) Provider {
 	return &SymLinkUnix{emitter, symlink.(*action.SymLink), phaseMap}
 }
 

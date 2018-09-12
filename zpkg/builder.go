@@ -1,16 +1,11 @@
 package zpkg
 
 import (
-	"errors"
-	"fmt"
-	"io/ioutil"
+	"github.com/solvent-io/zps/zps"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
-
-	"time"
 
 	"context"
 
@@ -215,16 +210,16 @@ func (b *Builder) realize() error {
 	var err error
 
 	// Setup context
-	ctx := action.GetContext(b.options, b.manifest)
+	ctx := context.WithValue(context.Background(), "options", b.options)
 	ctx = context.WithValue(ctx, "payload", b.payload)
 
-	for _, act := range b.manifest.Actions {
-		err = provider.Get(act).Realize("package", ctx)
+	factory := provider.DefaultFactory(b.Emitter)
+
+	for _, act := range b.manifest.Actions() {
+		err = factory.Get(act).Realize(ctx)
 		if err != nil {
 			return err
 		}
-
-		b.Emit("action", act)
 	}
 
 	return err

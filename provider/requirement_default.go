@@ -14,8 +14,8 @@ type RequirementDefault struct {
 	phaseMap map[string]string
 }
 
-func NewRequirementDefault(zpkg action.Action, phaseMap map[string]string, emitter *emission.Emitter) *RequirementDefault {
-	return &RequirementDefault{emitter, zpkg.(*action.Zpkg), phaseMap}
+func NewRequirementDefault(req action.Action, phaseMap map[string]string, emitter *emission.Emitter) Provider {
+	return &RequirementDefault{emitter, req.(*action.Requirement), phaseMap}
 }
 
 func (r *RequirementDefault) Realize(ctx context.Context) error {
