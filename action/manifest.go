@@ -3,6 +3,7 @@ package action
 // TODO handle overrides (file from Zpkgfile overrides vals from original
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -10,15 +11,15 @@ import (
 )
 
 type Manifest struct {
-	Zpkg *Zpkg `hcl:"Zpkg,block"`
+	Zpkg *Zpkg `hcl:"Zpkg,block" json:"zpkg"`
 
-	Tags []*Tag `hcl:"Tag,block"`
+	Tags []*Tag `hcl:"Tag,block" json:"tag,omitempty"`
 
-	Requirements []*Requirement `hcl:"Requirement,block"`
+	Requirements []*Requirement `hcl:"Requirement,block" json:"requirement,omitempty"`
 
-	Dirs     []*Dir     `hcl:"Dir,block"`
-	Files    []*File    `hcl:"File,block"`
-	SymLinks []*SymLink `hcl:"SymLink,block"`
+	Dirs     []*Dir     `hcl:"Dir,block" json:"dir,omitempty"`
+	Files    []*File    `hcl:"File,block" json:"file,omitempty"`
+	SymLinks []*SymLink `hcl:"SymLink,block" json:"symlink,omitempty"`
 }
 
 func NewManifest() *Manifest {
@@ -103,4 +104,14 @@ func (m *Manifest) Validate() error {
 	}
 
 	return nil
+}
+
+func (m *Manifest) ToJson() string {
+	out, _ := json.Marshal(m)
+
+	return string(out)
+}
+
+func (m *Manifest) Load(manifest string) error {
+	return json.Unmarshal([]byte(manifest), m)
 }

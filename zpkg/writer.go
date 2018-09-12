@@ -24,7 +24,7 @@ func (w *Writer) Write(filename string, header *Header, manifest *action.Manifes
 	// compress manifest
 	bzw, _ := bzip2.NewWriter(&manifestBuffer, &bzip2.WriterConfig{Level: 7})
 
-	if _, err := io.WriteString(bzw, manifest.Json()); err != nil {
+	if _, err := io.WriteString(bzw, manifest.ToJson()); err != nil {
 		return err
 	}
 
