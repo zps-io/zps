@@ -28,7 +28,7 @@ func NewUi() *Ui {
 	ui.warn = log.New(os.Stdout, "", 0)
 	ui.error = log.New(os.Stderr, "", 0)
 
-	ui.colorize = &colorstring.Colorize{Colors: colorstring.DefaultColors}
+	ui.colorize = &colorstring.Colorize{Colors: colorstring.DefaultColors, Reset: true}
 	return ui
 }
 
@@ -52,7 +52,7 @@ func (u *Ui) Out(content string) {
 }
 
 func (u *Ui) Debug(content string) {
-	u.info.Println(u.colorize.Color("[magenta]" + content))
+	u.info.Println(u.colorize.Color("[blue]" + content))
 }
 
 func (u *Ui) Info(content string) {

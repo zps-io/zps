@@ -79,6 +79,7 @@ deps:
 	go get github.com/ryanuber/columnize
 	go get github.com/blang/semver
 	go get github.com/solvent-io/sat
+	go get -u github.com/solvent-io/zkit
 	go get gonum.org/v1/gonum/graph
 	go get github.com/asdine/storm
 	go get github.com/segmentio/ksuid
@@ -97,7 +98,7 @@ zps: clean deps
 	echo "$$REPO_F" > dist/etc/zps/repo.d/filteredrepo.conf
 	go build -o dist/usr/bin/zps github.com/solvent-io/zps/cli/zps
 	ln dist/usr/bin/zps dist/usr/bin/zpkg
-	ln dist/usr/bin/zps dist/usr/bin/zpm
+#	ln dist/usr/bin/zps dist/usr/bin/zpm
 
 
 illumos: clean deps

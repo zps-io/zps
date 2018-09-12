@@ -9,8 +9,6 @@ import (
 )
 
 type Pkg struct {
-	uri *ZpkgUri
-
 	reqs []*Requirement
 
 	arch        string
@@ -224,10 +222,4 @@ func (p *Pkg) Json() *JsonPkg {
 	return json
 }
 
-func (p *Pkg) Columns() string {
-	return strings.Join([]string{
-		p.Name(),
-		p.Summary(),
-		p.Uri().String(),
-	}, "|")
-}
+

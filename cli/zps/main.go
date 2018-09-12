@@ -5,7 +5,7 @@ import (
 	"path"
 
 	zpkgcmds "github.com/solvent-io/zps/cli/zpkg/commands"
-	zpmcmds "github.com/solvent-io/zps/cli/zpm/commands"
+	// zpmcmds "github.com/solvent-io/zps/cli/zpm/commands"
 )
 
 func main() {
@@ -15,11 +15,13 @@ func main() {
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
-	case "zpm":
-		command := zpmcmds.NewZpmRootCommand()
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
+		/*
+			case "zpm":
+			command := zpmcmds.NewZpmRootCommand()
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+		*/
 	default:
 		os.Exit(0)
 	}

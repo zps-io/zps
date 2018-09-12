@@ -12,28 +12,24 @@ import (
 
 	"time"
 
+	"context"
+
 	"github.com/chuckpreslar/emission"
 	"github.com/solvent-io/zps/action"
-	"github.com/solvent-io/zps/namespace"
 	"github.com/solvent-io/zps/provider"
 	"github.com/solvent-io/zps/zpkg/payload"
-	"github.com/solvent-io/zps/zps"
-	"golang.org/x/net/context"
-
 )
 
 type Builder struct {
 	*emission.Emitter
 
-	options *action.Options
+	options *provider.Options
 
 	zpfPath    string
 	workPath   string
 	outputPath string
 
 	version uint8
-
-	namespaces []namespace.Namespace
 
 	manifest *action.Manifest
 
@@ -50,9 +46,7 @@ func NewBuilder() *Builder {
 
 	builder.version = Version
 
-	builder.options = action.NewOptions()
-
-	builder.namespaces = append(builder.namespaces, namespace.Get("vcs"))
+	builder.options = &provider.Options{}
 
 	builder.manifest = action.NewManifest()
 
@@ -100,14 +94,6 @@ func (b *Builder) Version(version uint8) *Builder {
 	return b
 }
 
-func (b *Builder) Namespace(name string) *Builder {
-	ns := namespace.Get(name)
-	if ns != nil {
-		b.namespaces = append(b.namespaces, namespace.Get(name))
-	}
-	return b
-}
-
 // Set default paths
 func (b *Builder) setPaths() error {
 	wd, err := os.Getwd()
@@ -148,12 +134,12 @@ func (b *Builder) setPaths() error {
 
 // This isn't efficient, I don't expect these files to be terribly large however
 func (b *Builder) loadZpkgfile() error {
-	zpfbytes, err := ioutil.ReadFile(b.zpfPath)
+	zpkgFile, err := (&ZpkgFile{}).Load(b.zpfPath)
 	if err != nil {
 		return err
 	}
 
-	err = b.manifest.Load("hcl", zpfbytes)
+	b.manifest, err = zpkgFile.Eval()
 	if err != nil {
 		return err
 	}
@@ -205,47 +191,15 @@ func (b *Builder) resolve() error {
 		return nil
 	})
 
-	// Ensure we don't have differing filesystem actions with the same path
-	var actions action.Actions = b.manifest.Section("dir", "file", "symlink")
-	sort.Sort(actions)
-	for index, action := range actions {
-		prev := index - 1
-		if prev != -1 {
-			if action.Key() == actions[prev].Key() {
-				return errors.New(fmt.Sprint(
-					"Action Conflicts:\n",
-					strings.ToUpper(actions[prev].Type()), " => ", actions[prev].Key(), "\n",
-					strings.ToUpper(action.Type()), " => ", action.Key()))
-			}
-		}
-	}
-
-	return err
-}
-
-// Set file name and zpkg timestamp
-func (b *Builder) set() error {
-	zpkg := b.manifest.Section("zpkg")[0].(*action.Zpkg)
-
-	uri := zps.NewZpkgUri()
-	uri.Name = zpkg.Name
-	uri.Publisher = zpkg.Publisher
-	uri.Category = zpkg.Category
-
-	err := uri.Version.Parse(zpkg.Version)
 	if err != nil {
 		return err
 	}
 
-	uri.Version.Timestamp = time.Now()
-	zpkg.Uri = uri.String()
+	return b.manifest.Validate()
+}
 
-	// Unset uri component values
-	zpkg.Name = ""
-	zpkg.Version = ""
-	zpkg.Publisher = ""
-	zpkg.Category = ""
-
+// Set file name and zpkg timestamp
+func (b *Builder) set() error {
 	pkg, err := zps.NewPkgFromManifest(b.manifest)
 	if err != nil {
 		return err
@@ -254,20 +208,6 @@ func (b *Builder) set() error {
 	b.filename = pkg.FileName()
 
 	return nil
-}
-
-// Validate the meta namespaces
-func (b *Builder) validate() error {
-	var err error
-
-	for _, ns := range b.namespaces {
-		err = ns.Validate(b.manifest)
-		if err != nil {
-			return err
-		}
-	}
-
-	return err
 }
 
 // Completes manifest, builds payload
@@ -312,11 +252,6 @@ func (b *Builder) Build() (string, error) {
 	}
 
 	err = b.set()
-	if err != nil {
-		return "", err
-	}
-
-	err = b.validate()
 	if err != nil {
 		return "", err
 	}

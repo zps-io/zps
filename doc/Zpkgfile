@@ -1,5 +1,4 @@
-zpkg {
-  name = "testpkg"
+Zpkg "testpkg" {
   publisher = "solvent"
   category = "test"
   version = "0.0.1"

@@ -1,14 +1,14 @@
 package action
 
 import (
-	"strings"
+	"fmt"
 )
 
 type File struct {
-	Path  string `json:"path"`
-	Owner string `json:"owner"`
-	Group string `json:"group"`
-	Mode  string `json:"mode"`
+	Path  string `json:"path" hcl:"path,label"`
+	Owner string `json:"owner" hcl:"owner,optional"`
+	Group string `json:"group" hcl:"group,optional"`
+	Mode  string `json:"mode" hcl:"mode,optional"`
 
 	Hash   string `json:"hash"`
 	Offset int    `json:"offset"`
@@ -24,28 +24,26 @@ func (f *File) Key() string {
 	return f.Path
 }
 
-func (f *File) Columns() string {
-	return strings.Join([]string{
-		strings.ToUpper(f.Type()),
-		f.Mode,
-		f.Owner + ":" + f.Group,
-		f.Path,
-	}, "|")
-}
-
-func (f *File) Unique() string {
-	key := []string{"file", f.Path}
-	return strings.Join(key, ":")
-}
-
 func (f *File) Type() string {
-	return "file"
+	return "File"
 }
 
-func (f *File) Valid() bool {
-	if f.Path == "" {
-		return false
+func (f *File) Id() string {
+	return fmt.Sprint(f.Type(), ".", f.Key())
+}
+
+func (f *File) Condition() *bool {
+	return nil
+}
+
+func (f *File) MayFail() bool {
+	return false
+}
+
+func (f *File) IsValid() bool {
+	if f.Path != "" && f.Owner != "" && f.Group != "" && f.Mode != "" {
+		return true
 	}
 
-	return true
+	return false
 }

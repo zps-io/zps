@@ -1,11 +1,11 @@
 package action
 
 import (
-	"strings"
+	"fmt"
 )
 
 type Requirement struct {
-	Name      string `json:"name" hcl:"name"`
+	Name      string `json:"name" hcl:"name,label"`
 	Method    string `json:"method" hcl:"method"`
 	Operation string `json:"operation,omitempty" hcl:"operation"`
 	Version   string `json:"version,omitempty" hcl:"version"`
@@ -16,37 +16,29 @@ func NewRequirement() *Requirement {
 }
 
 func (r *Requirement) Key() string {
-	key := []string{r.Name, r.Method, r.Operation}
-	return strings.Join(key, ":")
-}
-
-func (r *Requirement) Columns() string {
-	return strings.Join([]string{
-		strings.ToUpper(r.Type()),
-		r.Name,
-		r.Method,
-		r.Operation,
-		r.Version,
-	}, "|")
-}
-
-func (r *Requirement) Unique() string {
-	key := []string{"requirement", r.Name, r.Method, r.Operation}
-	return strings.Join(key, ":")
+	return r.Name
 }
 
 func (r *Requirement) Type() string {
-	return "requirement"
+	return "Requirement"
 }
 
-func (r *Requirement) Valid() bool {
-	if r.Name == "" {
-		return false
+func (r *Requirement) Id() string {
+	return fmt.Sprint(r.Type(), ".", r.Key())
+}
+
+func (r *Requirement) Condition() *bool {
+	return nil
+}
+
+func (r *Requirement) MayFail() bool {
+	return false
+}
+
+func (r *Requirement) IsValid() bool {
+	if r.Name != "" && r.Method != "" && r.Operation != "" && r.Version != "" {
+		return true
 	}
 
-	if r.Method == "" {
-		return false
-	}
-
-	return true
+	return false
 }

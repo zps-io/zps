@@ -1,14 +1,14 @@
 package action
 
 import (
-	"strings"
+	"fmt"
 )
 
 type SymLink struct {
-	Path   string `json:"path"`
-	Owner  string `json:"owner"`
-	Group  string `json:"group"`
-	Target string `json:"target"`
+	Path   string `json:"path" hcl:"path,label"`
+	Owner  string `json:"owner" hcl:"owner,optional"`
+	Group  string `json:"group" hcl:"group,optional"`
+	Target string `json:"target" hcl:"target"`
 }
 
 func NewSymLink() *SymLink {
@@ -19,28 +19,26 @@ func (s *SymLink) Key() string {
 	return s.Path
 }
 
-func (s *SymLink) Columns() string {
-	return strings.Join([]string{
-		strings.ToUpper(s.Type()),
-		s.Owner + ":" + s.Group,
-		s.Path,
-		s.Target,
-	}, "|")
-}
-
-func (s *SymLink) Unique() string {
-	key := []string{"symlink", s.Path}
-	return strings.Join(key, ":")
-}
-
 func (s *SymLink) Type() string {
-	return "symlink"
+	return "SymLink"
 }
 
-func (s *SymLink) Valid() bool {
-	if s.Path == "" {
-		return false
+func (s *SymLink) Id() string {
+	return fmt.Sprint(f.Type(), ".", f.Key())
+}
+
+func (s *SymLink) Condition() *bool {
+	return nil
+}
+
+func (s *SymLink) MayFail() bool {
+	return false
+}
+
+func (s *SymLink) IsValid() bool {
+	if s.Path != "" && s.Owner != "" && s.Group != "" && s.Target != "" {
+		return true
 	}
 
-	return true
+	return false
 }
