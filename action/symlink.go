@@ -24,7 +24,7 @@ func (s *SymLink) Type() string {
 }
 
 func (s *SymLink) Id() string {
-	return fmt.Sprint(f.Type(), ".", f.Key())
+	return fmt.Sprint(s.Type(), ".", s.Key())
 }
 
 func (s *SymLink) Condition() *bool {

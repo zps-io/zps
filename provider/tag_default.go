@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chuckpreslar/emission"
 
@@ -22,6 +23,7 @@ func NewTagDefault(tag action.Action, phaseMap map[string]string, emitter *emiss
 func (t *TagDefault) Realize(ctx context.Context) error {
 	switch t.phaseMap[Phase(ctx)] {
 	default:
+		t.Emit("action.info", fmt.Sprintf("%s %s", t.tag.Type(), t.tag.Key()))
 		return nil
 	}
 }

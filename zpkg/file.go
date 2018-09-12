@@ -1,24 +1,24 @@
 package zpkg
 
 import (
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/hashicorp/hcl2/gohcl"
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hclparse"
 	"github.com/solvent-io/zps/action"
 	"github.com/zclconf/go-cty/cty"
-	"io/ioutil"
-	"os"
-	"strings"
 )
 
 type ZpkgFile struct {
 	Bytes []byte
-	Path string
+	Path  string
 
 	ctx *hcl.EvalContext
 	hcl *hcl.File
 }
-
 
 func (z *ZpkgFile) Load(path string) (*ZpkgFile, error) {
 	var err error

@@ -32,6 +32,7 @@ func (s *SymLinkUnix) Realize(ctx context.Context) error {
 	case "install":
 		return s.install(ctx)
 	case "package":
+		s.Emit("action.info", fmt.Sprintf("%s %s", s.symlink.Type(), s.symlink.Key()))
 		return s.pkg(ctx)
 	case "remove":
 		return s.remove(ctx)

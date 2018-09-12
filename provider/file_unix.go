@@ -34,6 +34,7 @@ func (f *FileUnix) Realize(ctx context.Context) error {
 	case "install":
 		return f.install(ctx)
 	case "package":
+		f.Emit("action.info", fmt.Sprintf("%s %s", f.file.Type(), f.file.Key()))
 		return f.pkg(ctx)
 	case "remove":
 		return f.remove(ctx)

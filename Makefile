@@ -79,7 +79,6 @@ deps:
 	go get github.com/ryanuber/columnize
 	go get github.com/blang/semver
 	go get github.com/solvent-io/sat
-	go get -u github.com/solvent-io/zkit
 	go get gonum.org/v1/gonum/graph
 	go get github.com/asdine/storm
 	go get github.com/segmentio/ksuid

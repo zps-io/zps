@@ -33,6 +33,7 @@ func (d *DirUnix) Realize(ctx context.Context) error {
 	case "install":
 		return d.install(ctx)
 	case "package":
+		d.Emit("action.info", fmt.Sprintf("%s %s", d.dir.Type(), d.dir.Key()))
 		return d.pkg(ctx)
 	case "remove":
 		return d.remove(ctx)

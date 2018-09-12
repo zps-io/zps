@@ -4,5 +4,5 @@ const (
 	INSTALL = "install"
 	REMOVE  = "remove"
 	PACKAGE = "package"
-	NOOP = "noop"
+	NOOP    = "noop"
 )

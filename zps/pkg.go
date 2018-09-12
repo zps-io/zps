@@ -11,8 +11,8 @@ import (
 type Pkg struct {
 	reqs []*Requirement
 
-	name        string
-	version     *Version
+	name    string
+	version *Version
 
 	arch        string
 	os          string
@@ -28,8 +28,8 @@ type Pkg struct {
 type JsonPkg struct {
 	Requirements []*JsonRequirement `json:"requirements,omitempty"`
 
-	Name        string `json:"name"`
-	Version     string `json:"version"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 
 	Arch        string `json:"arch"`
 	Os          string `json:"os"`
@@ -45,7 +45,7 @@ func NewPkg(name string, version string, reqs []*Requirement, arch string, os st
 	if err != nil {
 		return nil, err
 	}
-	return &Pkg{reqs, name, ver,arch, os, summary, description, nil, 0, 0}, nil
+	return &Pkg{reqs, name, ver, arch, os, summary, description, nil, 0, 0}, nil
 }
 
 func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
@@ -226,5 +226,3 @@ func (p *Pkg) Json() *JsonPkg {
 
 	return json
 }
-
-

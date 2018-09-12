@@ -1,11 +1,12 @@
 package zpkg
 
 import (
-	"github.com/solvent-io/zps/zps"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/solvent-io/zps/zps"
 
 	"context"
 
@@ -262,7 +263,7 @@ func (b *Builder) Build() (string, error) {
 		return "", err
 	}
 
-	b.Emit("complete", b.filename)
+	b.Emit("builder.complete", b.filename)
 
 	return b.filename, err
 }

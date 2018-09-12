@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chuckpreslar/emission"
 	"github.com/solvent-io/zps/action"
@@ -21,6 +22,7 @@ func NewRequirementDefault(req action.Action, phaseMap map[string]string, emitte
 func (r *RequirementDefault) Realize(ctx context.Context) error {
 	switch r.phaseMap[Phase(ctx)] {
 	default:
+		r.Emit("action.info", fmt.Sprintf("%s %s", r.requirement.Type(), r.requirement.Key()))
 		return nil
 	}
 }

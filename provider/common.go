@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+
 	"github.com/solvent-io/zps/phase"
 
 	"github.com/chuckpreslar/emission"
@@ -85,11 +86,9 @@ func DefaultFactory(emitter *emission.Emitter) *Factory {
 		On("Dir", phase.INSTALL, "install").
 		On("Dir", phase.PACKAGE, "package").
 		On("Dir", phase.REMOVE, "remove").
-
 		On("File", phase.INSTALL, "install").
 		On("File", phase.PACKAGE, "package").
 		On("File", phase.REMOVE, "remove").
-
 		On("Symlink", phase.INSTALL, "install").
 		On("SymLink", phase.PACKAGE, "package").
 		On("SymLink", phase.REMOVE, "remove")

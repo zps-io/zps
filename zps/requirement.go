@@ -1,8 +1,8 @@
 package zps
 
 import (
-"fmt"
-"strings"
+	"fmt"
+	"strings"
 )
 
 type Requirement struct {
@@ -190,4 +190,3 @@ func (r *Requirement) String() string {
 	}
 	return ""
 }
-
