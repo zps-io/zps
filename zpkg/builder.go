@@ -1,11 +1,13 @@
 package zpkg
 
 import (
-	"github.com/solvent-io/zps/phase"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/solvent-io/zps/phase"
 
 	"github.com/solvent-io/zps/zps"
 
@@ -201,6 +203,9 @@ func (b *Builder) set() error {
 	if err != nil {
 		return err
 	}
+
+	pkg.Version().Timestamp = time.Now()
+	b.manifest.Zpkg.Version = pkg.Version().String()
 
 	b.filename = pkg.FileName()
 

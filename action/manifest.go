@@ -25,7 +25,7 @@ type Manifest struct {
 }
 
 func NewManifest() *Manifest {
-	return &Manifest{index:make(map[string]int)}
+	return &Manifest{index: make(map[string]int)}
 }
 
 func (m *Manifest) Add(action Action) {
@@ -144,6 +144,8 @@ func (m *Manifest) Actions() Actions {
 
 func (m *Manifest) Validate() error {
 	var actions Actions
+
+	// Ensure there are no duplicate paths present for FS actions
 	actions = m.Section("Dir", "File", "SymLink")
 
 	sort.Sort(actions)

@@ -11,8 +11,8 @@ import (
 type Pkg struct {
 	reqs []*Requirement
 
-	name    string
-	version *Version
+	name      string
+	version   *Version
 	publisher string
 
 	arch        string
@@ -29,8 +29,8 @@ type Pkg struct {
 type JsonPkg struct {
 	Requirements []*JsonRequirement `json:"requirements,omitempty"`
 
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name      string `json:"name"`
+	Version   string `json:"version"`
 	Publisher string `json:"publisher"`
 
 	Arch        string `json:"arch"`
@@ -90,6 +90,8 @@ func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 		return nil, err
 	}
 
+	fmt.Println(version.String())
+
 	pkg.name = zpkg.Name
 	pkg.version = version
 	pkg.publisher = zpkg.Publisher
@@ -133,6 +135,10 @@ func (p *Pkg) Id() string {
 
 func (p *Pkg) Name() string {
 	return p.name
+}
+
+func (p *Pkg) Publisher() string {
+	return p.publisher
 }
 
 func (p *Pkg) Summary() string {
