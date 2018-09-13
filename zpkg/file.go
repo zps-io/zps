@@ -30,6 +30,10 @@ func (z *ZpkgFile) Load(path string) (*ZpkgFile, error) {
 		return nil, err
 	}
 
+	z.ctx = &hcl.EvalContext{
+		Variables: map[string]cty.Value{},
+	}
+
 	return z, nil
 }
 

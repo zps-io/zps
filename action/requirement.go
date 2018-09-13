@@ -8,7 +8,7 @@ type Requirement struct {
 	Name      string `json:"name" hcl:"name,label"`
 	Method    string `json:"method" hcl:"method"`
 	Operation string `json:"operation,omitempty" hcl:"operation"`
-	Version   string `json:"version,omitempty" hcl:"version"`
+	Version   string `json:"version,omitempty" hcl:"version,optional"`
 }
 
 func NewRequirement() *Requirement {
