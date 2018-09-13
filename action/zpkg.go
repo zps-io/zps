@@ -3,6 +3,7 @@ package action
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type Zpkg struct {
@@ -29,6 +30,14 @@ func (z *Zpkg) Id() string {
 
 func (z *Zpkg) Type() string {
 	return "Zpkg"
+}
+
+func (z *Zpkg) Columns() string {
+	return strings.Join([]string{
+		strings.ToUpper(z.Type()),
+		z.Name,
+		z.Arch,
+	}, "|")
 }
 
 func (z *Zpkg) IsValid() bool {

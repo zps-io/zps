@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Requirement struct {
@@ -21,6 +22,16 @@ func (r *Requirement) Key() string {
 
 func (r *Requirement) Type() string {
 	return "Requirement"
+}
+
+func (r *Requirement) Columns() string {
+	return strings.Join([]string{
+		strings.ToUpper(r.Type()),
+		r.Name,
+		r.Method,
+		r.Operation,
+		r.Version,
+	}, "|")
 }
 
 func (r *Requirement) Id() string {

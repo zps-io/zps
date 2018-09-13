@@ -4,6 +4,7 @@ type Action interface {
 	Id() string
 	Key() string
 	Type() string
+	Columns() string
 	Condition() *bool
 	MayFail() bool
 	IsValid() bool

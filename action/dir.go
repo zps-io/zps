@@ -1,6 +1,9 @@
 package action
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Dir struct {
 	Path  string `json:"path" hcl:"path,label"`
@@ -19,6 +22,15 @@ func (d *Dir) Key() string {
 
 func (d *Dir) Type() string {
 	return "Dir"
+}
+
+func (d *Dir) Columns() string {
+	return strings.Join([]string{
+		strings.ToUpper(d.Type()),
+		d.Mode,
+		d.Owner + ":" + d.Group,
+		d.Path,
+	}, "|")
 }
 
 func (d *Dir) Id() string {

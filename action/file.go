@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+	"strings"
 )
 
 type File struct {
@@ -26,6 +27,15 @@ func (f *File) Key() string {
 
 func (f *File) Type() string {
 	return "File"
+}
+
+func (f *File) Columns() string {
+	return strings.Join([]string{
+		strings.ToUpper(f.Type()),
+		f.Mode,
+		f.Owner + ":" + f.Group,
+		f.Path,
+	}, "|")
 }
 
 func (f *File) Id() string {

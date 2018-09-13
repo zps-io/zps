@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+	"strings"
 )
 
 type SymLink struct {
@@ -21,6 +22,15 @@ func (s *SymLink) Key() string {
 
 func (s *SymLink) Type() string {
 	return "SymLink"
+}
+
+func (s *SymLink) Columns() string {
+	return strings.Join([]string{
+		strings.ToUpper(s.Type()),
+		"",
+		s.Owner + ":" + s.Group,
+		s.Path,
+	}, "|")
 }
 
 func (s *SymLink) Id() string {
