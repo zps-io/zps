@@ -24,6 +24,7 @@ func NewZpkgRootCommand() *ZpkgRootCommand {
 
 	cmd.AddCommand(NewZpkgBuildCommand().Command)
 	cmd.AddCommand(NewZpkgContentsCommand().Command)
+	cmd.AddCommand(NewZpkgExtractCommand().Command)
 	cmd.AddCommand(NewZpkgInfoCommand().Command)
 	cmd.AddCommand(NewZpkgManifestCommand().Command)
 
