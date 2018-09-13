@@ -1,10 +1,6 @@
 package commands
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/solvent-io/zps/action"
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/spf13/cobra"
@@ -51,13 +47,7 @@ func (z *ZpkgBuildCommand) run(cmd *cobra.Command, args []string) error {
 
 	builder := zpkg.NewBuilder()
 
-	builder.On("action", func(action action.Action) {
-		z.Info(fmt.Sprintf("Added => %s %s", strings.ToUpper(action.Type()), action.Key()))
-	})
-
-	builder.On("complete", func(filename string) {
-		z.Warn(fmt.Sprint("Wrote => ZPKG ", filename))
-	})
+	SetupEventHandlers(builder, z.Ui)
 
 	builder.ZpfPath(cmd.Flags().Arg(0)).TargetPath(targetPath).WorkPath(workPath).OutputPath(outputPath).Restrict(restrict).Secure(secure)
 

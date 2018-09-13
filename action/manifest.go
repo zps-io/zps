@@ -1,6 +1,6 @@
 package action
 
-// TODO handle overrides (file from Zpkgfile overrides vals from original
+// TODO look into cleaning this up with reflection
 
 import (
 	"encoding/json"
@@ -20,25 +20,59 @@ type Manifest struct {
 	Dirs     []*Dir     `hcl:"Dir,block" json:"dir,omitempty"`
 	Files    []*File    `hcl:"File,block" json:"file,omitempty"`
 	SymLinks []*SymLink `hcl:"SymLink,block" json:"symlink,omitempty"`
+
+	index map[string]int
 }
 
 func NewManifest() *Manifest {
-	return &Manifest{}
+	return &Manifest{index:make(map[string]int)}
 }
 
 func (m *Manifest) Add(action Action) {
+	if len(m.index) == 0 {
+		m.Index()
+	}
+
 	switch action.Type() {
 	case "Tag":
-		m.Tags = append(m.Tags, action.(*Tag))
+		if m.Exists(action) {
+			m.Tags[m.index[action.Id()]] = action.(*Tag)
+		} else {
+			m.Tags = append(m.Tags, action.(*Tag))
+		}
 	case "Requirement":
-		m.Requirements = append(m.Requirements, action.(*Requirement))
+		if m.Exists(action) {
+			m.Requirements[m.index[action.Id()]] = action.(*Requirement)
+		} else {
+			m.Requirements = append(m.Requirements, action.(*Requirement))
+		}
 	case "Dir":
-		m.Dirs = append(m.Dirs, action.(*Dir))
+		if m.Exists(action) {
+			m.Dirs[m.index[action.Id()]] = action.(*Dir)
+		} else {
+			m.Dirs = append(m.Dirs, action.(*Dir))
+		}
 	case "File":
-		m.Files = append(m.Files, action.(*File))
+		if m.Exists(action) {
+			m.Files[m.index[action.Id()]] = action.(*File)
+		} else {
+			m.Files = append(m.Files, action.(*File))
+		}
 	case "SymLink":
-		m.SymLinks = append(m.SymLinks, action.(*SymLink))
+		if m.Exists(action) {
+			m.SymLinks[m.index[action.Id()]] = action.(*SymLink)
+		} else {
+			m.SymLinks = append(m.SymLinks, action.(*SymLink))
+		}
 	}
+}
+
+func (m *Manifest) Exists(action Action) bool {
+	if _, ok := m.index[action.Id()]; ok {
+		return true
+	}
+
+	return false
 }
 
 func (m *Manifest) Section(filters ...string) Actions {
@@ -70,6 +104,28 @@ func (m *Manifest) Section(filters ...string) Actions {
 	}
 
 	return items
+}
+
+func (m *Manifest) Index() {
+	for index, act := range m.Tags {
+		m.index[act.Id()] = index
+	}
+
+	for index, act := range m.Requirements {
+		m.index[act.Id()] = index
+	}
+
+	for index, act := range m.Dirs {
+		m.index[act.Id()] = index
+	}
+
+	for index, act := range m.Files {
+		m.index[act.Id()] = index
+	}
+
+	for index, act := range m.SymLinks {
+		m.index[act.Id()] = index
+	}
 }
 
 func (m *Manifest) Actions() Actions {
@@ -113,5 +169,12 @@ func (m *Manifest) ToJson() string {
 }
 
 func (m *Manifest) Load(manifest string) error {
-	return json.Unmarshal([]byte(manifest), m)
+	err := json.Unmarshal([]byte(manifest), m)
+	if err != nil {
+		return err
+	}
+
+	m.Index()
+
+	return nil
 }

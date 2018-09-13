@@ -13,6 +13,7 @@ type Pkg struct {
 
 	name    string
 	version *Version
+	publisher string
 
 	arch        string
 	os          string
@@ -30,6 +31,7 @@ type JsonPkg struct {
 
 	Name    string `json:"name"`
 	Version string `json:"version"`
+	Publisher string `json:"publisher"`
 
 	Arch        string `json:"arch"`
 	Os          string `json:"os"`
@@ -39,13 +41,13 @@ type JsonPkg struct {
 	Channels []string `json:"channels,omitempty"`
 }
 
-func NewPkg(name string, version string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
+func NewPkg(name string, version string, publisher string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
 	ver := &Version{}
 	err := ver.Parse(version)
 	if err != nil {
 		return nil, err
 	}
-	return &Pkg{reqs, name, ver, arch, os, summary, description, nil, 0, 0}, nil
+	return &Pkg{reqs, name, ver, publisher, arch, os, summary, description, nil, 0, 0}, nil
 }
 
 func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
@@ -59,6 +61,7 @@ func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
 
 	pkg.name = jpkg.Name
 	pkg.version = version
+	pkg.publisher = jpkg.Publisher
 	pkg.arch = jpkg.Arch
 	pkg.os = jpkg.Os
 	pkg.summary = jpkg.Summary
@@ -87,7 +90,10 @@ func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 		return nil, err
 	}
 
+	pkg.name = zpkg.Name
 	pkg.version = version
+	pkg.publisher = zpkg.Publisher
+
 	pkg.arch = zpkg.Arch
 	pkg.os = zpkg.Os
 	pkg.summary = zpkg.Summary

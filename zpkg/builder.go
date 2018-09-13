@@ -1,6 +1,7 @@
 package zpkg
 
 import (
+	"github.com/solvent-io/zps/phase"
 	"os"
 	"path"
 	"path/filepath"
@@ -212,6 +213,7 @@ func (b *Builder) realize() error {
 
 	// Setup context
 	ctx := context.WithValue(context.Background(), "options", b.options)
+	ctx = context.WithValue(ctx, "phase", phase.PACKAGE)
 	ctx = context.WithValue(ctx, "payload", b.payload)
 
 	factory := provider.DefaultFactory(b.Emitter)

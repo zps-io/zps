@@ -51,6 +51,9 @@ func (f *Factory) Get(ac action.Action) Provider {
 
 // Build phase map
 func (f *Factory) On(action string, phase string, call string) *Factory {
+	if f.phaseMap[action] == nil {
+		f.phaseMap[action] = make(map[string]string)
+	}
 	f.phaseMap[action][phase] = call
 
 	return f
