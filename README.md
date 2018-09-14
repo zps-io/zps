@@ -11,7 +11,7 @@ ZPS is a modern binary package management solution created and designed to solve
 - Users should not be exposed to the vulgarities of implementation infrastructure
 - Must support cross platform builds with variable interpolation
 - No invention of custom serialization formats
-- OS support will be limited to OSX, Linux, FreeBS (initially)
+- OS support will be limited to OSX, Linux, FreeBSD (initially)
 - Architecture support will be limited to amd64 (initially) and arm64 (eventually)
 - System state can be modeled as a set of packages
 - A package is composed of a set of actions
