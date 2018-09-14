@@ -1,3 +1,12 @@
+/*
+  HCL2 Zpkfile
+
+  Variables
+
+  Environment:
+    env.ENV_VAR
+*/
+
 Zpkg "testpkg" {
   publisher = "solvent"
   version = "0.0.1"
