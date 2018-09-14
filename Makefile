@@ -72,8 +72,6 @@ deps:
 	go get github.com/chuckpreslar/emission
 	go get github.com/spf13/cobra/cobra
 	go get github.com/mitchellh/colorstring
-	go get github.com/hashicorp/hcl
-	go get github.com/hashicorp/hil
 	go get github.com/hashicorp/hcl2/...
 	go get github.com/hashicorp/go-multierror
 	go get github.com/ryanuber/columnize
@@ -98,17 +96,6 @@ zps: clean deps
 	go build -o dist/usr/bin/zps github.com/solvent-io/zps/cli/zps
 	ln dist/usr/bin/zps dist/usr/bin/zpkg
 #	ln dist/usr/bin/zps dist/usr/bin/zpm
-
-
-illumos: clean deps
-	mkdir -p dist/illumos/etc/zps/image.d
-	mkdir -p dist/illumos/etc/zps/policy.d
-	mkdir -p dist/illumos/etc/zps/repo.d
-	mkdir -p dist/var/cache/zps/repo
-	echo $(CONFIG) >> dist/illumos/etc/zps/config.conf
-	GOOS=solaris go build -o dist/illumos/usr/bin/zps github.com/solvent-io/zps/cmd/zps
-	ln dist/illumos/usr/bin/zps dist/illumos/usr/bin/zpkg
-	ln dist/illumos/usr/bin/zps dist/illumos/usr/bin/zpm
 
 fmt:
 	goimports -w .
