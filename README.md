@@ -21,6 +21,7 @@ ZPS is a modern binary package management solution created and designed to solve
 - A Package system should support multiple roots (install roots)
 - The integrity of a system comprised of packages should be easily cryptographically validated and quickly repaired
 - Images should be comprised of package sets
+- Configuration management is a delivery vehicle for unfinished work (ZPS will handle configuration at install time)
 - The Docker hype machine is the result of extended stagnation in the *NIX package management space
 
 #### Prior Art, and Influences
