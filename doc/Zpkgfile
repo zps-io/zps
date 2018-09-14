@@ -1,10 +1,22 @@
 Zpkg "testpkg" {
   publisher = "solvent"
-  category = "test"
   version = "0.0.1"
   summary = "Zpkg test pkg"
   description = "The long description of the Zpkg test package, that is long, because it needs to be long."
-  os = "darwin"
-  arch = "x86_64"
+  os = "${ env.OS }"
+  arch = "${ env.ARCH }"
 }
 
+Requirement "deppkg" {
+  method = "depends"
+  operation = "ANY"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/solvent-io/testpkg"
+}
+
+File "nacho/bacon/nacho.txt" {
+  mode = "0755"
+  owner = "taco"
+}
