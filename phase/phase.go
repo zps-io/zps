@@ -1,8 +1,9 @@
 package phase
 
 const (
-	INSTALL = "install"
-	REMOVE  = "remove"
-	PACKAGE = "package"
-	NOOP    = "noop"
+	INSTALL   = "install"
+	REMOVE    = "remove"
+	PACKAGE   = "package"
+	CONFIGURE = "configure"
+	NOOP      = "noop"
 )

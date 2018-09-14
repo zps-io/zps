@@ -47,7 +47,7 @@ func (z *ZpkgBuildCommand) run(cmd *cobra.Command, args []string) error {
 
 	builder := zpkg.NewBuilder()
 
-	SetupEventHandlers(builder, z.Ui)
+	SetupEventHandlers(builder.Emitter, z.Ui)
 
 	builder.ZpfPath(cmd.Flags().Arg(0)).TargetPath(targetPath).WorkPath(workPath).OutputPath(outputPath).Restrict(restrict).Secure(secure)
 
