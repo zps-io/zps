@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"github.com/ryanuber/columnize"
-	"github.com/solvent-io/zps/action"
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/spf13/cobra"
@@ -50,8 +49,7 @@ func (z *ZpkgContentsCommand) run(cmd *cobra.Command, args []string) error {
 		z.Fatal(err.Error())
 	}
 
-	var contents action.Actions
-	contents = reader.Manifest.Section("Dir", "SymLink", "File")
+	contents := reader.Manifest.Section("Dir", "SymLink", "File")
 
 	sort.Sort(contents)
 

@@ -11,7 +11,6 @@ import (
 
 	"errors"
 
-	"github.com/solvent-io/zps/action"
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/provider"
 	"github.com/solvent-io/zps/zpkg"
@@ -72,8 +71,7 @@ func (z *ZpkgExtractCommand) run(cmd *cobra.Command, args []string) error {
 	ctx = context.WithValue(ctx, "phase", "install")
 	ctx = context.WithValue(ctx, "options", &provider.Options{TargetPath: extractPath})
 
-	var contents action.Actions
-	contents = reader.Manifest.Section("Dir", "SymLink", "File")
+	contents := reader.Manifest.Section("Dir", "SymLink", "File")
 
 	sort.Sort(contents)
 
