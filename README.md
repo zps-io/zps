@@ -31,4 +31,8 @@ ZPS is a modern binary package management solution created and designed to solve
 - npm
 - pub
 
+#### Current State
+
+M1 refactor is in progress, M1 can be considered a functional prototype. See GH issues for milestone information.
+
 Copyright 2018 Zachary Schneider
