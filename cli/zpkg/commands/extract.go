@@ -1,21 +1,12 @@
 package commands
 
 import (
-	"fmt"
-	"os"
-	"path"
-	"sort"
-	"strings"
-
-	"github.com/chuckpreslar/emission"
-
 	"errors"
+	"os"
 
 	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/provider"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
 )
 
 type ZpkgExtractCommand struct {
@@ -60,30 +51,13 @@ func (z *ZpkgExtractCommand) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	reader := zpkg.NewReader(cmd.Flags().Arg(0), "")
+	manager := zpkg.NewManager()
 
-	err = reader.Read()
+	SetupEventHandlers(manager.Emitter, z.Ui)
+
+	err = manager.Extract(cmd.Flags().Arg(0), extractPath)
 	if err != nil {
 		z.Fatal(err.Error())
-	}
-
-	ctx := context.WithValue(context.Background(), "payload", reader.Payload)
-	ctx = context.WithValue(ctx, "phase", "install")
-	ctx = context.WithValue(ctx, "options", &provider.Options{TargetPath: extractPath})
-
-	contents := reader.Manifest.Section("Dir", "SymLink", "File")
-
-	sort.Sort(contents)
-
-	factory := provider.DefaultFactory(emission.NewEmitter())
-
-	for _, fsObject := range contents {
-		z.Info(fmt.Sprintf("Extracted => %s %s", strings.ToUpper(fsObject.Type()), path.Join(args[1], fsObject.Key())))
-
-		err = factory.Get(fsObject).Realize(ctx)
-		if err != nil {
-			z.Fatal(err.Error())
-		}
 	}
 
 	return err

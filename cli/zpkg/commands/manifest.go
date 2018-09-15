@@ -1,15 +1,11 @@
 package commands
 
 import (
-	"encoding/json"
-
 	"errors"
 
 	"github.com/solvent-io/zps/cli"
 	"github.com/solvent-io/zps/zpkg"
 	"github.com/spf13/cobra"
-
-	"bytes"
 )
 
 type ZpkgManifestCommand struct {
@@ -43,20 +39,16 @@ func (z *ZpkgManifestCommand) run(cmd *cobra.Command, args []string) error {
 		return errors.New("ZPKG Filename required")
 	}
 
-	reader := zpkg.NewReader(cmd.Flags().Arg(0), "")
+	manager := zpkg.NewManager()
 
-	err := reader.Read()
+	SetupEventHandlers(manager.Emitter, z.Ui)
+
+	output, err := manager.Manifest(cmd.Flags().Arg(0))
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	var output bytes.Buffer
-	err = json.Indent(&output, []byte(reader.Manifest.ToJson()), "", "    ")
-	if err != nil {
-		z.Fatal(err.Error())
-	}
-
-	z.Out(output.String())
+	z.Out(output)
 
 	return err
 }

@@ -90,8 +90,6 @@ func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 		return nil, err
 	}
 
-	fmt.Println(version.String())
-
 	pkg.name = zpkg.Name
 	pkg.version = version
 	pkg.publisher = zpkg.Publisher

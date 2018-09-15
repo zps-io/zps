@@ -28,4 +28,8 @@ func SetupEventHandlers(emitter *emission.Emitter, ui *cli.Ui) {
 	emitter.On("builder.complete", func(message string) {
 		ui.Warn(fmt.Sprint("=> ", message))
 	})
+
+	emitter.On("manager.info", func(message string) {
+		ui.Info(message)
+	})
 }

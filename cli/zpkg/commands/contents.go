@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"sort"
-
 	"errors"
 
 	"github.com/ryanuber/columnize"
@@ -42,20 +40,13 @@ func (z *ZpkgContentsCommand) run(cmd *cobra.Command, args []string) error {
 		return errors.New("ZPKG Filename required")
 	}
 
-	reader := zpkg.NewReader(cmd.Flags().Arg(0), "")
+	manager := zpkg.NewManager()
 
-	err := reader.Read()
+	SetupEventHandlers(manager.Emitter, z.Ui)
+
+	output, err := manager.Contents(cmd.Flags().Arg(0))
 	if err != nil {
 		z.Fatal(err.Error())
-	}
-
-	contents := reader.Manifest.Section("Dir", "SymLink", "File")
-
-	sort.Sort(contents)
-
-	var output []string
-	for _, fsObject := range contents {
-		output = append(output, fsObject.Columns())
 	}
 
 	z.Out(columnize.SimpleFormat(output))
