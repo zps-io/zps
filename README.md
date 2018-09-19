@@ -5,10 +5,10 @@ ZPS is a modern binary package management solution created and designed to solve
 
 #### Principles
 
-- It should be easy for developers to create packages for their software
-- It should be easy for developers to publish packages to repositories
-- A package based workflow should support promotion across channels in repositories and rolling upgrades
-- Users should not be exposed to the vulgarities of implementation infrastructure
+- Creating binary software packages should be easy
+- Publishing binary software packages should be easy
+- Repositories should support channels for configurable upgrade workflows
+- Vulgarities of technical implementation should not impact the user
 - Must support cross platform builds with variable interpolation
 - No invention of custom serialization formats
 - OS support will be limited to OSX, Linux, FreeBSD (initially)
@@ -20,15 +20,14 @@ ZPS is a modern binary package management solution created and designed to solve
 - Repositories should support import work flows
 - A Package system should support multiple roots (install roots)
 - The integrity of a system comprised of packages should be easily cryptographically validated and quickly repaired
-- Images should be comprised of package sets
 - Configuration management is a delivery vehicle for unfinished work (ZPS will handle configuration at install time)
 - The Docker hype machine is the result of extended stagnation in the *NIX package management space
 
 #### Prior Art, and Influences
 
 - IPS
-- APT/dpkg
-- Yum/RPM
+- APT/DPKG
+- YUM/RPM
 - npm
 - pub
 

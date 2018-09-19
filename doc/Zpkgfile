@@ -1,10 +1,11 @@
 /*
-  HCL2 Zpkfile
+  HCL2 Zpkgfile
 
-  Variables
+  Variable Namespaces
 
   Environment:
-    env.ENV_VAR
+
+  env.ENV_VAR
 */
 
 Zpkg "testpkg" {
