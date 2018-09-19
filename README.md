@@ -7,7 +7,7 @@ ZPS is a modern binary package management solution created and designed to solve
 
 - Creating binary software packages should be easy
 - Publishing binary software packages should be easy
-- Repositories should support channels for configurable upgrade workflows
+- Repositories should support channels for configurable upgrade work flows
 - Vulgarities of technical implementation should not impact the user
 - Must support cross platform builds with variable interpolation
 - No invention of custom serialization formats
