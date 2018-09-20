@@ -218,7 +218,7 @@ func (p *Pkg) FileName() string {
 	return fmt.Sprintf("%s@%s-%s-%s.zpkg", p.Name(), p.Version().String(), p.Os(), p.Arch())
 }
 
-func (p *Pkg) Json() *JsonPkg {
+func (p *Pkg) ToJson() *JsonPkg {
 	json := &JsonPkg{}
 
 	json.Name = p.name
@@ -231,7 +231,7 @@ func (p *Pkg) Json() *JsonPkg {
 	json.Channels = p.channels
 
 	for index := range p.reqs {
-		json.Requirements = append(json.Requirements, p.reqs[index].Json())
+		json.Requirements = append(json.Requirements, p.reqs[index].ToJson())
 	}
 
 	return json

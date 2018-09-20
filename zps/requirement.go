@@ -162,7 +162,7 @@ func (r *Requirement) OpInt(op string) int {
 	return 3
 }
 
-func (r *Requirement) Json() *JsonRequirement {
+func (r *Requirement) ToJson() *JsonRequirement {
 	json := &JsonRequirement{}
 
 	json.Method = r.Method

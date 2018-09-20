@@ -85,7 +85,8 @@ func (m *Manager) Info(path string) (string, error) {
 		return "", err
 	}
 
-	info := fmt.Sprint("Name: ", pkg.Name(), "\n") +
+	info := fmt.Sprint("Package: ", pkg.Id(), "\n") +
+		fmt.Sprint("Name: ", pkg.Name(), "\n") +
 		fmt.Sprint("Publisher: ", pkg.Publisher(), "\n") +
 		fmt.Sprint("Semver: ", pkg.Version().Semver.String(), "\n") +
 		fmt.Sprint("Timestamp: ", pkg.Version().Timestamp, "\n") +
