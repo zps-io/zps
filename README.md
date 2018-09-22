@@ -1,7 +1,8 @@
 ZPS
 ===
 
-ZPS is a modern binary package management solution created and designed to solve the delivery and design problems of existing solutions.
+ZPS is a modern binary package management solution created and designed to solve the delivery problems encountered
+by teams that execute rapidly.
 
 #### Design
 
