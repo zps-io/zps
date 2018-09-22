@@ -30,6 +30,7 @@ ZPS is a modern binary package management solution created and designed to solve
 - Publishing binary software packages should be easy
 - Vulgarities of technical implementation should not impact the user
 - Configuration management is a delivery vehicle for unfinished work (ZPS will handle configuration at install time)
+- Design and functionality should not be crippled in order to support a zero value business model
 - The Docker hype machine is the result of extended stagnation in the *NIX package management space
 
 #### Prior Art, and Influences
