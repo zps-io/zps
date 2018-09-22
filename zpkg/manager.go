@@ -1,3 +1,13 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright 2018 Zachary Schneider
+ */
+
 package zpkg
 
 import (
@@ -5,13 +15,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/solvent-io/zps/phase"
-	"github.com/solvent-io/zps/zps"
 	fpath "path"
-	"github.com/chuckpreslar/emission"
-	"github.com/solvent-io/zps/provider"
 	"sort"
 	"strings"
+
+	"github.com/chuckpreslar/emission"
+	"github.com/solvent-io/zps/phase"
+	"github.com/solvent-io/zps/provider"
+	"github.com/solvent-io/zps/zps"
 )
 
 type Manager struct {
@@ -53,7 +64,6 @@ func (m *Manager) Extract(path string, target string) error {
 	options := &provider.Options{TargetPath: target}
 	ctx := m.getContext(phase.INSTALL, options)
 	ctx = context.WithValue(ctx, "payload", reader.Payload)
-
 
 	contents := reader.Manifest.Section("Dir", "SymLink", "File")
 	sort.Sort(contents)
