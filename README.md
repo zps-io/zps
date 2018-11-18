@@ -1,8 +1,8 @@
 ZPS
 ===
 
-ZPS is a modern binary package management solution created and designed to solve the delivery problems encountered
-by teams that execute rapidly.
+ZPS is a modern binary package management solution designed to solve the delivery problems encountered
+by teams that execute rapidly as well as the compliance problems of those that rely on the software delivered.
 
 #### Design
 
@@ -19,6 +19,8 @@ by teams that execute rapidly.
 - Repositories are multi-vendor from the start
 - Repositories should support import work flows
 
+- Packages may be automatically added to channels based on defined metadata queries
+
 #### Platform and Architectures
 
 - Architecture support will be limited to amd64 (initially) and arm64 (eventually)
@@ -29,6 +31,7 @@ by teams that execute rapidly.
 
 - Creating binary software packages should be easy
 - Publishing binary software packages should be easy
+- Design should support commercial software subscriptions thereby encouraging vendors to provide binary packages
 - Vulgarities of technical implementation should not impact the user
 - Configuration management is a delivery vehicle for unfinished work (ZPS will handle configuration at install time)
 - Design and functionality should not be crippled in order to support a zero value business model

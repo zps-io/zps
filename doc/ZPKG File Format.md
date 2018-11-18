@@ -17,7 +17,7 @@ manifest length:      uint32                    length of manifest
 
 ### MANIFEST
 
-manifest              bytes[] manifest.length   JSON encoded manifest
+manifest              []byte manifest.length   JSON encoded manifest
 
 ### PAYLOAD
 
