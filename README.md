@@ -44,6 +44,7 @@ by teams that execute rapidly as well as the compliance problems of those that r
 - YUM/RPM
 - npm
 - pub
+- libsolv
 
 #### Current State
 

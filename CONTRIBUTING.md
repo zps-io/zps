@@ -9,5 +9,5 @@ Feel free to submit a pull request. If the submission is in line with our projec
 
 ###New Features or Significant Changes
 
-Please submit a design proposal as a github issue to the project. The proposal must be excepted by the project maintainers
+Please submit a design proposal as a github issue to the project. The proposal must be accepted by the project maintainers
 in order for related code to be accepted.
