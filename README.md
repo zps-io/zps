@@ -52,6 +52,6 @@ M1 refactor is in progress, M1 can be considered a functional prototype. See GH 
 #### Thank You
 
 - HashiCorp and Martin Atkins for HCL2
-- James Nugent and Paul Stack for design validation and morale support
+- James Nugent and Paul Stack for design validation and moral support
 
 Copyright 2019 Zachary Schneider
