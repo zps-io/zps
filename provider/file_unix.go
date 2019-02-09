@@ -65,16 +65,16 @@ func (f *FileUnix) install(ctx context.Context) error {
 	}
 
 	if f.file.Size != 0 {
-		var hash string
+		var digest string
 		var err error
 
-		hash, err = payload.Get(target, int64(f.file.Offset), int64(f.file.Size))
+		digest, err = payload.Get(target, int64(f.file.Offset), int64(f.file.Size))
 		if err != nil {
 			return err
 		}
 
-		if hash != f.file.Hash {
-			return errors.New(fmt.Sprint("checksum does not match manifest for: ", target))
+		if digest != f.file.Digest {
+			return errors.New(fmt.Sprint("digest does not match manifest for: ", target))
 		}
 	} else {
 		file, err := os.Create(target)
@@ -152,11 +152,11 @@ func (f *FileUnix) pkg(ctx context.Context) error {
 
 	// Add to payload
 	if f.file.Size != 0 {
-		f.file.Offset, f.file.Csize, f.file.Hash, err = payload.Put(target)
+		f.file.Offset, f.file.Csize, f.file.Digest, err = payload.Put(target)
 	} else {
 		f.file.Offset = 0
 		f.file.Csize = 0
-		f.file.Hash = ""
+		f.file.Digest = ""
 	}
 
 	return err

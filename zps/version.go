@@ -78,29 +78,29 @@ func (v *Version) Compare(ve *Version) int {
 
 func (v *Version) EQ(ve *Version) bool {
 	compare := v.Compare(ve)
-	return (compare == 0 || compare == 2)
+	return compare == 0 || compare == 2
 }
 
 func (v *Version) EXQ(ve *Version) bool {
-	return (v.Compare(ve) == 2)
+	return v.Compare(ve) == 2
 }
 
 func (v *Version) GT(ve *Version) bool {
-	return (v.Compare(ve) == 1)
+	return v.Compare(ve) == 1
 }
 
 func (v *Version) GTE(ve *Version) bool {
-	return (v.Compare(ve) >= 0)
+	return v.Compare(ve) >= 0
 }
 
 func (v *Version) LT(ve *Version) bool {
-	return (v.Compare(ve) == -1)
+	return v.Compare(ve) == -1
 }
 
 func (v *Version) LTE(ve *Version) bool {
-	return (v.Compare(ve) <= 0)
+	return v.Compare(ve) <= 0
 }
 
 func (v *Version) NEQ(ve *Version) bool {
-	return (v.Compare(ve) != 0)
+	return v.Compare(ve) != 0
 }

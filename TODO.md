@@ -6,7 +6,7 @@ TODO
 Currently in progress. Private code base is being refactored and published to github.
 
 - Rework error handling, ensure all errors are clear, emit what go package raised them, use multi-error handling in config and Zpkgfile parsing
-- Uri handler repository abstraction first type should be file system path
+- Uri handler repository abstraction
 - Static Repositories
 - Proper Transaction Manager
 - Package signing infrastructure
@@ -14,6 +14,7 @@ Currently in progress. Private code base is being refactored and published to gi
 - Dir permissions (we aren't checking for conflicts or solving for multiple dirs in the same package)
 - Action policy configuration and enforcement
 - Create online docs, man pages
+- Create cryptographic verification implementation
 - Complete when ZPS can be safely used as an ancillary (non-root) package manager
 
 ### Testing

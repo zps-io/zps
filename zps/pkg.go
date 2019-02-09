@@ -246,3 +246,11 @@ func (p *Pkg) ToJson() *JsonPkg {
 
 	return json
 }
+
+func (p *Pkg) Columns() string {
+	return strings.Join([]string{
+		p.Name(),
+		p.Summary(),
+		p.Id(),
+	}, "|")
+}

@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2018 Zachary Schneider
+ * Copyright 2019 Zachary Schneider
  */
 
 package commands
@@ -15,25 +15,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ZpmVersionCommand struct {
+type ZpmCacheCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpmVersionCommand() *ZpmVersionCommand {
-	cmd := &ZpmVersionCommand{}
+func NewZpmCacheCommand() *ZpmCacheCommand {
+	cmd := &ZpmCacheCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "version"
-	cmd.Short = "Print the version number of ZPM"
-	cmd.Long = "Print the version number of ZPM"
+	cmd.Use = "cache"
+	cmd.Short = "Work with ZPS image cache"
+	cmd.Long = "Work with ZPS image cache"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
+	cmd.AddCommand(NewZpmCacheCleanCommand().Command)
+	cmd.AddCommand(NewZpmCacheClearCommand().Command)
 	return cmd
 }
 
-func (z *ZpmVersionCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmCacheCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -41,7 +43,7 @@ func (z *ZpmVersionCommand) setup(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (z *ZpmVersionCommand) run(cmd *cobra.Command, args []string) error {
-	z.Out("ZPM v0.1.0")
+func (z *ZpmCacheCommand) run(cmd *cobra.Command, args []string) error {
+	cmd.Help()
 	return nil
 }

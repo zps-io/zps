@@ -90,3 +90,7 @@ func (u *Ui) Yellow(content string) {
 func (u *Ui) Blue(content string) {
 	u.info.Println(u.colorize.Color("[blue]" + content))
 }
+
+func (u *Ui) Red(content string) {
+	u.info.Println(u.colorize.Color("[red]" + content))
+}

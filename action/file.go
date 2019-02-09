@@ -21,7 +21,7 @@ type File struct {
 	Group string `json:"group" hcl:"group,optional"`
 	Mode  string `json:"mode" hcl:"mode,optional"`
 
-	Hash   string `json:"hash"`
+	Digest string `json:"digest"`
 	Offset int    `json:"offset"`
 	Csize  int    `json:"csize"`
 	Size   int    `json:"size"`
