@@ -1,0 +1,17 @@
+Zpkg "nacho" {
+  publisher = "solvent.io"
+  version = "0.1.1"
+  summary = "Zpkg nacho pkg"
+  description = "Nachos for the cool kids"
+  os = "darwin"
+  arch = "x86_64"
+}
+
+Requirement "hodor" {
+  method = "depends"
+  operation = "ANY"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/solvent-io/nacho"
+}

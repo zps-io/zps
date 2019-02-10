@@ -1,0 +1,12 @@
+Zpkg "hodor" {
+  publisher = "solvent.io"
+  version = "0.2.1"
+  summary = "Zpkg hodor pkg"
+  description = "Hold ... the .... door."
+  os = "darwin"
+  arch = "x86_64"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/solvent-io/hodor"
+}

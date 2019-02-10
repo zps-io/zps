@@ -109,7 +109,7 @@ func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
 	pkg.summary = zpkg.Summary
 	pkg.description = zpkg.Description
 
-	for _, raction := range manifest.Section("requirement") {
+	for _, raction := range manifest.Section("Requirement") {
 		req := NewRequirement(raction.(*action.Requirement).Name, nil)
 
 		if raction.(*action.Requirement).Version != "" {

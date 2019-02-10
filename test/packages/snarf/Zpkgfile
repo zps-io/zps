@@ -1,0 +1,17 @@
+Zpkg "snarf" {
+  publisher = "solvent.io"
+  version = "0.1.1"
+  summary = "Zpkg snarf pkg"
+  description = "But Lional! Snarf ... Snarf."
+  os = "darwin"
+  arch = "x86_64"
+}
+
+Requirement "nacho" {
+  method = "depends"
+  operation = "ANY"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/solvent-io/snarf"
+}

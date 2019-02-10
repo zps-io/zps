@@ -1,0 +1,12 @@
+Zpkg "moo" {
+  publisher = "solvent.io"
+  version = "0.1.1"
+  summary = "Zpkg moo pkg"
+  description = "Moo is the epic sound a cow makes because yes"
+  os = "darwin"
+  arch = "x86_64"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/solvent-io/moo"
+}
