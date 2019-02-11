@@ -65,6 +65,8 @@ func (u *UpdatedPolicy) SelectRequest(solvables Solvables) Solvable {
 }
 
 func (u *UpdatedPolicy) SelectSolution(solutions Solutions) *Solution {
+
+
 	solution := solutions[0]
 	return &solution
 }

@@ -155,10 +155,11 @@ func (slice Solutions) Less(i, j int) bool {
 		return true
 	}
 
-	for index, name := range slice[i].Names() {
-		if index+1 == len(slice[i].Names()) {
-			return slice[i].Get(name).Version().LT(slice[j].Get(name).Version())
-		}
+	for _, name := range slice[i].Names() {
+		// TODO ???
+		//if index+1 == len(slice[i].Names()) {
+		//	return slice[i].Get(name).Version().LT(slice[j].Get(name).Version())
+		//}
 
 		if slice[i].Get(name).Version().GT(slice[j].Get(name).Version()) {
 			return true
