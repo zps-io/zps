@@ -112,7 +112,7 @@ func (m *Manager) Contents(pkgName string) ([]string, error) {
 	}
 
 	var contents action.Actions
-	contents = manifest.Section("dir", "symlink", "file")
+	contents = manifest.Section("Dir", "SymLink", "File")
 
 	sort.Sort(contents)
 
