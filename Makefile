@@ -6,11 +6,11 @@ priority = 10
 enabled = true
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/testrepo"
+	uri = "file://$(ROOT_DIR)/test/solvent.io/testrepo"
 }
 
 publish {
-	uri = "file://$(ROOT_DIR)/test/testrepo"
+	uri = "file://$(ROOT_DIR)/test/solvent.io/testrepo"
 	name = "Test Repo"
 	prune = 3
 }
@@ -21,11 +21,11 @@ priority = 10
 enabled = true
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/anotherrepo"
+	uri = "file://$(ROOT_DIR)/test/solvent.io/anotherrepo"
 }
 
 publish {
-	uri = "file://$(ROOT_DIR)/test/anotherrepo"
+	uri = "file://$(ROOT_DIR)/test/solvent.io/anotherrepo"
 	name = "Another Repo"
 	prune = 3
 }
@@ -40,11 +40,11 @@ channels = [
 ]
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/filterrepo"
+	uri = "file://$(ROOT_DIR)/test/solvent.io/filterrepo"
 }
 
 publish {
-	uri = "file://$(ROOT_DIR)/test/filterrepo"
+	uri = "file://$(ROOT_DIR)/test/solvent.io/filterrepo"
 	name = "Filtered Repo"
 	prune = 3
 }

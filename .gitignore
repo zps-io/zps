@@ -5,9 +5,7 @@ dist/
 extract/
 test/extract
 test/proto
-test/testrepo
-test/anotherrepo
-test/filterrepo
+test/solvent.io
 sat/
 *.iml
 .idea/
