@@ -12,6 +12,11 @@ Requirement "nacho" {
   operation = "ANY"
 }
 
+Requirement "moo" {
+  method = "depends"
+  operation = "ANY"
+}
+
 Tag "zps.vcs.uri" {
   value = "https://github.com/solvent-io/snarf"
 }

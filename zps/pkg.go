@@ -234,6 +234,8 @@ func (p *Pkg) ToJson() *JsonPkg {
 	json.Name = p.name
 	json.Version = p.version.String()
 
+	json.Publisher = p.publisher
+
 	json.Arch = p.arch
 	json.Os = p.os
 	json.Description = p.description
