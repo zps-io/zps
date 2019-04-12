@@ -5,7 +5,7 @@ dist/
 extract/
 test/extract
 test/proto
-test/solvent.io
+test/fezz.io
 sat/
 *.iml
 .idea/
