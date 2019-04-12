@@ -14,8 +14,8 @@ import (
 	"os"
 	"path"
 
-	zpkgcmds "github.com/solvent-io/zps/cli/zpkg/commands"
-	zpmcmds "github.com/solvent-io/zps/cli/zpm/commands"
+	zpkgcmds "github.com/fezz-io/zps/cli/zpkg/commands"
+	zpmcmds "github.com/fezz-io/zps/cli/zpm/commands"
 )
 
 func main() {

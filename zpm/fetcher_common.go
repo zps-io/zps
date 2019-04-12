@@ -13,7 +13,7 @@ package zpm
 import (
 	"net/url"
 
-	"github.com/solvent-io/zps/zps"
+	"github.com/fezz-io/zps/zps"
 )
 
 type Fetcher interface {

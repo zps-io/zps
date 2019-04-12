@@ -24,8 +24,8 @@ import (
 	"context"
 
 	"github.com/naegelejd/go-acl/os/group"
-	"github.com/solvent-io/zps/action"
-	zpayload "github.com/solvent-io/zps/zpkg/payload"
+	"github.com/fezz-io/zps/action"
+	zpayload "github.com/fezz-io/zps/zpkg/payload"
 )
 
 type FileUnix struct {

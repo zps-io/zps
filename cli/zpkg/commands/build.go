@@ -11,8 +11,8 @@
 package commands
 
 import (
-	"github.com/solvent-io/zps/cli"
-	"github.com/solvent-io/zps/zpkg"
+	"github.com/fezz-io/zps/cli"
+	"github.com/fezz-io/zps/zpkg"
 	"github.com/spf13/cobra"
 )
 

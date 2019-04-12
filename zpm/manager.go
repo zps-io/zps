@@ -21,14 +21,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solvent-io/zps/action"
-	"github.com/solvent-io/zps/phase"
-	"github.com/solvent-io/zps/zpkg"
-	"github.com/solvent-io/zps/zps"
+	"github.com/fezz-io/zps/action"
+	"github.com/fezz-io/zps/phase"
+	"github.com/fezz-io/zps/zpkg"
+	"github.com/fezz-io/zps/zps"
 
 	"github.com/chuckpreslar/emission"
 	"github.com/nightlyone/lockfile"
-	"github.com/solvent-io/zps/config"
+	"github.com/fezz-io/zps/config"
 )
 
 type Manager struct {

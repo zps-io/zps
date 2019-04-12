@@ -6,11 +6,11 @@ priority = 10
 enabled = true
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/solvent.io/testrepo"
+	uri = "file://$(ROOT_DIR)/test/fezz.io/testrepo"
 }
 
 publish {
-	uri = "file://$(ROOT_DIR)/test/solvent.io/testrepo"
+	uri = "file://$(ROOT_DIR)/test/fezz.io/testrepo"
 	name = "Test Repo"
 	prune = 3
 }
@@ -21,11 +21,11 @@ priority = 10
 enabled = true
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/solvent.io/anotherrepo"
+	uri = "file://$(ROOT_DIR)/test/fezz.io/anotherrepo"
 }
 
 publish {
-	uri = "file://$(ROOT_DIR)/test/solvent.io/anotherrepo"
+	uri = "file://$(ROOT_DIR)/test/fezz.io/anotherrepo"
 	name = "Another Repo"
 	prune = 3
 }
@@ -40,11 +40,11 @@ channels = [
 ]
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/solvent.io/filterrepo"
+	uri = "file://$(ROOT_DIR)/test/fezz.io/filterrepo"
 }
 
 publish {
-	uri = "file://$(ROOT_DIR)/test/solvent.io/filterrepo"
+	uri = "file://$(ROOT_DIR)/test/fezz.io/filterrepo"
 	name = "Filtered Repo"
 	prune = 3
 }
@@ -76,7 +76,7 @@ deps:
 	go get github.com/hashicorp/go-multierror
 	go get github.com/ryanuber/columnize
 	go get github.com/blang/semver
-	go get github.com/solvent-io/sat
+	go get github.com/fezz-io/sat
 	go get gonum.org/v1/gonum/graph
 	go get github.com/asdine/storm
 	go get github.com/segmentio/ksuid
@@ -93,7 +93,7 @@ zps: clean deps
 	echo "$$REPO_A" > dist/etc/zps/repo.d/testrepo.conf
 	echo "$$REPO_B" > dist/etc/zps/repo.d/anotherrepo.conf
 	echo "$$REPO_F" > dist/etc/zps/repo.d/filteredrepo.conf
-	go build -o dist/usr/bin/zps github.com/solvent-io/zps/cli/zps
+	go build -o dist/usr/bin/zps github.com/fezz-io/zps/cli/zps
 	ln dist/usr/bin/zps dist/usr/bin/zpkg
 	ln dist/usr/bin/zps dist/usr/bin/zpm
 

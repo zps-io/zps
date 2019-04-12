@@ -1,0 +1,1 @@
+{"updated":"20190210T214027Z","packages":[{"requirements":[{"name":"nacho","method":"depends","operation":"ANY"}],"name":"fred","version":"0.1.1:20190210T214017Z","publisher":"","arch":"any","os":"darwin","summary":"Zpkg fred pkg","description":"Fred? Fred's dead baby."}]}

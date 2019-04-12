@@ -12,9 +12,9 @@ package commands
 
 import (
 	"github.com/ryanuber/columnize"
-	"github.com/solvent-io/zps/cli"
+	"github.com/fezz-io/zps/cli"
 
-	"github.com/solvent-io/zps/zpm"
+	"github.com/fezz-io/zps/zpm"
 
 	"errors"
 

@@ -14,7 +14,7 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/solvent-io/sat"
+	"github.com/fezz-io/sat"
 	//"github.com/davecgh/go-spew/spew"
 )
 

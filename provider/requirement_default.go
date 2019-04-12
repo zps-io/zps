@@ -15,7 +15,7 @@ import (
 	"fmt"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/solvent-io/zps/action"
+	"github.com/fezz-io/zps/action"
 )
 
 type RequirementDefault struct {

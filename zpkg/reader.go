@@ -19,8 +19,8 @@ import (
 
 	"github.com/dsnet/compress/bzip2"
 	"github.com/lunixbochs/struc"
-	"github.com/solvent-io/zps/action"
-	"github.com/solvent-io/zps/zpkg/payload"
+	"github.com/fezz-io/zps/action"
+	"github.com/fezz-io/zps/zpkg/payload"
 )
 
 type Reader struct {

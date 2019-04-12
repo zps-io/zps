@@ -24,7 +24,7 @@ import (
 	"context"
 
 	"github.com/naegelejd/go-acl/os/group"
-	"github.com/solvent-io/zps/action"
+	"github.com/fezz-io/zps/action"
 )
 
 type DirUnix struct {
