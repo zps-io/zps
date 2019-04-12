@@ -1,5 +1,5 @@
 Zpkg "snarf" {
-  publisher = "solvent.io"
+  publisher = "fezz.io"
   version = "0.1.1"
   summary = "Zpkg snarf pkg"
   description = "But Lional! Snarf ... Snarf."
@@ -18,5 +18,5 @@ Requirement "moo" {
 }
 
 Tag "zps.vcs.uri" {
-  value = "https://github.com/solvent-io/snarf"
+  value = "https://github.com/fezz-io/snarf"
 }

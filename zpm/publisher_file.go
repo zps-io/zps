@@ -23,8 +23,8 @@ import (
 
 	"github.com/chuckpreslar/emission"
 	"github.com/nightlyone/lockfile"
-	"github.com/solvent-io/zps/zpkg"
-	"github.com/solvent-io/zps/zps"
+	"github.com/fezz-io/zps/zpkg"
+	"github.com/fezz-io/zps/zps"
 )
 
 type FilePublisher struct {

@@ -17,7 +17,7 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/coreos/bbolt"
-	"github.com/solvent-io/zps/action"
+	"github.com/fezz-io/zps/action"
 )
 
 type State struct {

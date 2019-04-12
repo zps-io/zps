@@ -16,7 +16,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/solvent-io/zps/zps"
+	"github.com/fezz-io/zps/zps"
 )
 
 type LocalFetcher struct {

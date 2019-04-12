@@ -13,10 +13,10 @@ package provider
 import (
 	"context"
 
-	"github.com/solvent-io/zps/phase"
+	"github.com/fezz-io/zps/phase"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/solvent-io/zps/action"
+	"github.com/fezz-io/zps/action"
 )
 
 type Provider interface {

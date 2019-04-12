@@ -15,7 +15,7 @@ import (
 
 	"github.com/chuckpreslar/emission"
 
-	"github.com/solvent-io/zps/cli"
+	"github.com/fezz-io/zps/cli"
 )
 
 func SetupEventHandlers(emitter *emission.Emitter, ui *cli.Ui) {

@@ -1,5 +1,5 @@
 Zpkg "hodor" {
-  publisher = "solvent.io"
+  publisher = "fezz.io"
   version = "0.2.1"
   summary = "Zpkg hodor pkg"
   description = "Hold ... the .... door."
@@ -8,5 +8,5 @@ Zpkg "hodor" {
 }
 
 Tag "zps.vcs.uri" {
-  value = "https://github.com/solvent-io/hodor"
+  value = "https://github.com/fezz-io/hodor"
 }
