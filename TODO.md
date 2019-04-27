@@ -3,7 +3,7 @@ TODO
 
 ### Milestone 1
 
-Currently in progress. Private code base is being refactored and published to github.
+Currently in progress.
 
 - Rework error handling, ensure all errors are clear, emit what go package raised them, use multi-error handling in config and Zpkgfile parsing
 - Uri handler repository abstraction

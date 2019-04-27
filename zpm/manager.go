@@ -378,10 +378,12 @@ func (m *Manager) Refresh() error {
 		err = fe.Refresh()
 		if err == nil {
 			m.Emit("manager.refresh", fmt.Sprint("refreshed: ", r.Fetch.Uri.String()))
+		} else {
+			m.Emit("manager.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (m *Manager) Remove(args []string) error {
@@ -458,21 +460,16 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
 			for _, osarch := range osArches {
-				packagesfile := m.cache.GetPackages(osarch.String(), repo.Fetch.Uri.String())
+				metafile := m.cache.GetMeta(osarch.String(), repo.Fetch.Uri.String())
 				repo := &zps.Repo{}
 
-				pkgsbytes, err := ioutil.ReadFile(packagesfile)
+				metadata := NewMetadata(metafile)
 
-				if err == nil {
-					err = repo.Load(pkgsbytes)
-					if err != nil {
-						return nil, err
-					}
-				} else if !os.IsNotExist(err) {
+				meta, err := metadata.All()
+				if err != nil {
 					return nil, err
-				} else if os.IsNotExist(err) {
-					continue
 				}
+				repo.Load(meta)
 
 				for _, pkg := range repo.Solvables() {
 					contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Id()}, "|"))
@@ -710,23 +707,24 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 
 	for _, r := range m.config.Repos {
 		if r.Enabled == true {
+			if !m.cache.HasMeta(r.Fetch.Uri.String()) {
+				m.Emit("warn", fmt.Sprint("missing metadata: %s", r.Fetch.Uri))
+				continue
+			}
+
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
 			for _, osarch := range osArches {
 				repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, r.Channels, []zps.Solvable{})
-				packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
-				pkgsbytes, err := ioutil.ReadFile(packagesfile)
+				metafile := m.cache.GetMeta(osarch.String(), r.Fetch.Uri.String())
 
-				if err == nil {
-					err = repo.Load(pkgsbytes)
-					if err != nil {
-						return nil, err
-					}
-				} else if !os.IsNotExist(err) {
+				metadata := NewMetadata(metafile)
+
+				meta, err := metadata.All()
+				if err != nil && !strings.Contains(err.Error(), "no such file") {
 					return nil, err
-				} else if os.IsNotExist(err) {
-					continue
 				}
+				repo.Load(meta)
 
 				repos = append(repos, repo)
 			}
