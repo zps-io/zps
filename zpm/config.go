@@ -11,18 +11,18 @@
 package zpm
 
 import (
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/coreos/bbolt"
-	"path/filepath"
-	"time"
 )
 
 type Config struct {
-	Path         string
+	Path string
 }
 
 type ConfigEntry struct {
-	Key string `storm:"id"`
+	Key   string `storm:"id"`
 	Value string
 }
 
@@ -33,12 +33,31 @@ func NewConfig(path string) *Config {
 }
 
 func (c *Config) getDb() (*storm.DB, error) {
-	db, err := storm.Open(filepath.Join(c.Path, "config.db"), storm.BoltOptions(0600, &bolt.Options{Timeout: 10 * time.Second}))
+	db, err := storm.Open(c.Path, storm.BoltOptions(0600, &bolt.Options{Timeout: 10 * time.Second}))
 	if err != nil {
 		return nil, err
 	}
 
 	return db, nil
+}
+
+func (c *Config) All() (map[string]string, error) {
+	db, err := c.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*ConfigEntry
+	config := make(map[string]string)
+
+	err = db.All(&entries)
+
+	for _, entry := range entries {
+		config[entry.Key] = entry.Value
+	}
+
+	return config, nil
 }
 
 func (c *Config) Get(key string) (string, error) {
@@ -74,5 +93,3 @@ func (m *Config) Set(key string, value string) error {
 	err = db.Save(entry)
 	return err
 }
-
-

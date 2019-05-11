@@ -38,7 +38,7 @@ func (s *Solver) Solve(request *Request) (*Solution, error) {
 	s.solutions = nil
 
 	s.addClauses()
-	
+
 	satisfiable, s.satSolutions = s.solver.Satisfiable()
 	if satisfiable == false {
 		return nil, errors.New("zps.solver: No solution for requested jobs")

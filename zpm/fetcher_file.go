@@ -17,8 +17,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nightlyone/lockfile"
 	"github.com/fezz-io/zps/zps"
+	"github.com/nightlyone/lockfile"
 )
 
 type FileFetcher struct {

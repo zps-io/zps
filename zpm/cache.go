@@ -37,7 +37,7 @@ func (c *Cache) Exists(name string) bool {
 }
 
 func (c *Cache) HasMeta(uri string) bool {
-	files, err := filepath.Glob(filepath.Join(c.path, c.getId(uri)))
+	files, err := filepath.Glob(filepath.Join(c.path, c.getId(uri)+"*.db"))
 	if err != nil {
 		return false
 	}

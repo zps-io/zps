@@ -17,9 +17,9 @@ import (
 	"os"
 
 	"github.com/dsnet/compress/bzip2"
-	"github.com/lunixbochs/struc"
 	"github.com/fezz-io/zps/action"
 	"github.com/fezz-io/zps/zpkg/payload"
+	"github.com/lunixbochs/struc"
 )
 
 type Writer struct{}

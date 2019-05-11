@@ -99,7 +99,7 @@ func (r *Repo) Prune(count int) (Solvables, error) {
 	return pruned, nil
 }
 
-func (r *Repo) Load(pkgs []*Pkg)  {
+func (r *Repo) Load(pkgs []*Pkg) {
 
 	for _, pkg := range pkgs {
 		r.solvables = append(r.solvables, pkg)

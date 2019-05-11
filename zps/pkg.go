@@ -37,7 +37,7 @@ type Pkg struct {
 }
 
 type PkgEntry struct {
-	Id     string `storm:"id"`
+	Id string `storm:"id"`
 
 	Requirements []*Requirement
 

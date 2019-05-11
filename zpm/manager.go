@@ -11,10 +11,8 @@
 package zpm
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -27,8 +25,8 @@ import (
 	"github.com/fezz-io/zps/zps"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/nightlyone/lockfile"
 	"github.com/fezz-io/zps/config"
+	"github.com/nightlyone/lockfile"
 )
 
 type Manager struct {
@@ -450,9 +448,9 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 
 	for _, repo := range m.config.Repos {
 
-		repoConfig, err := m.repoConfig(repo.Fetch.Uri.String())
-		if err != nil {
-			return nil, err
+		repoConfig, _ := m.repoConfig(repo.Fetch.Uri.String())
+		if repoConfig == nil {
+			continue
 		}
 
 		if name == repoConfig["name"] && repo.Fetch.Uri != nil {
@@ -461,6 +459,7 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 
 			for _, osarch := range osArches {
 				metafile := m.cache.GetMeta(osarch.String(), repo.Fetch.Uri.String())
+
 				repo := &zps.Repo{}
 
 				metadata := NewMetadata(metafile)
@@ -708,7 +707,7 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 	for _, r := range m.config.Repos {
 		if r.Enabled == true {
 			if !m.cache.HasMeta(r.Fetch.Uri.String()) {
-				m.Emit("warn", fmt.Sprint("missing metadata: %s", r.Fetch.Uri))
+				m.Emit("manager.warn", fmt.Sprintf("missing metadata: %s", r.Fetch.Uri))
 				continue
 			}
 
@@ -750,19 +749,20 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 }
 
 func (m *Manager) repoConfig(uri string) (map[string]string, error) {
-	configs := make(map[string]string)
-	configfile := m.cache.GetConfig(uri)
+	configPath := m.cache.GetConfig(uri)
 
-	configbytes, err := ioutil.ReadFile(configfile)
-	if err != nil {
+	if !m.cache.Exists(filepath.Base(configPath)) {
 		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
-	err = json.Unmarshal(configbytes, &configs)
+	configDb := NewConfig(configPath)
+
+	config, err := configDb.All()
 	if err != nil {
 		return nil, err
 	}
-	return configs, nil
+
+	return config, nil
 }
 
 func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {

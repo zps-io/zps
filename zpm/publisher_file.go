@@ -16,11 +16,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"io"
+
 	"github.com/chuckpreslar/emission"
 	"github.com/fezz-io/zps/zpkg"
 	"github.com/fezz-io/zps/zps"
 	"github.com/nightlyone/lockfile"
-	"io"
 )
 
 type FilePublisher struct {
@@ -133,7 +134,7 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
 	var err error
 
-	metapath := filepath.Join(f.uri.Path, osarch.String())
+	metapath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
 	repo := &zps.Repo{}
 
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
@@ -238,7 +239,7 @@ func (f *FilePublisher) upload(file string, dest string) error {
 
 // Temporary
 func (f *FilePublisher) configure() error {
-	config := NewConfig(f.uri.Path)
+	config := NewConfig(f.uri.Path + "config.db")
 
 	return config.Set("name", f.name)
 }

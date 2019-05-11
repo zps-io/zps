@@ -11,20 +11,20 @@
 package zpm
 
 import (
+	"os"
+	"sort"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/coreos/bbolt"
 	"github.com/fezz-io/zps/zps"
-	"os"
-	"path/filepath"
-	"sort"
-	"time"
 )
 
 type Metadata struct {
-	Path         string
-	Packages     *MetadataPackages
-	Channels     *MetadataChannels
-	Updates      *MetadataUpdates
+	Path     string
+	Packages *MetadataPackages
+	Channels *MetadataChannels
+	Updates  *MetadataUpdates
 }
 
 type MetadataPackages struct {
@@ -52,7 +52,7 @@ func NewMetadata(path string) *Metadata {
 }
 
 func (m *Metadata) getDb() (*storm.DB, error) {
-	db, err := storm.Open(filepath.Join(m.Path, "metadata.db"), storm.BoltOptions(0600, &bolt.Options{Timeout: 10 * time.Second}))
+	db, err := storm.Open(m.Path, storm.BoltOptions(0600, &bolt.Options{Timeout: 10 * time.Second}))
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (m *Metadata) All() ([]*zps.Pkg, error) {
 }
 
 func (m *Metadata) Empty() error {
-	return os.RemoveAll(filepath.Join(m.Path, "metadata.db"))
+	return os.RemoveAll(m.Path)
 }
 
 func (m *Metadata) Get(name string) ([]*zps.Pkg, error) {

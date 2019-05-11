@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/segmentio/ksuid"
 	"github.com/fezz-io/zps/action"
 	"github.com/fezz-io/zps/provider"
 	"github.com/fezz-io/zps/zpkg"
 	"github.com/fezz-io/zps/zps"
+	"github.com/segmentio/ksuid"
 	"golang.org/x/net/context"
 )
 
