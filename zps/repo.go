@@ -11,7 +11,6 @@
 package zps
 
 import (
-	"encoding/json"
 	"sort"
 	"time"
 )
@@ -28,11 +27,6 @@ type Repo struct {
 }
 
 type Repos []*Repo
-
-type JsonRepo struct {
-	Updated  string     `json:"updated"`
-	Packages []*JsonPkg `json:"packages"`
-}
 
 func NewRepo(uri string, priority int, enabled bool, channels []string, solvables Solvables) *Repo {
 	repo := &Repo{Uri: uri, Priority: priority, Enabled: enabled, channels: make(map[string]bool), solvables: solvables}
@@ -105,27 +99,13 @@ func (r *Repo) Prune(count int) (Solvables, error) {
 	return pruned, nil
 }
 
-func (r *Repo) Load(bytes []byte) error {
-	meta := &JsonRepo{}
-	err := json.Unmarshal(bytes, meta)
+func (r *Repo) Load(pkgs []*Pkg) {
 
-	for _, jpkg := range meta.Packages {
-		pkg, err := NewPkgFromJson(jpkg)
-		if err != nil {
-			return err
-		}
-
+	for _, pkg := range pkgs {
 		r.solvables = append(r.solvables, pkg)
 	}
 
-	r.Updated, err = time.Parse("20060102T150405Z", meta.Updated)
-	if err != nil {
-		return err
-	}
-
 	r.Index()
-
-	return err
 }
 
 func (r *Repo) Solvables() Solvables {
@@ -145,22 +125,6 @@ func (r *Repo) Solvables() Solvables {
 	}
 
 	return r.solvables
-}
-
-func (r *Repo) Json() ([]byte, error) {
-	jsonMeta := &JsonRepo{}
-	jsonMeta.Updated = time.Now().Format("20060102T150405Z")
-
-	for _, pkg := range r.solvables {
-		jsonMeta.Packages = append(jsonMeta.Packages, pkg.(*Pkg).ToJson())
-	}
-
-	result, err := json.Marshal(jsonMeta)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
 
 func (slice Repos) Len() int {

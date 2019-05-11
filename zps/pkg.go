@@ -36,19 +36,21 @@ type Pkg struct {
 	priority int
 }
 
-type JsonPkg struct {
-	Requirements []*JsonRequirement `json:"requirements,omitempty"`
+type PkgEntry struct {
+	Id string `storm:"id"`
 
-	Name      string `json:"name"`
-	Version   string `json:"version"`
-	Publisher string `json:"publisher"`
+	Requirements []*Requirement
 
-	Arch        string `json:"arch"`
-	Os          string `json:"os"`
-	Summary     string `json:"summary"`
-	Description string `json:"description"`
+	Name      string
+	Version   *Version
+	Publisher string
 
-	Channels []string `json:"channels,omitempty"`
+	Arch        string
+	Os          string
+	Summary     string
+	Description string
+
+	Channels []string
 }
 
 func NewPkg(name string, version string, publisher string, reqs []*Requirement, arch string, os string, summary string, description string) (*Pkg, error) {
@@ -58,36 +60,6 @@ func NewPkg(name string, version string, publisher string, reqs []*Requirement, 
 		return nil, err
 	}
 	return &Pkg{reqs, name, ver, publisher, arch, os, summary, description, nil, 0, 0}, nil
-}
-
-func NewPkgFromJson(jpkg *JsonPkg) (*Pkg, error) {
-	pkg := &Pkg{}
-
-	version := &Version{}
-	err := version.Parse(jpkg.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	pkg.name = jpkg.Name
-	pkg.version = version
-	pkg.publisher = jpkg.Publisher
-	pkg.arch = jpkg.Arch
-	pkg.os = jpkg.Os
-	pkg.summary = jpkg.Summary
-	pkg.description = jpkg.Description
-	pkg.channels = jpkg.Channels
-
-	for _, jreq := range jpkg.Requirements {
-		req, err := NewRequirementFromJson(jreq)
-		if err != nil {
-			return nil, err
-		}
-
-		pkg.reqs = append(pkg.reqs, req)
-	}
-
-	return pkg, nil
 }
 
 func NewPkgFromManifest(manifest *action.Manifest) (*Pkg, error) {
@@ -228,31 +200,39 @@ func (p *Pkg) FileName() string {
 	return fmt.Sprintf("%s@%s-%s-%s.zpkg", p.Name(), p.Version().String(), p.Os(), p.Arch())
 }
 
-func (p *Pkg) ToJson() *JsonPkg {
-	json := &JsonPkg{}
-
-	json.Name = p.name
-	json.Version = p.version.String()
-
-	json.Publisher = p.publisher
-
-	json.Arch = p.arch
-	json.Os = p.os
-	json.Description = p.description
-	json.Summary = p.summary
-	json.Channels = p.channels
-
-	for index := range p.reqs {
-		json.Requirements = append(json.Requirements, p.reqs[index].ToJson())
-	}
-
-	return json
-}
-
 func (p *Pkg) Columns() string {
 	return strings.Join([]string{
 		p.Name(),
 		p.Summary(),
 		p.Id(),
 	}, "|")
+}
+
+func (p *Pkg) ToEntry() *PkgEntry {
+	return &PkgEntry{
+		Id:           p.Id(),
+		Requirements: p.Requirements(),
+		Name:         p.Name(),
+		Version:      p.Version(),
+		Publisher:    p.Publisher(),
+		Arch:         p.Arch(),
+		Os:           p.Os(),
+		Summary:      p.Summary(),
+		Description:  p.Description(),
+		Channels:     p.Channels(),
+	}
+}
+
+func (p *PkgEntry) ToPkg() *Pkg {
+	return &Pkg{
+		reqs:        p.Requirements,
+		name:        p.Name,
+		version:     p.Version,
+		publisher:   p.Publisher,
+		arch:        p.Arch,
+		os:          p.Os,
+		summary:     p.Summary,
+		description: p.Description,
+		channels:    p.Channels,
+	}
 }

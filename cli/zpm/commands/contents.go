@@ -11,8 +11,8 @@
 package commands
 
 import (
-	"github.com/ryanuber/columnize"
 	"github.com/fezz-io/zps/cli"
+	"github.com/ryanuber/columnize"
 
 	"github.com/fezz-io/zps/zpm"
 

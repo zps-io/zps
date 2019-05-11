@@ -13,9 +13,9 @@ package commands
 import (
 	"errors"
 
-	"github.com/ryanuber/columnize"
 	"github.com/fezz-io/zps/cli"
 	"github.com/fezz-io/zps/zpm"
+	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 )
 

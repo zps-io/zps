@@ -11,10 +11,8 @@
 package zpm
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -27,8 +25,8 @@ import (
 	"github.com/fezz-io/zps/zps"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/nightlyone/lockfile"
 	"github.com/fezz-io/zps/config"
+	"github.com/nightlyone/lockfile"
 )
 
 type Manager struct {
@@ -378,10 +376,12 @@ func (m *Manager) Refresh() error {
 		err = fe.Refresh()
 		if err == nil {
 			m.Emit("manager.refresh", fmt.Sprint("refreshed: ", r.Fetch.Uri.String()))
+		} else {
+			m.Emit("manager.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (m *Manager) Remove(args []string) error {
@@ -448,9 +448,9 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 
 	for _, repo := range m.config.Repos {
 
-		repoConfig, err := m.repoConfig(repo.Fetch.Uri.String())
-		if err != nil {
-			return nil, err
+		repoConfig, _ := m.repoConfig(repo.Fetch.Uri.String())
+		if repoConfig == nil {
+			continue
 		}
 
 		if name == repoConfig["name"] && repo.Fetch.Uri != nil {
@@ -458,21 +458,17 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
 			for _, osarch := range osArches {
-				packagesfile := m.cache.GetPackages(osarch.String(), repo.Fetch.Uri.String())
+				metafile := m.cache.GetMeta(osarch.String(), repo.Fetch.Uri.String())
+
 				repo := &zps.Repo{}
 
-				pkgsbytes, err := ioutil.ReadFile(packagesfile)
+				metadata := NewMetadata(metafile)
 
-				if err == nil {
-					err = repo.Load(pkgsbytes)
-					if err != nil {
-						return nil, err
-					}
-				} else if !os.IsNotExist(err) {
+				meta, err := metadata.All()
+				if err != nil {
 					return nil, err
-				} else if os.IsNotExist(err) {
-					continue
 				}
+				repo.Load(meta)
 
 				for _, pkg := range repo.Solvables() {
 					contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Id()}, "|"))
@@ -710,23 +706,24 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 
 	for _, r := range m.config.Repos {
 		if r.Enabled == true {
+			if !m.cache.HasMeta(r.Fetch.Uri.String()) {
+				m.Emit("manager.warn", fmt.Sprintf("missing metadata: %s", r.Fetch.Uri))
+				continue
+			}
+
 			osArches := zps.ExpandOsArch(&zps.OsArch{m.config.CurrentImage.Os, m.config.CurrentImage.Arch})
 
 			for _, osarch := range osArches {
 				repo := zps.NewRepo(r.Fetch.Uri.String(), r.Priority, r.Enabled, r.Channels, []zps.Solvable{})
-				packagesfile := m.cache.GetPackages(osarch.String(), r.Fetch.Uri.String())
-				pkgsbytes, err := ioutil.ReadFile(packagesfile)
+				metafile := m.cache.GetMeta(osarch.String(), r.Fetch.Uri.String())
 
-				if err == nil {
-					err = repo.Load(pkgsbytes)
-					if err != nil {
-						return nil, err
-					}
-				} else if !os.IsNotExist(err) {
+				metadata := NewMetadata(metafile)
+
+				meta, err := metadata.All()
+				if err != nil && !strings.Contains(err.Error(), "no such file") {
 					return nil, err
-				} else if os.IsNotExist(err) {
-					continue
 				}
+				repo.Load(meta)
 
 				repos = append(repos, repo)
 			}
@@ -752,19 +749,20 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 }
 
 func (m *Manager) repoConfig(uri string) (map[string]string, error) {
-	configs := make(map[string]string)
-	configfile := m.cache.GetConfig(uri)
+	configPath := m.cache.GetConfig(uri)
 
-	configbytes, err := ioutil.ReadFile(configfile)
-	if err != nil {
+	if !m.cache.Exists(filepath.Base(configPath)) {
 		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
-	err = json.Unmarshal(configbytes, &configs)
+	configDb := NewConfig(configPath)
+
+	config, err := configDb.All()
 	if err != nil {
 		return nil, err
 	}
-	return configs, nil
+
+	return config, nil
 }
 
 func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {

@@ -23,8 +23,8 @@ import (
 
 	"context"
 
-	"github.com/naegelejd/go-acl/os/group"
 	"github.com/fezz-io/zps/action"
+	"github.com/naegelejd/go-acl/os/group"
 )
 
 type DirUnix struct {

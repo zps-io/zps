@@ -36,12 +36,25 @@ func (c *Cache) Exists(name string) bool {
 	return true
 }
 
-func (c *Cache) GetConfig(uri string) string {
-	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), ".config.json"))
+func (c *Cache) HasMeta(uri string) bool {
+	files, err := filepath.Glob(filepath.Join(c.path, c.getId(uri)+"*.db"))
+	if err != nil {
+		return false
+	}
+
+	if len(files) > 0 {
+		return true
+	}
+
+	return false
 }
 
-func (c *Cache) GetPackages(osarch string, uri string) string {
-	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), "-", osarch, ".packages.json"))
+func (c *Cache) GetConfig(uri string) string {
+	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), ".config.db"))
+}
+
+func (c *Cache) GetMeta(osarch string, uri string) string {
+	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), "-", osarch, ".metadata.db"))
 }
 
 func (c *Cache) GetFile(name string) string {
@@ -64,7 +77,7 @@ func (c *Cache) Clear() error {
 		return err
 	}
 
-	metafiles, _ := filepath.Glob(filepath.Join(c.path, "*.json"))
+	metafiles, _ := filepath.Glob(filepath.Join(c.path, "*.db"))
 
 	for _, f := range metafiles {
 		os.Remove(f)

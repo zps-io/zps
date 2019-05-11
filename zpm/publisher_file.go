@@ -17,14 +17,11 @@ import (
 	"path/filepath"
 
 	"io"
-	"io/ioutil"
-
-	"encoding/json"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/nightlyone/lockfile"
 	"github.com/fezz-io/zps/zpkg"
 	"github.com/fezz-io/zps/zps"
+	"github.com/nightlyone/lockfile"
 )
 
 type FilePublisher struct {
@@ -101,8 +98,7 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) error {
 	var err error
 
-	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
-	repo := &zps.Repo{}
+	metapath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
 
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
 
@@ -117,34 +113,19 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 	}
 	defer lock.Unlock()
 
-	pkgsbytes, err := ioutil.ReadFile(packagesfile)
-
-	if err == nil {
-		err = repo.Load(pkgsbytes)
-		if err != nil {
-			return err
-		}
-	} else if !os.IsNotExist(err) {
+	metadata := NewMetadata(metapath)
+	meta, err := metadata.All()
+	if err != nil {
 		return err
 	}
 
-	if len(repo.Solvables()) > 0 {
-		for _, solvable := range repo.Solvables() {
-			if solvable.Id() == pkg {
-				solvable.SetChannels(channel)
-				f.Emit("publisher.channel", pkg)
-			}
-		}
-
-		jsn, err := repo.Json()
+	if len(meta) > 0 {
+		err = metadata.Channels.Add(pkg, channel)
 		if err != nil {
 			return err
 		}
 
-		err = ioutil.WriteFile(packagesfile, jsn, 0640)
-		if err != nil {
-			return err
-		}
+		f.Emit("publisher.channel", pkg)
 	}
 
 	return nil
@@ -153,7 +134,7 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
 	var err error
 
-	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
+	metapath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
 	repo := &zps.Repo{}
 
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
@@ -169,16 +150,13 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	}
 	defer lock.Unlock()
 
-	pkgsbytes, err := ioutil.ReadFile(packagesfile)
+	metadata := NewMetadata(metapath)
 
-	if err == nil {
-		err = repo.Load(pkgsbytes)
-		if err != nil {
-			return err
-		}
-	} else if !os.IsNotExist(err) {
+	meta, err := metadata.All()
+	if err != nil {
 		return err
 	}
+	repo.Load(meta)
 
 	rejects := repo.Add(zpkgs...)
 	rejectIndex := make(map[string]bool)
@@ -197,11 +175,6 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	}
 
 	if len(repo.Solvables()) > 0 {
-		json, err := repo.Json()
-		if err != nil {
-			return err
-		}
-
 		for _, file := range pkgFiles {
 			if !rejectIndex[filepath.Base(file)] {
 				f.Emit("publisher.publish", file)
@@ -216,9 +189,12 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 			os.Remove(filepath.Join(f.uri.Path, osarch.String(), pkg.FileName()))
 		}
 
-		err = ioutil.WriteFile(packagesfile, json, 0640)
-		if err != nil {
-			return err
+		// TODO Rewrite instead of atomic update for now
+
+		metadata.Empty()
+
+		for _, pkg := range repo.Solvables() {
+			metadata.Put(pkg.(*zps.Pkg))
 		}
 	} else {
 		os.RemoveAll(filepath.Join(f.uri.Path, osarch.String()))
@@ -263,15 +239,7 @@ func (f *FilePublisher) upload(file string, dest string) error {
 
 // Temporary
 func (f *FilePublisher) configure() error {
-	configfile := filepath.Join(f.uri.Path, "config.json")
+	config := NewConfig(f.uri.Path + "config.db")
 
-	config := make(map[string]string)
-	config["name"] = f.name
-
-	result, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(configfile, result, 0640)
+	return config.Set("name", f.name)
 }

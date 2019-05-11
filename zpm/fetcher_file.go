@@ -13,13 +13,12 @@ package zpm
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 
-	"github.com/nightlyone/lockfile"
 	"github.com/fezz-io/zps/zps"
+	"github.com/nightlyone/lockfile"
 )
 
 type FileFetcher struct {
@@ -32,9 +31,13 @@ func NewFileFetcher(uri *url.URL, cache *Cache) *FileFetcher {
 }
 
 func (f *FileFetcher) Refresh() error {
-	configfile := filepath.Join(f.uri.Path, "config.json")
+	configfile := filepath.Join(f.uri.Path, "config.db")
 
-	s, err := os.OpenFile(configfile, os.O_RDWR|os.O_CREATE, 0640)
+	if _, err := os.Stat(configfile); os.IsNotExist(err) {
+		return errors.New("repo config not found")
+	}
+
+	s, err := os.OpenFile(configfile, os.O_RDWR, 0640)
 	if err != nil {
 		return err
 	}
@@ -104,10 +107,13 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 
-	packagesfile := filepath.Join(f.uri.Path, osarch.String(), "packages.json")
-	repo := &zps.Repo{}
+	metadatafile := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
 
 	if _, err = os.Stat(filepath.Join(f.uri.Path, osarch.String())); os.IsNotExist(err) {
+		return nil
+	}
+
+	if _, err = os.Stat(metadatafile); os.IsNotExist(err) {
 		return nil
 	}
 
@@ -122,21 +128,14 @@ func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	}
 	defer lock.Unlock()
 
-	pkgsbytes, err := ioutil.ReadFile(packagesfile)
-
 	if err == nil {
-		err = repo.Load(pkgsbytes)
-		if err != nil {
-			return err
-		}
-
-		s, err := os.OpenFile(packagesfile, os.O_RDWR|os.O_CREATE, 0640)
+		s, err := os.OpenFile(metadatafile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}
 		defer s.Close()
 
-		d, err := os.Create(f.cache.GetPackages(osarch.String(), f.uri.String()))
+		d, err := os.Create(f.cache.GetMeta(osarch.String(), f.uri.String()))
 		if err != nil {
 			return err
 		}

@@ -22,35 +22,8 @@ type Requirement struct {
 	Version   *Version
 }
 
-type JsonRequirement struct {
-	Name      string `json:"name"`
-	Method    string `json:"method"`
-	Operation string `json:"operation"`
-	Version   string `json:"version,omitempty"`
-}
-
 func NewRequirement(name string, version *Version) *Requirement {
 	return &Requirement{Name: name, Version: version}
-}
-
-func NewRequirementFromJson(req *JsonRequirement) (*Requirement, error) {
-	newreq := &Requirement{}
-
-	newreq.Name = req.Name
-	newreq.Method = req.Method
-	newreq.Operation = newreq.OpInt(req.Operation)
-
-	if req.Version != "" {
-		version := &Version{}
-		err := version.Parse(req.Version)
-		if err != nil {
-			return nil, err
-		}
-
-		newreq.Version = version
-	}
-
-	return newreq, nil
 }
 
 func NewRequirementFromSimpleString(id string) (*Requirement, error) {
@@ -170,19 +143,6 @@ func (r *Requirement) OpInt(op string) int {
 	}
 
 	return 3
-}
-
-func (r *Requirement) ToJson() *JsonRequirement {
-	json := &JsonRequirement{}
-
-	json.Method = r.Method
-	json.Name = r.Name
-	if r.Version != nil {
-		json.Version = r.Version.String()
-	}
-	json.Operation = r.OpString()
-
-	return json
 }
 
 func (r *Requirement) String() string {
