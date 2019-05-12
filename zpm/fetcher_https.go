@@ -37,8 +37,11 @@ func NewHttpsFetcher(uri *url.URL, cache *Cache) *HttpsFetcher {
 func (h *HttpsFetcher) Refresh() error {
 	configUri, _ := url.Parse(h.uri.String())
 	configUri.Path = path.Join(configUri.Path, "config.db")
+	user := configUri.User.Username()
+	password, _ := configUri.User.Password()
 
 	resp, err := h.client.R().
+		SetBasicAuth(user, password).
 		SetOutput(h.cache.GetConfig(h.uri.String())).
 		Get(configUri.String())
 
@@ -74,7 +77,11 @@ func (h *HttpsFetcher) Fetch(pkg *zps.Pkg) error {
 	fileUri, _ := url.Parse(h.uri.String())
 	fileUri.Path = path.Join(fileUri.Path, osarch.String(), pkg.FileName())
 
+	user := fileUri.User.Username()
+	password, _ := fileUri.User.Password()
+
 	resp, err := h.client.R().
+		SetBasicAuth(user, password).
 		SetOutput(h.cache.GetFile(pkg.FileName())).
 		Get(fileUri.String())
 
@@ -102,7 +109,11 @@ func (h *HttpsFetcher) refresh(osarch *zps.OsArch) error {
 	metadataUri, _ := url.Parse(h.uri.String())
 	metadataUri.Path = path.Join(metadataUri.Path, osarch.String(), "metadata.db")
 
+	user := metadataUri.User.Username()
+	password, _ := metadataUri.User.Password()
+
 	resp, err := h.client.R().
+		SetBasicAuth(user, password).
 		SetOutput(h.cache.GetMeta(osarch.String(), h.uri.String())).
 		Get(metadataUri.String())
 
