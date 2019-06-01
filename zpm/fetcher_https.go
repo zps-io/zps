@@ -37,6 +37,7 @@ func NewHttpsFetcher(uri *url.URL, cache *Cache) *HttpsFetcher {
 func (h *HttpsFetcher) Refresh() error {
 	configUri, _ := url.Parse(h.uri.String())
 	configUri.Path = path.Join(configUri.Path, "config.db")
+
 	user := configUri.User.Username()
 	password, _ := configUri.User.Password()
 

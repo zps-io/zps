@@ -29,6 +29,8 @@ func NewFetcher(uri *url.URL, cache *Cache) Fetcher {
 		return NewHttpsFetcher(uri, cache)
 	case "local":
 		return NewLocalFetcher(uri, cache)
+	case "s3":
+		return NewS3Fetcher(uri, cache)
 	default:
 		return nil
 	}
