@@ -89,8 +89,14 @@ func (s *Solver) addClauses() {
 	}
 }
 
+// TODO add protection for circular dependencies
 func (s *Solver) addReqClauses(solvable Solvable) {
 	for _, req := range solvable.Requirements() {
+		// Continue if a requirement references itself
+		if solvable.Name() == req.Name {
+			continue
+		}
+
 		switch req.Method {
 		case "depends":
 			var clause []sat.LiteralEncoder
