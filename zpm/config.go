@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"github.com/coreos/bbolt"
+	bolt "github.com/coreos/bbolt"
 )
 
 type Config struct {

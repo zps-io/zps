@@ -82,7 +82,7 @@ func (m *Manager) CacheClear() error {
 func (m *Manager) Channel(repo string, pkg string, channel string) error {
 	for _, r := range m.config.Repos {
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
 			err := pb.Channel(pkg, channel)
 
@@ -352,7 +352,7 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
 			err := pb.Publish(pkgs...)
 
@@ -428,11 +428,9 @@ func (m *Manager) Remove(args []string) error {
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
-			err := pb.Init()
-
-			return err
+			return pb.Init()
 		}
 	}
 
@@ -463,6 +461,9 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 				repo := &zps.Repo{}
 
 				metadata := NewMetadata(metafile)
+				if !metadata.Exists() {
+					continue
+				}
 
 				meta, err := metadata.All()
 				if err != nil {
@@ -515,7 +516,7 @@ func (m *Manager) RepoList() ([]string, error) {
 func (m *Manager) RepoUpdate(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
 			err := pb.Update()
 
@@ -718,6 +719,9 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 				metafile := m.cache.GetMeta(osarch.String(), r.Fetch.Uri.String())
 
 				metadata := NewMetadata(metafile)
+				if !metadata.Exists() {
+					continue
+				}
 
 				meta, err := metadata.All()
 				if err != nil && !strings.Contains(err.Error(), "no such file") {

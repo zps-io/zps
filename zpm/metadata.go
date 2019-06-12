@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"github.com/coreos/bbolt"
+	bolt "github.com/coreos/bbolt"
 	"github.com/fezz-io/zps/zps"
 )
 
@@ -81,6 +81,14 @@ func (m *Metadata) All() ([]*zps.Pkg, error) {
 
 func (m *Metadata) Empty() error {
 	return os.RemoveAll(m.Path)
+}
+
+func (m *Metadata) Exists() bool {
+	if _, err := os.Stat(m.Path); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
 }
 
 func (m *Metadata) Get(name string) ([]*zps.Pkg, error) {

@@ -83,7 +83,7 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 
 	for _, osarch := range zps.Platforms() {
 
-		pkgFiles, pkgs := f.filter(osarch, zpkgs)
+		pkgFiles, pkgs := FilterPackagesByArch(osarch, zpkgs)
 		if len(pkgFiles) > 0 {
 			err := f.publish(osarch, pkgFiles, pkgs)
 			if err != nil {
@@ -201,20 +201,6 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	}
 
 	return nil
-}
-
-func (f *FilePublisher) filter(osarch *zps.OsArch, zpkgs map[string]*zps.Pkg) ([]string, []*zps.Pkg) {
-	var files []string
-	var pkgs []*zps.Pkg
-
-	for k, v := range zpkgs {
-		if v.Os() == osarch.Os && v.Arch() == osarch.Arch {
-			files = append(files, k)
-			pkgs = append(pkgs, zpkgs[k])
-		}
-	}
-
-	return files, pkgs
 }
 
 func (f *FilePublisher) upload(file string, dest string) error {

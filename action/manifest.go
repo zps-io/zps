@@ -155,6 +155,14 @@ func (m *Manifest) Actions() Actions {
 func (m *Manifest) Validate() error {
 	var actions Actions
 
+	// Do not allow a requirement to name itself
+	reqs := m.Section("Requirement")
+	for _, req := range reqs {
+		if req.(*Requirement).Name == m.Zpkg.Name {
+			return errors.New("Action Requirement: cannot reference itself")
+		}
+	}
+
 	// Ensure there are no duplicate paths present for FS actions
 	actions = m.Section("Dir", "File", "SymLink")
 

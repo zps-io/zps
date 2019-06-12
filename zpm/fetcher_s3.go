@@ -30,9 +30,9 @@ import (
 )
 
 type S3Fetcher struct {
-	uri    *url.URL
-	cache  *Cache
-	client *s3manager.Downloader
+	uri     *url.URL
+	cache   *Cache
+	session *session.Session
 }
 
 func NewS3Fetcher(uri *url.URL, cache *Cache) *S3Fetcher {
@@ -41,7 +41,11 @@ func NewS3Fetcher(uri *url.URL, cache *Cache) *S3Fetcher {
 	user := uri.User.Username()
 	password, _ := uri.User.Password()
 
-	sess.Config.Credentials = credentials.NewStaticCredentials(user, password, "")
+	if user != "" && password != "" {
+		sess.Config.Credentials = credentials.NewStaticCredentials(user, password, "")
+	} else {
+		sess.Config.Credentials = credentials.NewEnvCredentials()
+	}
 
 	region, err := s3manager.GetBucketRegion(context.Background(), sess, uri.Host, "us-west-2")
 	if err != nil {
@@ -51,27 +55,23 @@ func NewS3Fetcher(uri *url.URL, cache *Cache) *S3Fetcher {
 		return nil
 	}
 
-	sess.Config.Credentials = credentials.NewStaticCredentials(user, password, "")
 	sess.Config.Region = aws.String(region)
 
-	client := s3manager.NewDownloader(sess)
-
-	return &S3Fetcher{uri, cache, client}
+	return &S3Fetcher{uri, cache, sess}
 }
 
 func (s *S3Fetcher) Refresh() error {
-	configUri, _ := url.Parse(s.uri.String())
-	configUri.Path = path.Join(configUri.Path, "config.db")
-
 	d, err := os.Create(s.cache.GetConfig(s.uri.String()))
 	if err != nil {
 		return err
 	}
 	defer d.Close()
 
-	_, err = s.client.Download(d, &s3.GetObjectInput{
+	client := s3manager.NewDownloader(s.session)
+
+	_, err = client.Download(d, &s3.GetObjectInput{
 		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(s.uri.Path),
+		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 	})
 	if err != nil {
 		return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
@@ -90,9 +90,7 @@ func (s *S3Fetcher) Refresh() error {
 func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	var err error
 	osarch := &zps.OsArch{pkg.Os(), pkg.Arch()}
-
-	fileUri, _ := url.Parse(s.uri.String())
-	fileUri.Path = path.Join(fileUri.Path, osarch.String(), pkg.FileName())
+	target := path.Join(s.uri.Path, osarch.String(), pkg.FileName())
 
 	d, err := os.Create(s.cache.GetFile(pkg.FileName()))
 	if err != nil {
@@ -100,35 +98,43 @@ func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	}
 	defer d.Close()
 
-	_, err = s.client.Download(d, &s3.GetObjectInput{
+	client := s3manager.NewDownloader(s.session)
+
+	_, err = client.Download(d, &s3.GetObjectInput{
 		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(fileUri.Path),
+		Key:    aws.String(target),
 	})
 	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", fileUri.Path))
+		return errors.New(fmt.Sprintf("unable to download: %s", target))
 	}
 
-	return nil
+	return err
 }
 
 func (s *S3Fetcher) refresh(osarch *zps.OsArch) error {
 	var err error
+	target := path.Join(s.uri.Path, osarch.String(), "metadata.db")
+	dest := s.cache.GetMeta(osarch.String(), s.uri.String())
 
-	metadataUri, _ := url.Parse(s.uri.String())
-	metadataUri.Path = path.Join(metadataUri.Path, osarch.String(), "metadata.db")
-
-	d, err := os.Create(s.cache.GetMeta(osarch.String(), s.uri.String()))
+	d, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
 	defer d.Close()
 
-	_, err = s.client.Download(d, &s3.GetObjectInput{
+	client := s3manager.NewDownloader(s.session)
+
+	_, err = client.Download(d, &s3.GetObjectInput{
 		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(metadataUri.Path),
+		Key:    aws.String(target),
 	})
 	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", metadataUri.Path))
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
+			return errors.New(fmt.Sprintf("unable to download: %s", target))
+		} else {
+			d.Close()
+			os.Remove(dest)
+		}
 	}
 
 	return nil

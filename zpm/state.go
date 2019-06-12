@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"github.com/coreos/bbolt"
+	bolt "github.com/coreos/bbolt"
 	"github.com/fezz-io/zps/action"
 )
 

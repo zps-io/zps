@@ -103,6 +103,10 @@ func (z *ZpsConfig) LockPath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
 }
 
+func (z *ZpsConfig) WorkPath() string {
+	return filepath.Join(z.CurrentImage.Path, "var", "tmp", "zps")
+}
+
 func (z *ZpsConfig) LoadImages() error {
 	defaultOs := runtime.GOOS
 	var defaultArch string
