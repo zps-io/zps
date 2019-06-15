@@ -72,7 +72,7 @@ func (s *Solver) addClauses() {
 			if candidate != nil {
 				clause = sat.NewVariable(candidate.Id())
 				s.solver.AddClause(clause)
-				s.addReqClauses(candidate)
+				s.addReqClauses(nil, candidate)
 			}
 		case "remove":
 			var clause sat.LiteralEncoder
@@ -89,8 +89,7 @@ func (s *Solver) addClauses() {
 	}
 }
 
-// TODO add protection for circular dependencies
-func (s *Solver) addReqClauses(solvable Solvable) {
+func (s *Solver) addReqClauses(parent Solvable, solvable Solvable) {
 	for _, req := range solvable.Requirements() {
 		// Continue if a requirement references itself
 		if solvable.Name() == req.Name {
@@ -106,8 +105,14 @@ func (s *Solver) addReqClauses(solvable Solvable) {
 
 			for _, candidate := range provides {
 				clause = append(clause, sat.NewVariable(candidate.Id()))
-				// recurse
-				s.addReqClauses(candidate)
+				// recurse if candidate is not in fact the parent
+				if parent != nil {
+					if candidate.Name() == parent.Name() {
+						continue
+					}
+				}
+
+				s.addReqClauses(solvable, candidate)
 			}
 
 			s.solver.AddClause(clause...)

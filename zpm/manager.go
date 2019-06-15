@@ -774,8 +774,8 @@ func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
 	var files []string
 
 	for _, item := range args {
-		if _, err := os.Stat(item); err == nil {
-			if filepath.Ext(item) == ".zpkg" {
+		if filepath.Ext(item) == ".zpkg" {
+			if _, err := os.Stat(item); err == nil {
 				// TODO an extra package read
 				reader := zpkg.NewReader(item, "")
 				err := reader.Read()
@@ -789,7 +789,13 @@ func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
 				}
 
 				reqs = append(reqs, pkg.Id())
-				files = append(files, item)
+
+				itemPath, err := filepath.Abs(item)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				files = append(files, itemPath)
 
 			}
 		} else {
