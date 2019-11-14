@@ -105,6 +105,7 @@ func (s *Solver) addReqClauses(parent Solvable, solvable Solvable) {
 
 			for _, candidate := range provides {
 				clause = append(clause, sat.NewVariable(candidate.Id()))
+
 				// recurse if candidate is not in fact the parent
 				if parent != nil {
 					if candidate.Name() == parent.Name() {

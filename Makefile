@@ -76,30 +76,7 @@ all: zps
 clean:
 	rm -rf dist
 
-deps:
-	go get golang.org/x/tools/cmd/goimports
-	go get golang.org/x/sys/unix
-	go get golang.org/x/net/context
-	go get github.com/kardianos/osext
-	go get github.com/naegelejd/go-acl/os/group
-	go get github.com/lunixbochs/struc
-	go get github.com/dsnet/compress
-	go get github.com/coreos/bbolt/...
-	go get github.com/chuckpreslar/emission
-	go get github.com/spf13/cobra/cobra
-	go get github.com/mitchellh/colorstring
-	go get github.com/hashicorp/hcl2/...
-	go get github.com/hashicorp/go-multierror
-	go get github.com/ryanuber/columnize
-	go get github.com/blang/semver
-	go get github.com/fezz-io/sat
-	go get gonum.org/v1/gonum/graph
-	go get github.com/asdine/storm
-	go get github.com/segmentio/ksuid
-	go get github.com/davecgh/go-spew/spew
-	go get github.com/nightlyone/lockfile
-
-zps: clean deps
+zps: clean
 	mkdir -p dist/etc/zps/image.d
 	mkdir -p dist/etc/zps/policy.d
 	mkdir -p dist/etc/zps/repo.d

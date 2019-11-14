@@ -31,6 +31,8 @@ type Manifest struct {
 	Files    []*File    `hcl:"File,block" json:"file,omitempty"`
 	SymLinks []*SymLink `hcl:"SymLink,block" json:"symlink,omitempty"`
 
+	Signatures []*Signature `hcl:"Signature,block" json:"signature,omitempty"`
+
 	index map[string]int
 }
 
@@ -110,6 +112,10 @@ func (m *Manifest) Section(filters ...string) Actions {
 			for _, item := range m.SymLinks {
 				items = append(items, item)
 			}
+		case "Signature":
+			for _, item := range m.Signatures {
+				items = append(items, item)
+			}
 		}
 	}
 
@@ -136,6 +142,10 @@ func (m *Manifest) Index() {
 	for index, act := range m.SymLinks {
 		m.index[act.Id()] = index
 	}
+
+	for index, act := range m.Signatures {
+		m.index[act.Id()] = index
+	}
 }
 
 func (m *Manifest) Actions() Actions {
@@ -147,6 +157,7 @@ func (m *Manifest) Actions() Actions {
 	actions = append(actions, m.Zpkg)
 	actions = append(actions, m.Section("Tag")...)
 	actions = append(actions, m.Section("Requirement")...)
+	actions = append(actions, m.Section("Signature")...)
 	actions = append(actions, fs...)
 
 	return actions
@@ -184,6 +195,16 @@ func (m *Manifest) Validate() error {
 
 func (m *Manifest) ToJson() string {
 	out, _ := json.Marshal(m)
+
+	return string(out)
+}
+
+func (m *Manifest) ToSigningJson() string {
+	s := *m
+
+	s.Signatures = nil
+
+	out, _ := json.Marshal(s)
 
 	return string(out)
 }
