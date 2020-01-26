@@ -12,32 +12,31 @@ package commands
 
 import (
 	"errors"
+	"github.com/fezz-io/zps/zpm"
 
 	"github.com/fezz-io/zps/cli"
-	"github.com/fezz-io/zps/zpkg"
-	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 )
 
-type ZpkgContentsCommand struct {
+type ZpmZpkgInfoCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpkgContentsCommand() *ZpkgContentsCommand {
-	cmd := &ZpkgContentsCommand{}
+func NewZpmZpkgInfoCommand() *ZpmZpkgInfoCommand {
+	cmd := &ZpmZpkgInfoCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "contents [ZPKG path]"
-	cmd.Short = "List contents of a ZPKG"
-	cmd.Long = "List contents of a ZPKG"
+	cmd.Use = "info [ZPKG path]"
+	cmd.Short = "Display ZPKG file information"
+	cmd.Long = "Display ZPKG file information"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
 	return cmd
 }
 
-func (z *ZpkgContentsCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgInfoCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -45,21 +44,27 @@ func (z *ZpkgContentsCommand) setup(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (z *ZpkgContentsCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgInfoCommand) run(cmd *cobra.Command, args []string) error {
+	image, _ := cmd.Flags().GetString("image")
+
 	if cmd.Flags().NArg() != 1 {
 		return errors.New("ZPKG Filename required")
 	}
 
-	manager := zpkg.NewManager()
-
-	SetupEventHandlers(manager.Emitter, z.Ui)
-
-	output, err := manager.Contents(cmd.Flags().Arg(0))
+	// Load manager
+	mgr, err := zpm.NewManager(image)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
 
-	z.Out(columnize.SimpleFormat(output))
+	SetupEventHandlers(mgr.Emitter, z.Ui)
+
+	output, err := mgr.ZpkgInfo(cmd.Flags().Arg(0))
+	if err != nil {
+		z.Fatal(err.Error())
+	}
+
+	z.Out(output)
 
 	return err
 }

@@ -91,15 +91,19 @@ func (z *ZpsConfig) ConfigPath() string {
 	return filepath.Join(z.CurrentImage.Path, "etc", "zps")
 }
 
-func (z *ZpsConfig) StatePath() string {
-	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
-}
-
 func (z *ZpsConfig) CachePath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "cache", "zps")
 }
 
 func (z *ZpsConfig) LockPath() string {
+	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
+}
+
+func (z *ZpsConfig) StatePath() string {
+	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
+}
+
+func (z *ZpsConfig) TrustPath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
 }
 

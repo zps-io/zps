@@ -35,6 +35,10 @@ func SetupEventHandlers(emitter *emission.Emitter, ui *cli.Ui) {
 		ui.Warn(fmt.Sprint("~ ", message))
 	})
 
+	emitter.On("builder.complete", func(message string) {
+		ui.Warn(fmt.Sprint("=> ", message))
+	})
+
 	emitter.On("manager.error", func(message string) {
 		ui.Error(fmt.Sprint("x ", message))
 	})

@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	bolt "go.etcd.io/bbolt"
 	"github.com/fezz-io/zps/action"
+	bolt "go.etcd.io/bbolt"
 )
 
 type State struct {

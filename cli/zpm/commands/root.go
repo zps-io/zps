@@ -40,6 +40,7 @@ func NewZpmRootCommand() *ZpmRootCommand {
 	cmd.AddCommand(NewZpmInfoCommand().Command)
 	cmd.AddCommand(NewZpmInstallCommand().Command)
 	cmd.AddCommand(NewZpmListCommand().Command)
+	cmd.AddCommand(NewZpmPkiCommand().Command)
 	cmd.AddCommand(NewZpmPlanCommand().Command)
 	cmd.AddCommand(NewZpmPublishCommand().Command)
 	cmd.AddCommand(NewZpmRefreshCommand().Command)
@@ -49,6 +50,7 @@ func NewZpmRootCommand() *ZpmRootCommand {
 	cmd.AddCommand(NewZpmThawCommand().Command)
 	cmd.AddCommand(NewZpmTransactionCommand().Command)
 	cmd.AddCommand(NewZpmVersionCommand().Command)
+	cmd.AddCommand(NewZpmZpkgCommand().Command)
 
 	return cmd
 }

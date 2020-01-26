@@ -16,13 +16,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ZpkgBuildCommand struct {
+type ZpmZpkgBuildCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpkgBuildCommand() *ZpkgBuildCommand {
-	cmd := &ZpkgBuildCommand{}
+func NewZpmZpkgBuildCommand() *ZpmZpkgBuildCommand {
+	cmd := &ZpmZpkgBuildCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "build [ZPKGFILE PATH]"
@@ -40,7 +40,7 @@ func NewZpkgBuildCommand() *ZpkgBuildCommand {
 	return cmd
 }
 
-func (z *ZpkgBuildCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgBuildCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -48,7 +48,7 @@ func (z *ZpkgBuildCommand) setup(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (z *ZpkgBuildCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgBuildCommand) run(cmd *cobra.Command, args []string) error {
 	targetPath, _ := cmd.Flags().GetString("target-path")
 	outputPath, _ := cmd.Flags().GetString("output-path")
 	workPath, _ := cmd.Flags().GetString("work-path")

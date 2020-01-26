@@ -18,7 +18,7 @@ import (
 type Signature struct {
 	FingerPrint string `json:"fingerprint"`
 	Algo        string `json:"algo"`
-	Manifest    string `json:"manifest"`
+	Value       string `json:"value"`
 }
 
 func NewSignature() *File {
@@ -53,7 +53,7 @@ func (s *Signature) MayFail() bool {
 }
 
 func (s *Signature) IsValid() bool {
-	if s.FingerPrint != "" && s.Algo != "" && s.Manifest != "" {
+	if s.FingerPrint != "" && s.Algo != "" && s.Value != "" {
 		return true
 	}
 

@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	bolt "go.etcd.io/bbolt"
 	"github.com/fezz-io/zps/zps"
+	bolt "go.etcd.io/bbolt"
 )
 
 type Metadata struct {

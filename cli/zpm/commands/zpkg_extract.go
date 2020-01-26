@@ -12,20 +12,20 @@ package commands
 
 import (
 	"errors"
+	"github.com/fezz-io/zps/zpm"
 	"os"
 
 	"github.com/fezz-io/zps/cli"
-	"github.com/fezz-io/zps/zpkg"
 	"github.com/spf13/cobra"
 )
 
-type ZpkgExtractCommand struct {
+type ZpmZpkgExtractCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpkgExtractCommand() *ZpkgExtractCommand {
-	cmd := &ZpkgExtractCommand{}
+func NewZpmZpkgExtractCommand() *ZpmZpkgExtractCommand {
+	cmd := &ZpmZpkgExtractCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "extract [ZPKG path] [extract path]"
@@ -37,7 +37,7 @@ func NewZpkgExtractCommand() *ZpkgExtractCommand {
 	return cmd
 }
 
-func (z *ZpkgExtractCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgExtractCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -45,7 +45,8 @@ func (z *ZpkgExtractCommand) setup(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (z *ZpkgExtractCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgExtractCommand) run(cmd *cobra.Command, args []string) error {
+	image, _ := cmd.Flags().GetString("image")
 	var err error
 
 	if cmd.Flags().NArg() == 0 {
@@ -61,11 +62,15 @@ func (z *ZpkgExtractCommand) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	manager := zpkg.NewManager()
+	// Load manager
+	mgr, err := zpm.NewManager(image)
+	if err != nil {
+		z.Fatal(err.Error())
+	}
 
-	SetupEventHandlers(manager.Emitter, z.Ui)
+	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = manager.Extract(cmd.Flags().Arg(0), extractPath)
+	err = mgr.ZpkgExtract(cmd.Flags().Arg(0), extractPath)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
