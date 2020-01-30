@@ -85,6 +85,10 @@ func (r *Reader) Get(path string, offset int64, size int64) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+func (r *Reader) Offset() int64 {
+	return r.offset
+}
+
 func (r *Reader) Close() {
 	r.file.Close()
 }

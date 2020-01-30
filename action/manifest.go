@@ -70,6 +70,12 @@ func (m *Manifest) Add(action Action) {
 		} else {
 			m.Files = append(m.Files, action.(*File))
 		}
+	case "Signature":
+		if m.Exists(action) {
+			m.Signatures[m.index[action.Id()]] = action.(*Signature)
+		} else {
+			m.Signatures = append(m.Signatures, action.(*Signature))
+		}
 	case "SymLink":
 		if m.Exists(action) {
 			m.SymLinks[m.index[action.Id()]] = action.(*SymLink)

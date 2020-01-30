@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fezz-io/zps/sec"
+
 	"github.com/fezz-io/zps/provider"
 
 	"github.com/fezz-io/zps/action"
@@ -292,7 +294,7 @@ func (m *Manager) List() ([]string, error) {
 }
 
 func (m *Manager) PkiKeyPairImport(certPath string, keyPath string) error {
-	err := SecurityValidateKeyPair(certPath, keyPath)
+	err := sec.SecurityValidateKeyPair(certPath, keyPath)
 	if err != nil {
 		return err
 	}
@@ -307,7 +309,7 @@ func (m *Manager) PkiKeyPairImport(certPath string, keyPath string) error {
 		return err
 	}
 
-	subject, publisher, fingerprint, err := SecurityCertMetaFromBytes(&certPem)
+	subject, publisher, fingerprint, err := sec.SecurityCertMetaFromBytes(&certPem)
 	if err != nil {
 		return err
 	}
@@ -719,7 +721,21 @@ func (m *Manager) ZpkgBuild(zpfPath string, targetPath string, workPath string, 
 		OutputPath(outputPath).Restrict(restrict).
 		Secure(secure)
 
-	_, err := builder.Build()
+	filename, manifest, err := builder.Build()
+
+	kp, err := m.pki.KeyPairs.GetByPublisher(manifest.Zpkg.Publisher)
+
+	if len(kp) == 0 {
+		m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", manifest.Zpkg.Publisher))
+		return err
+	}
+
+	signer := zpkg.NewSigner(filename, workPath)
+
+	err = signer.Sign(kp[0].Fingerprint, &kp[0].Key)
+	if err == nil {
+		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp[0].Subject))
+	}
 
 	return err
 }

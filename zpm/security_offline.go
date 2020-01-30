@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/fezz-io/zps/sec"
+
 	"github.com/fezz-io/zps/action"
 )
 
@@ -49,7 +51,7 @@ func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures [
 		// TODO Check CRL, if found
 
 		// TODO for now return on first successful validation
-		if s.validateChain(opts, cert) == nil && SecurityValidateBytes(content, cert, *sig) == nil {
+		if s.validateChain(opts, cert) == nil && sec.SecurityValidateBytes(content, cert, *sig) == nil {
 			return nil
 		}
 	}

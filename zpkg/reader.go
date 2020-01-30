@@ -94,6 +94,7 @@ func (r *Reader) Read() error {
 	// TODO get byte size of header instead of just setting it
 	offset := int64(r.Header.ManifestLength + 12)
 	r.Payload = payload.NewReader(r.workPath, r.path, offset)
+
 	return err
 }
 

@@ -243,44 +243,44 @@ func (b *Builder) realize() error {
 	return err
 }
 
-func (b *Builder) Build() (string, error) {
+func (b *Builder) Build() (string, *action.Manifest, error) {
 	err := b.setPaths()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	err = b.loadZpkgfile()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	err = b.processOptions()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	err = b.resolve()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	err = b.set()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	err = b.realize()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Write the file
 	err = b.writer.Write(b.filename, b.header, b.manifest, b.payload)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	b.Emit("builder.complete", b.filename)
 
-	return b.filename, err
+	return b.filename, b.manifest, err
 }
