@@ -48,11 +48,11 @@ func (z *ZpmPkiKeyPairImportCommand) run(cmd *cobra.Command, args []string) erro
 	image, _ := cmd.Flags().GetString("image")
 
 	if cmd.Flags().Arg(0) == "" {
-		return errors.New("key file name required")
+		return errors.New("cert file name required")
 	}
 
 	if cmd.Flags().Arg(1) == "" {
-		return errors.New("cert file name required")
+		return errors.New("key file name required")
 	}
 
 	// Load manager

@@ -16,13 +16,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fezz-io/zps/provider"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/fezz-io/zps/provider"
 
 	"github.com/fezz-io/zps/action"
 	"github.com/fezz-io/zps/phase"
@@ -39,6 +41,7 @@ type Manager struct {
 	config *config.ZpsConfig
 	state  *State
 	cache  *Cache
+	pki    *Pki
 	lock   lockfile.Lockfile
 }
 
@@ -60,6 +63,7 @@ func NewManager(image string) (*Manager, error) {
 
 	mgr.state = NewState(mgr.config.StatePath())
 	mgr.cache = NewCache(mgr.config.CachePath())
+	mgr.pki = NewPki(mgr.config.PkiPath())
 
 	return mgr, nil
 }
@@ -287,7 +291,54 @@ func (m *Manager) List() ([]string, error) {
 	return output, nil
 }
 
-func (m *Manager) PkiKeyPairImport(key string, cert string) error {
+func (m *Manager) PkiKeyPairImport(certPath string, keyPath string) error {
+	err := SecurityValidateKeyPair(certPath, keyPath)
+	if err != nil {
+		return err
+	}
+
+	certPem, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return err
+	}
+
+	keyPem, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return err
+	}
+
+	subject, publisher, fingerprint, err := SecurityCertMetaFromBytes(&certPem)
+	if err != nil {
+		return err
+	}
+
+	kps, err := m.pki.KeyPairs.GetByPublisher(publisher)
+	if err != nil {
+		return err
+	}
+
+	if len(kps) > 0 {
+		for index := range kps {
+			m.Emitter.Emit("manager.warn",
+				fmt.Sprintf("Removing %s due to matching publisher %s",
+					kps[index].Fingerprint,
+					publisher,
+				),
+			)
+
+			err := m.pki.KeyPairs.Del(kps[index].Fingerprint)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = m.pki.KeyPairs.Put(fingerprint, subject, publisher, certPem, keyPem)
+	if err != nil {
+		return err
+	}
+
+	m.Emit("manager.info", fmt.Sprintf("Imported keypair for publisher %s", publisher))
 
 	return nil
 }

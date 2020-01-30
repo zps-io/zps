@@ -103,7 +103,7 @@ func (z *ZpsConfig) StatePath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
 }
 
-func (z *ZpsConfig) TrustPath() string {
+func (z *ZpsConfig) PkiPath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
 }
 

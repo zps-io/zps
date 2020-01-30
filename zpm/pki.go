@@ -48,6 +48,7 @@ type CertEntry struct {
 
 type KeyPairEntry struct {
 	Fingerprint string `storm:"id"`
+	Subject     string `storm:"index"`
 	Publisher   string `storm:"index"`
 	Cert        []byte
 	Key         []byte
@@ -249,6 +250,27 @@ func (p *PkiKeyPairs) GetByPublisher(publisher string) ([]*KeyPairEntry, error) 
 	return entries, err
 }
 
+func (p *PkiKeyPairs) GetBySubject(subject string) ([]*KeyPairEntry, error) {
+	db, err := p.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*KeyPairEntry
+
+	err = db.Find("Subject", subject, &entries)
+	if err != nil {
+		if err == storm.ErrNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return entries, err
+}
+
 func (p *PkiKeyPairs) Del(fingerprint string) error {
 	db, err := p.getDb()
 	if err != nil {
@@ -261,14 +283,14 @@ func (p *PkiKeyPairs) Del(fingerprint string) error {
 	return err
 }
 
-func (p *PkiKeyPairs) Put(fingerprint string, publisher string, typ string, cert []byte, key []byte) error {
+func (p *PkiKeyPairs) Put(fingerprint string, subject string, publisher string, cert []byte, key []byte) error {
 	db, err := p.getDb()
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	entry := &KeyPairEntry{fingerprint, publisher, cert, key}
+	entry := &KeyPairEntry{fingerprint, subject, publisher, cert, key}
 
 	err = db.Save(entry)
 	return err

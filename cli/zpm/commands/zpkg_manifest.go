@@ -12,6 +12,7 @@ package commands
 
 import (
 	"errors"
+
 	"github.com/fezz-io/zps/zpm"
 
 	"github.com/fezz-io/zps/cli"
