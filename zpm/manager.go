@@ -835,6 +835,32 @@ func (m *Manager) ZpkgManifest(path string) (string, error) {
 	return manifest.String(), nil
 }
 
+func (m *Manager) ZpkgSign(path string, workPath string) error {
+	reader := zpkg.NewReader(path, "")
+
+	err := reader.Read()
+	if err != nil {
+		return err
+	}
+	reader.Close()
+
+	kp, err := m.pki.KeyPairs.GetByPublisher(reader.Manifest.Zpkg.Publisher)
+
+	if len(kp) == 0 {
+		m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", reader.Manifest.Zpkg.Publisher))
+		return err
+	}
+
+	signer := zpkg.NewSigner(path, workPath)
+
+	err = signer.Sign(kp[0].Fingerprint, &kp[0].Key)
+	if err == nil {
+		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp[0].Subject))
+	}
+
+	return err
+}
+
 func (m *Manager) image() (*zps.Repo, error) {
 	packages, err := m.state.Packages.All()
 	if err != nil {

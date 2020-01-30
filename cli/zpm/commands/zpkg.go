@@ -35,6 +35,7 @@ func NewZpmZpkgCommand() *ZpmZpkgCommand {
 	cmd.AddCommand(NewZpmZpkgExtractCommand().Command)
 	cmd.AddCommand(NewZpmZpkgInfoCommand().Command)
 	cmd.AddCommand(NewZpmZpkgManifestCommand().Command)
+	cmd.AddCommand(NewZpmZpkgSignCommand().Command)
 
 	return cmd
 }
