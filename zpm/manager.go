@@ -709,6 +709,21 @@ func (m *Manager) TransActionList() ([]string, error) {
 	return output, nil
 }
 
+func (m *Manager) ZpkgBuild(zpfPath string, targetPath string, workPath string, outputPath string, restrict bool, secure bool) error {
+	builder := zpkg.NewBuilder()
+
+	builder.Emitter = m.Emitter
+
+	builder.ZpfPath(zpfPath).
+		TargetPath(targetPath).WorkPath(workPath).
+		OutputPath(outputPath).Restrict(restrict).
+		Secure(secure)
+
+	_, err := builder.Build()
+
+	return err
+}
+
 // TODO consider merging with Contents command via file path sniffing
 func (m *Manager) ZpkgContents(path string) ([]string, error) {
 	reader := zpkg.NewReader(path, "")

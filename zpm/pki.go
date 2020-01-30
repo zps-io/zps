@@ -20,8 +20,8 @@ import (
 
 const (
 	PKICertCA           = "ca"
-	PKICertIntermediate = "int"
-	PKICertStandard     = "std"
+	PKICertIntermediate = "intermediate"
+	PKICertUser         = "user"
 	PKICertCRL          = "crl"
 )
 

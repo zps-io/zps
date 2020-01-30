@@ -12,7 +12,7 @@ package commands
 
 import (
 	"github.com/fezz-io/zps/cli"
-	"github.com/fezz-io/zps/zpkg"
+	"github.com/fezz-io/zps/zpm"
 	"github.com/spf13/cobra"
 )
 
@@ -49,23 +49,22 @@ func (z *ZpmZpkgBuildCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpmZpkgBuildCommand) run(cmd *cobra.Command, args []string) error {
+	image, _ := cmd.Flags().GetString("image")
 	targetPath, _ := cmd.Flags().GetString("target-path")
 	outputPath, _ := cmd.Flags().GetString("output-path")
 	workPath, _ := cmd.Flags().GetString("work-path")
 	restrict, _ := cmd.Flags().GetBool("restrict")
 	secure, _ := cmd.Flags().GetBool("secure")
 
-	builder := zpkg.NewBuilder()
+	// Load manager
+	mgr, err := zpm.NewManager(image)
+	if err != nil {
+		z.Fatal(err.Error())
+	}
 
-	SetupEventHandlers(builder.Emitter, z.Ui)
+	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	builder.ZpfPath(cmd.Flags().Arg(0)).
-		TargetPath(targetPath).WorkPath(workPath).
-		OutputPath(outputPath).Restrict(restrict).
-		Secure(secure)
-
-	_, err := builder.Build()
-
+	err = mgr.ZpkgBuild(cmd.Flags().Arg(0), targetPath, workPath, outputPath, restrict, secure)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

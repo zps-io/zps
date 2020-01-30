@@ -3,6 +3,7 @@ package zpm
 import (
 	"bytes"
 	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
@@ -71,6 +72,29 @@ func SecurityCertMetaFromBytes(certPem *[]byte) (string, string, string, error) 
 	fingerprint := SpkiFingerprint(cert).String()
 
 	return cert.Subject.CommonName, cert.DNSNames[0], fingerprint, nil
+}
+
+func SecuritySignBytes(content *[]byte, certFingerprint string, key *rsa.PrivateKey, algo string) (*action.Signature, error) {
+	switch algo {
+	case "sha256":
+		digest := sha256.Sum256(*content)
+
+		rng := rand.Reader
+
+		signature, err := rsa.SignPKCS1v15(rng, key, crypto.SHA256, digest[:])
+		if err != nil {
+			return nil, err
+		}
+
+		return &action.Signature{
+			FingerPrint: certFingerprint,
+			Algo:        "sha256",
+			Value:       string(signature),
+		}, nil
+
+	default:
+		return nil, errors.New("unsupported signature algorithm")
+	}
 }
 
 func SecurityValidateBytes(content *[]byte, cert *x509.Certificate, signature action.Signature) error {
