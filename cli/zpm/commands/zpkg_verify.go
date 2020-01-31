@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Zachary Schneider
+ * Copyright 2018 Zachary Schneider
  */
 
 package commands
@@ -18,27 +18,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ZpmPkiTrustImportCommand struct {
+type ZpmZpkgVerifyCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpmPkiTrustImportCommand() *ZpmPkiTrustImportCommand {
-	cmd := &ZpmPkiTrustImportCommand{}
+func NewZpmZpkgVerifyCommand() *ZpmZpkgVerifyCommand {
+	cmd := &ZpmZpkgVerifyCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "import [CERT_FILE]"
-	cmd.Short = "Import trusted certificate into ZPM pki store"
-	cmd.Long = "Import trusted certificate into ZPM pki store"
+	cmd.Use = "verify [ZPKGFILE PATH]"
+	cmd.Short = "Verify a ZPKG"
+	cmd.Long = "Verify a ZPKG"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
-
-	cmd.Flags().String("type", "user", "cerificate type: user|intermediate|ca")
 
 	return cmd
 }
 
-func (z *ZpmPkiTrustImportCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgVerifyCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -46,12 +44,11 @@ func (z *ZpmPkiTrustImportCommand) setup(cmd *cobra.Command, args []string) erro
 	return err
 }
 
-func (z *ZpmPkiTrustImportCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgVerifyCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
-	typ, _ := cmd.Flags().GetString("type")
 
-	if cmd.Flags().Arg(0) == "" {
-		return errors.New("cert file name required")
+	if cmd.Flags().NArg() != 1 {
+		return errors.New("ZPKG Filename required")
 	}
 
 	// Load manager
@@ -62,7 +59,7 @@ func (z *ZpmPkiTrustImportCommand) run(cmd *cobra.Command, args []string) error 
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.PkiTrustImport(cmd.Flags().Arg(0), typ)
+	err = mgr.ZpkgVerify(cmd.Flags().Arg(0))
 	if err != nil {
 		z.Fatal(err.Error())
 	}

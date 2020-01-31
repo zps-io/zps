@@ -23,7 +23,7 @@ type SecurityOffline struct {
 }
 
 // TODO warn on the presence of invalid signatures
-func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures []*action.Signature) error {
+func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures []*action.Signature) (*action.Signature, error) {
 	// Setup verify opts
 	opts := x509.VerifyOptions{
 		DNSName:       publisher,
@@ -40,23 +40,23 @@ func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures [
 
 		asn, _ := pem.Decode(certEntry.Cert)
 		if asn == nil {
-			return fmt.Errorf("failed to parse pem for cert entry: %s", certEntry.Fingerprint)
+			return nil, fmt.Errorf("failed to parse pem for cert entry: %s", certEntry.Fingerprint)
 		}
 
 		cert, err := x509.ParseCertificate(asn.Bytes)
 		if err != nil {
-			return fmt.Errorf("failed to parse asn for cert entry: %s", certEntry.Fingerprint)
+			return nil, fmt.Errorf("failed to parse asn for cert entry: %s", certEntry.Fingerprint)
 		}
 
 		// TODO Check CRL, if found
 
 		// TODO for now return on first successful validation
 		if s.validateChain(opts, cert) == nil && sec.SecurityValidateBytes(content, cert, *sig) == nil {
-			return nil
+			return sig, nil
 		}
 	}
 
-	return errors.New("no valid signature found")
+	return nil, errors.New("no valid signature found")
 }
 
 func (s *SecurityOffline) validateChain(opts x509.VerifyOptions, certificate *x509.Certificate) error {

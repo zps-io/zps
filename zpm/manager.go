@@ -345,7 +345,23 @@ func (m *Manager) PkiKeyPairImport(certPath string, keyPath string) error {
 	return nil
 }
 
-func (m *Manager) PkiTrustImport(cert string) error {
+func (m *Manager) PkiTrustImport(certPath string, typ string) error {
+	certPem, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return err
+	}
+
+	_, publisher, fingerprint, err := sec.SecurityCertMetaFromBytes(&certPem)
+	if err != nil {
+		return err
+	}
+
+	err = m.pki.Certificates.Put(fingerprint, publisher, typ, certPem)
+	if err != nil {
+		return err
+	}
+
+	m.Emit("manager.info", fmt.Sprintf("Imported certificate for publisher %s", publisher))
 
 	return nil
 }
@@ -722,6 +738,9 @@ func (m *Manager) ZpkgBuild(zpfPath string, targetPath string, workPath string, 
 		Secure(secure)
 
 	filename, manifest, err := builder.Build()
+	if err != nil {
+		return err
+	}
 
 	kp, err := m.pki.KeyPairs.GetByPublisher(manifest.Zpkg.Publisher)
 
@@ -859,6 +878,35 @@ func (m *Manager) ZpkgSign(path string, workPath string) error {
 	}
 
 	return err
+}
+
+// TODO also verify file digests
+func (m *Manager) ZpkgVerify(path string) error {
+	reader := zpkg.NewReader(path, "")
+
+	err := reader.Read()
+	if err != nil {
+		return err
+	}
+	reader.Close()
+
+	// TODO wire in mode config
+	security, err := NewSecurity("offline", m.pki)
+	if err != nil {
+		return err
+	}
+
+	var content []byte
+	content = []byte(reader.Manifest.ToSigningJson())
+
+	sig, err := security.Verify(reader.Manifest.Zpkg.Publisher, &content, reader.Manifest.Signatures)
+	if err != nil {
+		return err
+	}
+
+	m.Emit("manager.info", fmt.Sprintf("signature validated with key fingerpint: %s", sig.FingerPrint))
+
+	return nil
 }
 
 func (m *Manager) image() (*zps.Repo, error) {

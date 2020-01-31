@@ -106,7 +106,7 @@ func (p *PkiCertificates) Get(fingerprint string) (*CertEntry, error) {
 	}
 	defer db.Close()
 
-	var entry *CertEntry
+	var entry CertEntry
 
 	err = db.One("Fingerprint", fingerprint, &entry)
 	if err != nil {
@@ -117,7 +117,7 @@ func (p *PkiCertificates) Get(fingerprint string) (*CertEntry, error) {
 		return nil, err
 	}
 
-	return entry, err
+	return &entry, err
 }
 
 func (p *PkiCertificates) GetByPublisher(publisher string) ([]*CertEntry, error) {
@@ -215,7 +215,7 @@ func (p *PkiKeyPairs) Get(fingerprint string) (*KeyPairEntry, error) {
 	}
 	defer db.Close()
 
-	var entry *KeyPairEntry
+	var entry KeyPairEntry
 
 	err = db.One("Fingerprint", fingerprint, &entry)
 	if err != nil {
@@ -226,7 +226,7 @@ func (p *PkiKeyPairs) Get(fingerprint string) (*KeyPairEntry, error) {
 		return nil, err
 	}
 
-	return entry, err
+	return &entry, err
 }
 
 func (p *PkiKeyPairs) GetByPublisher(publisher string) ([]*KeyPairEntry, error) {

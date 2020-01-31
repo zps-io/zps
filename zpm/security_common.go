@@ -9,7 +9,7 @@ import (
 )
 
 type Security interface {
-	Verify(publisher string, content *[]byte, signatures []*action.Signature) error
+	Verify(publisher string, content *[]byte, signatures []*action.Signature) (*action.Signature, error)
 }
 
 func NewSecurity(mode string, pki *Pki) (Security, error) {
