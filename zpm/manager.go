@@ -904,7 +904,7 @@ func (m *Manager) ZpkgVerify(path string) error {
 		return err
 	}
 
-	m.Emit("manager.info", fmt.Sprintf("manifest signature validated with key fingerpint: %s", sig.FingerPrint))
+	m.Emit("manager.info", fmt.Sprintf("Manifest signature validated with key fingerpint: %s", sig.FingerPrint))
 
 	// Verify payload
 
@@ -923,6 +923,8 @@ func (m *Manager) ZpkgVerify(path string) error {
 			return err
 		}
 	}
+
+	m.Emit("manager.info", fmt.Sprintf("Package verified: %s", path))
 
 	return nil
 }

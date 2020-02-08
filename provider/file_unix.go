@@ -49,7 +49,7 @@ func (f *FileUnix) Realize(ctx context.Context) error {
 	case "remove":
 		return f.remove(ctx)
 	case "verify":
-		f.Emit("action.info", fmt.Sprintf("verified %s %s", f.file.Type(), f.file.Key()))
+		f.Emit("action.info", fmt.Sprintf("Verified %s %s", f.file.Type(), f.file.Key()))
 		return f.verify(ctx)
 	default:
 		return nil
