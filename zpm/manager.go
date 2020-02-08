@@ -888,13 +888,13 @@ func (m *Manager) ZpkgVerify(path string) error {
 	if err != nil {
 		return err
 	}
-	reader.Close()
 
 	// TODO wire in mode config
 	security, err := NewSecurity("offline", m.pki)
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
 	var content []byte
 	content = []byte(reader.Manifest.ToSigningJson())
@@ -904,7 +904,25 @@ func (m *Manager) ZpkgVerify(path string) error {
 		return err
 	}
 
-	m.Emit("manager.info", fmt.Sprintf("signature validated with key fingerpint: %s", sig.FingerPrint))
+	m.Emit("manager.info", fmt.Sprintf("manifest signature validated with key fingerpint: %s", sig.FingerPrint))
+
+	// Verify payload
+
+	options := &provider.Options{}
+	ctx := m.getContext(phase.VERIFY, options)
+	ctx = context.WithValue(ctx, "payload", reader.Payload)
+
+	contents := reader.Manifest.Section("File")
+	sort.Sort(contents)
+
+	factory := provider.DefaultFactory(m.Emitter)
+
+	for _, fsObject := range contents {
+		err = factory.Get(fsObject).Realize(ctx)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

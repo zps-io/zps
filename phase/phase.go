@@ -16,4 +16,5 @@ const (
 	PACKAGE   = "package"
 	CONFIGURE = "configure"
 	NOOP      = "noop"
+	VERIFY    = "verify"
 )

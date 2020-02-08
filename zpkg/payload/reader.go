@@ -85,6 +85,41 @@ func (r *Reader) Get(path string, offset int64, size int64) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+func (r *Reader) Verify(offset int64, size int64) (string, error) {
+	var err error
+
+	if r.file == nil {
+		r.file, err = os.Open(r.Path)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	_, err = r.file.Seek(r.offset+offset, 0)
+	if err != nil {
+		return "", err
+	}
+
+	reader := bufio.NewReader(r.file)
+
+	var bzreader *bzip2.Reader
+
+	bzreader, err = bzip2.NewReader(reader, &bzip2.ReaderConfig{})
+	if err != nil {
+		return "", err
+	}
+
+	hasher := sha256.New()
+
+	_, err = io.CopyN(hasher, bzreader, size)
+
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
 func (r *Reader) Offset() int64 {
 	return r.offset
 }

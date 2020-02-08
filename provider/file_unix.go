@@ -48,6 +48,9 @@ func (f *FileUnix) Realize(ctx context.Context) error {
 		return f.pkg(ctx)
 	case "remove":
 		return f.remove(ctx)
+	case "verify":
+		f.Emit("action.info", fmt.Sprintf("verified %s %s", f.file.Type(), f.file.Key()))
+		return f.verify(ctx)
 	default:
 		return nil
 	}
@@ -157,6 +160,21 @@ func (f *FileUnix) pkg(ctx context.Context) error {
 		f.file.Offset = 0
 		f.file.Csize = 0
 		f.file.Digest = ""
+	}
+
+	return err
+}
+
+func (f *FileUnix) verify(ctx context.Context) error {
+	payload := ctx.Value("payload").(*zpayload.Reader)
+
+	digest, err := payload.Verify(int64(f.file.Offset), int64(f.file.Size))
+	if err != nil {
+		return err
+	}
+
+	if digest != f.file.Digest {
+		return errors.New(fmt.Sprint("digest does not match manifest for: ", f.file.Path))
 	}
 
 	return err
