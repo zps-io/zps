@@ -917,6 +917,8 @@ func (m *Manager) ZpkgVerify(path string) error {
 
 	factory := provider.DefaultFactory(m.Emitter)
 
+	m.Emit("manager.info", "Validating payload ...")
+
 	for _, fsObject := range contents {
 		err = factory.Get(fsObject).Realize(ctx)
 		if err != nil {
