@@ -225,7 +225,7 @@ func (f *FilePublisher) upload(file string, dest string) error {
 
 // Temporary
 func (f *FilePublisher) configure() error {
-	config := NewConfig(f.uri.Path + "config.db")
+	config := NewConfig(filepath.Join(f.uri.Path, "config.db"))
 
 	return config.Set("name", f.name)
 }
