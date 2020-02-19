@@ -11,6 +11,10 @@
 package zpm
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"path/filepath"
 	"time"
 
@@ -294,4 +298,13 @@ func (p *PkiKeyPairs) Put(fingerprint string, subject string, publisher string, 
 
 	err = db.Save(entry)
 	return err
+}
+
+func (k *KeyPairEntry) RSAKey() (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(k.Key)
+	if block == nil {
+		return nil, errors.New("failed to decode key")
+	}
+
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }

@@ -2,9 +2,7 @@ package zpkg
 
 import (
 	"bufio"
-	"crypto/x509"
-	"encoding/pem"
-	"errors"
+	"crypto/rsa"
 	"io"
 	"os"
 
@@ -25,18 +23,8 @@ func NewSigner(path string, workPath string) *Signer {
 	return signer
 }
 
-func (s *Signer) Sign(fingerprint string, key *[]byte) error {
+func (s *Signer) Sign(fingerprint string, key *rsa.PrivateKey) error {
 	err := s.reader.Read()
-	if err != nil {
-		return err
-	}
-
-	block, _ := pem.Decode(*key)
-	if block == nil {
-		return errors.New("failed to decode key")
-	}
-
-	rsaKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
 		return err
 	}
@@ -45,7 +33,10 @@ func (s *Signer) Sign(fingerprint string, key *[]byte) error {
 	content = []byte(s.reader.Manifest.ToSigningJson())
 
 	// Get signature action
-	sigAction, err := sec.SecuritySignBytes(&content, fingerprint, rsaKey, "sha256")
+	sigAction, err := sec.SecuritySignBytes(&content, fingerprint, key, "sha256")
+	if err != nil {
+		return err
+	}
 
 	// Modify manifest
 	manifest := s.reader.Manifest

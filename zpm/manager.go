@@ -751,7 +751,12 @@ func (m *Manager) ZpkgBuild(zpfPath string, targetPath string, workPath string, 
 
 	signer := zpkg.NewSigner(filename, workPath)
 
-	err = signer.Sign(kp[0].Fingerprint, &kp[0].Key)
+	rsaKey, err := kp[0].RSAKey()
+	if err != nil {
+		return err
+	}
+
+	err = signer.Sign(kp[0].Fingerprint, rsaKey)
 	if err == nil {
 		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp[0].Subject))
 	}
@@ -872,7 +877,12 @@ func (m *Manager) ZpkgSign(path string, workPath string) error {
 
 	signer := zpkg.NewSigner(path, workPath)
 
-	err = signer.Sign(kp[0].Fingerprint, &kp[0].Key)
+	rsaKey, err := kp[0].RSAKey()
+	if err != nil {
+		return err
+	}
+
+	err = signer.Sign(kp[0].Fingerprint, rsaKey)
 	if err == nil {
 		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp[0].Subject))
 	}
