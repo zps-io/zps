@@ -29,6 +29,7 @@ by teams that execute rapidly as well as the compliance problems of those that r
 
 #### Principles
 
+- Software build systems and software delivery are separate concerns, one must not adopt a build system to create a package
 - Creating binary software packages should be easy
 - Publishing binary software packages should be easy
 - Design should support commercial software subscriptions thereby encouraging vendors to provide binary packages
