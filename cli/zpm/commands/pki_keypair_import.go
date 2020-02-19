@@ -27,7 +27,7 @@ func NewZpmPkiKeyPairImportCommand() *ZpmPkiKeyPairImportCommand {
 	cmd := &ZpmPkiKeyPairImportCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "import [KEY_FILE] [CERT_FILE]"
+	cmd.Use = "import [CERT_FILE] [KEY_FILE]"
 	cmd.Short = "Import signing key pair into ZPM pki store"
 	cmd.Long = "Import signing key pair into ZPM pki store"
 	cmd.PreRunE = cmd.setup

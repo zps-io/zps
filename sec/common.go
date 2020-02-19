@@ -30,14 +30,11 @@ func SecurityCertMetaFromBytes(certPem *[]byte) (string, string, string, error) 
 
 	fingerprint := SpkiFingerprint(cert).String()
 
-	var publisher string
-	if len(cert.DNSNames) == 0 {
-		publisher = cert.Subject.CommonName
-	} else {
-		publisher = cert.DNSNames[0]
+	if len(cert.Subject.Organization) == 0 {
+		return "", "", "", errors.New("invalid certificate organization")
 	}
 
-	return cert.Subject.CommonName, publisher, fingerprint, nil
+	return cert.Subject.CommonName, cert.Subject.Organization[0], fingerprint, nil
 }
 
 func SecuritySignBytes(content *[]byte, certFingerprint string, key *rsa.PrivateKey, algo string) (*action.Signature, error) {

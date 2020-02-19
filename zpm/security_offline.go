@@ -26,7 +26,6 @@ type SecurityOffline struct {
 func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures []*action.Signature) (*action.Signature, error) {
 	// Setup verify opts
 	opts := x509.VerifyOptions{
-		DNSName:       publisher,
 		Roots:         s.caCache,
 		Intermediates: s.intermediateCache,
 	}
