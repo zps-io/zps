@@ -1,5 +1,9 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-CONFIG='mode = "ancillary"'
+
+define CONFIG
+mode = "ancillary"
+security = "offline"
+endef
 
 define REPO_A
 priority = 10
@@ -83,7 +87,7 @@ zps: clean
 	mkdir -p dist/var/lib/zps
 	mkdir -p dist/var/cache/zps
 	mkdir -p dist/var/tmp/zps
-	echo $(CONFIG) > dist/etc/zps/main.conf
+	echo "$$CONFIG" > dist/etc/zps/main.conf
 	echo "$$REPO_A" > dist/etc/zps/repo.d/testrepo.conf
 	echo "$$REPO_B" > dist/etc/zps/repo.d/anotherrepo.conf
 	echo "$$REPO_F" > dist/etc/zps/repo.d/filteredrepo.conf

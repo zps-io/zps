@@ -26,7 +26,8 @@ import (
 )
 
 type ZpsConfig struct {
-	Mode string
+	Mode     string
+	Security string
 
 	Root         string
 	CurrentImage *ImageConfig
@@ -200,6 +201,12 @@ func (z *ZpsConfig) LoadMain() error {
 		z.Mode = val.(string)
 	} else {
 		z.Mode = "ancillary"
+	}
+
+	if val, ok := config["security"]; ok {
+		z.Security = val.(string)
+	} else {
+		z.Security = "offline"
 	}
 
 	return nil

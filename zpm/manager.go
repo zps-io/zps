@@ -900,7 +900,7 @@ func (m *Manager) ZpkgValidate(path string) error {
 	}
 
 	// TODO wire in mode config
-	security, err := NewSecurity("offline", m.pki)
+	security, err := NewSecurity(m.config.Security, m.pki)
 	if err != nil {
 		return err
 	}
