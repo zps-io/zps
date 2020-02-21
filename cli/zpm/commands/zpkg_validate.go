@@ -18,25 +18,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ZpmZpkgVerifyCommand struct {
+type ZpmZpkgValidateCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpmZpkgVerifyCommand() *ZpmZpkgVerifyCommand {
-	cmd := &ZpmZpkgVerifyCommand{}
+func NewZpmZpkgValidateCommand() *ZpmZpkgValidateCommand {
+	cmd := &ZpmZpkgValidateCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "verify [ZPKGFILE PATH]"
-	cmd.Short = "Verify a ZPKG"
-	cmd.Long = "Verify a ZPKG"
+	cmd.Use = "validate [ZPKGFILE PATH]"
+	cmd.Short = "Validate a ZPKG"
+	cmd.Long = "Validate a ZPKG"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
 	return cmd
 }
 
-func (z *ZpmZpkgVerifyCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgValidateCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -44,7 +44,7 @@ func (z *ZpmZpkgVerifyCommand) setup(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (z *ZpmZpkgVerifyCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpmZpkgValidateCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
 
 	if cmd.Flags().NArg() != 1 {
@@ -59,7 +59,7 @@ func (z *ZpmZpkgVerifyCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.ZpkgVerify(cmd.Flags().Arg(0))
+	err = mgr.ZpkgValidate(cmd.Flags().Arg(0))
 	if err != nil {
 		z.Fatal(err.Error())
 	}

@@ -33,7 +33,7 @@ func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures [
 	for _, sig := range signatures {
 		// Load cert if found
 		certEntry, err := s.pki.Certificates.Get(sig.FingerPrint)
-		if err != nil {
+		if err != nil || certEntry == nil {
 			continue
 		}
 

@@ -891,7 +891,7 @@ func (m *Manager) ZpkgSign(path string, workPath string) error {
 }
 
 // TODO also verify file digests
-func (m *Manager) ZpkgVerify(path string) error {
+func (m *Manager) ZpkgValidate(path string) error {
 	reader := zpkg.NewReader(path, "")
 
 	err := reader.Read()
