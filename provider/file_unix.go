@@ -48,8 +48,8 @@ func (f *FileUnix) Realize(ctx context.Context) error {
 		return f.pkg(ctx)
 	case "remove":
 		return f.remove(ctx)
-	case "verify":
-		return f.verify(ctx)
+	case "validate":
+		return f.validate(ctx)
 	default:
 		return nil
 	}
@@ -164,7 +164,7 @@ func (f *FileUnix) pkg(ctx context.Context) error {
 	return err
 }
 
-func (f *FileUnix) verify(ctx context.Context) error {
+func (f *FileUnix) validate(ctx context.Context) error {
 	options := Opts(ctx)
 	payload := ctx.Value("payload").(*zpayload.Reader)
 

@@ -916,10 +916,10 @@ func (m *Manager) ZpkgValidate(path string) error {
 
 	m.Emit("manager.info", fmt.Sprintf("Manifest signature validated with key fingerpint: %s", sig.FingerPrint))
 
-	// Verify payload
+	// Validate payload
 
 	options := &provider.Options{}
-	ctx := m.getContext(phase.VERIFY, options)
+	ctx := m.getContext(phase.VALIDATE, options)
 	ctx = context.WithValue(ctx, "payload", reader.Payload)
 
 	contents := reader.Manifest.Section("File")

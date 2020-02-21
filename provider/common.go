@@ -102,7 +102,7 @@ func DefaultFactory(emitter *emission.Emitter) *Factory {
 		On("File", phase.INSTALL, "install").
 		On("File", phase.PACKAGE, "package").
 		On("File", phase.REMOVE, "remove").
-		On("File", phase.VERIFY, "verify").
+		On("File", phase.VALIDATE, "validate").
 		On("Symlink", phase.INSTALL, "install").
 		On("SymLink", phase.PACKAGE, "package").
 		On("SymLink", phase.REMOVE, "remove")
