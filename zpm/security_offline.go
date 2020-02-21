@@ -24,6 +24,10 @@ type SecurityOffline struct {
 
 // TODO warn on the presence of invalid signatures
 func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures []*action.Signature) (*action.Signature, error) {
+	if len(signatures) == 0 {
+		return nil, errors.New("no signatures present")
+	}
+
 	// Setup verify opts
 	opts := x509.VerifyOptions{
 		Roots:         s.caCache,
@@ -55,7 +59,7 @@ func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures [
 		}
 	}
 
-	return nil, errors.New("no valid signature found")
+	return nil, errors.New("no trusted certificates found for signatures")
 }
 
 func (s *SecurityOffline) validateChain(opts x509.VerifyOptions, certificate *x509.Certificate) error {
