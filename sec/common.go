@@ -9,12 +9,18 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/fezz-io/zps/action"
+)
+
+const (
+	DefaultDigestMethod = "sha256"
 )
 
 func SecurityCertMetaFromBytes(certPem *[]byte) (string, string, string, error) {
@@ -58,6 +64,22 @@ func SecuritySignBytes(content *[]byte, certFingerprint string, key *rsa.Private
 	default:
 		return nil, errors.New("unsupported signature algorithm")
 	}
+}
+
+func SecuritySignFile(filePath string, sigPath string, fingerprint string, key *rsa.PrivateKey, algo string) error {
+	cfgBytes, err := ioutil.ReadFile(filePath)
+
+	sig, err := SecuritySignBytes(&cfgBytes, fingerprint, key, algo)
+	if err != nil {
+		return err
+	}
+
+	sigBytes, err := json.Marshal(sig)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(sigPath, sigBytes, 0640)
 }
 
 func SecurityValidateBytes(content *[]byte, cert *x509.Certificate, signature action.Signature) error {

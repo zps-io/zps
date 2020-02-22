@@ -11,9 +11,7 @@
 package zpm
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -50,22 +48,63 @@ func (f *FilePublisher) Init() error {
 		os.RemoveAll(filepath.Join(f.uri.Path, osarch.String()))
 	}
 
-	return f.configure()
-}
+	configPath := filepath.Join(f.uri.Path, "config.db")
+	sigPath := filepath.Join(f.uri.Path, "config.sig")
+	config := NewConfig(configPath)
 
-func (f *FilePublisher) Update() error {
-	return f.configure()
-}
+	os.Remove(sigPath)
 
-func (f *FilePublisher) Channel(pkg string, channel string) error {
+	err := config.Set("name", f.name)
+	if err != nil {
+		return err
+	}
 
-	for _, osarch := range zps.Platforms() {
-
-		err := f.channel(osarch, pkg, channel)
+	if len(f.keyPair.Key) != 0 {
+		rsaKey, err := f.keyPair.RSAKey()
 		if err != nil {
 			return err
 		}
 
+		err = sec.SecuritySignFile(configPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
+
+func (f *FilePublisher) Update() error {
+	configPath := filepath.Join(f.uri.Path, "config.db")
+	sigPath := filepath.Join(f.uri.Path, "config.sig")
+	config := NewConfig(configPath)
+
+	err := config.Set("name", f.name)
+	if err != nil {
+		return err
+	}
+
+	if len(f.keyPair.Key) != 0 {
+		rsaKey, err := f.keyPair.RSAKey()
+		if err != nil {
+			return err
+		}
+
+		err = sec.SecuritySignFile(configPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
+
+func (f *FilePublisher) Channel(pkg string, channel string) error {
+	for _, osarch := range zps.Platforms() {
+		err := f.channel(osarch, pkg, channel)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -106,9 +145,11 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) error {
 	var err error
 
-	metapath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
+	metaPath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
+	sigPath := filepath.Join(f.uri.Path, osarch.String(), "metadata.sig")
 
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
+	os.Remove(sigPath)
 
 	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
 	if err != nil {
@@ -121,7 +162,7 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 	}
 	defer lock.Unlock()
 
-	metadata := NewMetadata(metapath)
+	metadata := NewMetadata(metaPath)
 	meta, err := metadata.All()
 	if err != nil {
 		return err
@@ -133,6 +174,18 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 			return err
 		}
 
+		if len(f.keyPair.Key) != 0 {
+			rsaKey, err := f.keyPair.RSAKey()
+			if err != nil {
+				return err
+			}
+
+			err = sec.SecuritySignFile(metaPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+			if err != nil {
+				return err
+			}
+		}
+
 		f.Emit("publisher.channel", pkg)
 	}
 
@@ -142,10 +195,12 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
 	var err error
 
-	metapath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
+	metaPath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
+	sigPath := filepath.Join(f.uri.Path, osarch.String(), "metadata.sig")
 	repo := &zps.Repo{}
 
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
+	os.Remove(sigPath)
 
 	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
 	if err != nil {
@@ -158,7 +213,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	}
 	defer lock.Unlock()
 
-	metadata := NewMetadata(metapath)
+	metadata := NewMetadata(metaPath)
 
 	meta, err := metadata.All()
 	if err != nil {
@@ -204,6 +259,18 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 		for _, pkg := range repo.Solvables() {
 			metadata.Put(pkg.(*zps.Pkg))
 		}
+
+		if len(f.keyPair.Key) != 0 {
+			rsaKey, err := f.keyPair.RSAKey()
+			if err != nil {
+				return err
+			}
+
+			err = sec.SecuritySignFile(metaPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+			if err != nil {
+				return err
+			}
+		}
 	} else {
 		os.RemoveAll(filepath.Join(f.uri.Path, osarch.String()))
 	}
@@ -229,35 +296,4 @@ func (f *FilePublisher) upload(file string, dest string) error {
 	}
 
 	return d.Close()
-}
-
-// Temporary
-func (f *FilePublisher) configure() error {
-	configPath := filepath.Join(f.uri.Path, "config.db")
-	config := NewConfig(configPath)
-
-	err := config.Set("name", f.name)
-	if err != nil {
-		return err
-	}
-
-	if len(f.keyPair.Key) != 0 {
-		rsaKey, err := f.keyPair.RSAKey()
-		if err != nil {
-			return err
-		}
-
-		cfgBytes, err := ioutil.ReadFile(configPath)
-
-		sig, err := sec.SecuritySignBytes(&cfgBytes, f.keyPair.Fingerprint, rsaKey, "sha256")
-		if err != nil {
-			return err
-		}
-
-		sigBytes, err := json.Marshal(sig)
-
-		return ioutil.WriteFile(filepath.Join(f.uri.Path, "config.sig"), sigBytes, 0640)
-	}
-
-	return err
 }
