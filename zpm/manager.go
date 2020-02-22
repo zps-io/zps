@@ -92,8 +92,22 @@ func (m *Manager) CacheClear() error {
 
 func (m *Manager) Channel(repo string, pkg string, channel string) error {
 	for _, r := range m.config.Repos {
+		kp := &KeyPairEntry{}
+		publisher := PublisherFromUri(r.Publish.Uri)
+
+		pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
+		if err != nil {
+			return err
+		}
+
+		if len(pairs) == 0 {
+			m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
+		} else {
+			kp = pairs[0]
+		}
+
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune, kp)
 
 			err := pb.Channel(pkg, channel)
 
@@ -436,11 +450,23 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+			kp := &KeyPairEntry{}
+			publisher := PublisherFromUri(r.Publish.Uri)
 
-			err := pb.Publish(pkgs...)
+			pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
+			if err != nil {
+				return err
+			}
 
-			return err
+			if len(pairs) == 0 {
+				m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
+			} else {
+				kp = pairs[0]
+			}
+
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune, kp)
+
+			return pb.Publish(pkgs...)
 		}
 	}
 
@@ -512,7 +538,21 @@ func (m *Manager) Remove(args []string) error {
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+			kp := &KeyPairEntry{}
+			publisher := PublisherFromUri(repo.Publish.Uri)
+
+			pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
+			if err != nil {
+				return err
+			}
+
+			if len(pairs) == 0 {
+				m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
+			} else {
+				kp = pairs[0]
+			}
+
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune, kp)
 
 			return pb.Init()
 		}
@@ -600,11 +640,23 @@ func (m *Manager) RepoList() ([]string, error) {
 func (m *Manager) RepoUpdate(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+			kp := &KeyPairEntry{}
+			publisher := PublisherFromUri(repo.Publish.Uri)
 
-			err := pb.Update()
+			pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
+			if err != nil {
+				return err
+			}
 
-			return err
+			if len(pairs) == 0 {
+				m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
+			} else {
+				kp = pairs[0]
+			}
+
+			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune, kp)
+
+			return pb.Update()
 		}
 	}
 

@@ -11,10 +11,14 @@
 package zpm
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
+
+	"github.com/fezz-io/zps/sec"
 
 	"io"
 
@@ -26,13 +30,17 @@ import (
 
 type FilePublisher struct {
 	*emission.Emitter
-	uri   *url.URL
-	name  string
+
+	uri  *url.URL
+	name string
+
 	prune int
+
+	keyPair *KeyPairEntry
 }
 
-func NewFilePublisher(emitter *emission.Emitter, uri *url.URL, name string, prune int) *FilePublisher {
-	return &FilePublisher{emitter, uri, name, prune}
+func NewFilePublisher(emitter *emission.Emitter, uri *url.URL, name string, prune int, keyPair *KeyPairEntry) *FilePublisher {
+	return &FilePublisher{emitter, uri, name, prune, keyPair}
 }
 
 func (f *FilePublisher) Init() error {
@@ -225,7 +233,31 @@ func (f *FilePublisher) upload(file string, dest string) error {
 
 // Temporary
 func (f *FilePublisher) configure() error {
-	config := NewConfig(filepath.Join(f.uri.Path, "config.db"))
+	configPath := filepath.Join(f.uri.Path, "config.db")
+	config := NewConfig(configPath)
 
-	return config.Set("name", f.name)
+	err := config.Set("name", f.name)
+	if err != nil {
+		return err
+	}
+
+	if len(f.keyPair.Key) != 0 {
+		rsaKey, err := f.keyPair.RSAKey()
+		if err != nil {
+			return err
+		}
+
+		cfgBytes, err := ioutil.ReadFile(configPath)
+
+		sig, err := sec.SecuritySignBytes(&cfgBytes, f.keyPair.Fingerprint, rsaKey, "sha256")
+		if err != nil {
+			return err
+		}
+
+		sigBytes, err := json.Marshal(sig)
+
+		return ioutil.WriteFile(filepath.Join(f.uri.Path, "config.sig"), sigBytes, 0640)
+	}
+
+	return err
 }

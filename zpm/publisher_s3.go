@@ -42,10 +42,12 @@ type S3Publisher struct {
 	name  string
 	prune int
 
+	keyPair *KeyPairEntry
+
 	session *session.Session
 }
 
-func NewS3Publisher(emitter *emission.Emitter, workPath string, uri *url.URL, name string, prune int) *S3Publisher {
+func NewS3Publisher(emitter *emission.Emitter, workPath string, uri *url.URL, name string, prune int, keyPair *KeyPairEntry) *S3Publisher {
 	sess := session.Must(session.NewSession())
 
 	user := uri.User.Username()
@@ -68,7 +70,7 @@ func NewS3Publisher(emitter *emission.Emitter, workPath string, uri *url.URL, na
 
 	sess.Config.Region = aws.String(region)
 
-	return &S3Publisher{emitter, workPath, uri, name, prune, sess}
+	return &S3Publisher{emitter, workPath, uri, name, prune, keyPair, sess}
 }
 
 func (s *S3Publisher) Init() error {

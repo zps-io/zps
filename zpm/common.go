@@ -1,6 +1,11 @@
 package zpm
 
-import "github.com/fezz-io/zps/zps"
+import (
+	"net/url"
+	"strings"
+
+	"github.com/fezz-io/zps/zps"
+)
 
 func FilterPackagesByArch(osarch *zps.OsArch, zpkgs map[string]*zps.Pkg) ([]string, []*zps.Pkg) {
 	var files []string
@@ -14,4 +19,14 @@ func FilterPackagesByArch(osarch *zps.OsArch, zpkgs map[string]*zps.Pkg) ([]stri
 	}
 
 	return files, pkgs
+}
+
+func PublisherFromUri(uri *url.URL) string {
+	parts := strings.Split(uri.Path, "/")
+
+	if len(parts) < 2 {
+		return ""
+	} else {
+		return parts[len(parts)-2]
+	}
 }
