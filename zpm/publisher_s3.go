@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fezz-io/zps/sec"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -105,7 +107,9 @@ func (s *S3Publisher) Init() error {
 
 	defer os.RemoveAll(tmpDir)
 
-	config := NewConfig(filepath.Join(tmpDir, "config.db"))
+	configPath := filepath.Join(tmpDir, "config.db")
+	sigPath := filepath.Join(tmpDir, "config.sig")
+	config := NewConfig(configPath)
 
 	err = config.Set("name", s.name)
 	if err != nil {
@@ -113,7 +117,7 @@ func (s *S3Publisher) Init() error {
 	}
 
 	// Upload the config db
-	configDb, err := os.Open(filepath.Join(tmpDir, "config.db"))
+	configDb, err := os.Open(configPath)
 	if err != nil {
 		return err
 	}
@@ -126,6 +130,30 @@ func (s *S3Publisher) Init() error {
 		Body:   configDb,
 	})
 
+	// Sign and upload
+	if len(s.keyPair.Key) != 0 {
+		rsaKey, err := s.keyPair.RSAKey()
+		if err != nil {
+			return err
+		}
+
+		err = sec.SecuritySignFile(configPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		if err != nil {
+			return err
+		}
+
+		configSig, err := os.Open(sigPath)
+		if err != nil {
+			return err
+		}
+
+		_, err = uploader.Upload(&s3manager.UploadInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
+			Body:   configSig,
+		})
+	}
+
 	return err
 }
 
@@ -135,9 +163,12 @@ func (s *S3Publisher) Update() error {
 		return err
 	}
 
+	configPath := filepath.Join(tmpDir, "config.db")
+	sigPath := filepath.Join(tmpDir, "config.sig")
+
 	defer os.RemoveAll(tmpDir)
 
-	configDb, err := os.Create(filepath.Join(tmpDir, "config.db"))
+	configDb, err := os.Create(configPath)
 	if err != nil {
 		return err
 	}
@@ -155,7 +186,7 @@ func (s *S3Publisher) Update() error {
 	}
 
 	// Modify config db
-	config := NewConfig(filepath.Join(tmpDir, "config.db"))
+	config := NewConfig(configPath)
 
 	err = config.Set("name", s.name)
 	if err != nil {
@@ -172,6 +203,30 @@ func (s *S3Publisher) Update() error {
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 		Body:   configDb,
 	})
+
+	// Sign and upload
+	if len(s.keyPair.Key) != 0 {
+		rsaKey, err := s.keyPair.RSAKey()
+		if err != nil {
+			return err
+		}
+
+		err = sec.SecuritySignFile(configPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		if err != nil {
+			return err
+		}
+
+		configSig, err := os.Open(sigPath)
+		if err != nil {
+			return err
+		}
+
+		_, err = uploader.Upload(&s3manager.UploadInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
+			Body:   configSig,
+		})
+	}
 
 	return err
 }
@@ -230,6 +285,7 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string) er
 	defer os.RemoveAll(tmpDir)
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
+	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -275,6 +331,30 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string) er
 		Body:   metadataDb,
 	})
 
+	// Sign and upload
+	if len(s.keyPair.Key) != 0 {
+		rsaKey, err := s.keyPair.RSAKey()
+		if err != nil {
+			return err
+		}
+
+		err = sec.SecuritySignFile(metaPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		if err != nil {
+			return err
+		}
+
+		configSig, err := os.Open(sigPath)
+		if err != nil {
+			return err
+		}
+
+		_, err = uploader.Upload(&s3manager.UploadInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
+			Body:   configSig,
+		})
+	}
+
 	return err
 }
 
@@ -287,6 +367,7 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 	defer os.RemoveAll(tmpDir)
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
+	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -378,6 +459,29 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 			Body:   metadataUp,
 		})
 
+		// Sign and upload
+		if len(s.keyPair.Key) != 0 {
+			rsaKey, err := s.keyPair.RSAKey()
+			if err != nil {
+				return err
+			}
+
+			err = sec.SecuritySignFile(metaPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+			if err != nil {
+				return err
+			}
+
+			configSig, err := os.Open(sigPath)
+			if err != nil {
+				return err
+			}
+
+			_, err = uploader.Upload(&s3manager.UploadInput{
+				Bucket: aws.String(s.uri.Host),
+				Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
+				Body:   configSig,
+			})
+		}
 	} else {
 		_, err = svc.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(s.uri.Host),
@@ -388,7 +492,7 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (s *S3Publisher) upload(file string, dest string) error {
