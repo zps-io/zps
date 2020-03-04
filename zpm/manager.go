@@ -247,7 +247,7 @@ func (m *Manager) Install(args []string) error {
 		switch op.Operation {
 		case phase.INSTALL:
 			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
-			fe := NewFetcher(uri, m.cache)
+			fe := NewFetcher(uri, m.cache, m.security)
 			err = fe.Fetch(op.Package.(*zps.Pkg))
 			if err != nil {
 				return err
@@ -463,7 +463,7 @@ func (m *Manager) Refresh() error {
 	defer m.lock.Unlock()
 
 	for _, r := range m.config.Repos {
-		fe := NewFetcher(r.Fetch.Uri, m.cache)
+		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security)
 
 		err = fe.Refresh()
 		if err == nil {

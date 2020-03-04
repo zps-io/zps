@@ -23,15 +23,18 @@ import (
 
 type HttpsFetcher struct {
 	uri    *url.URL
+
 	cache  *Cache
+	security Security
+
 	client *resty.Client
 }
 
-func NewHttpsFetcher(uri *url.URL, cache *Cache) *HttpsFetcher {
+func NewHttpsFetcher(uri *url.URL, cache *Cache, security Security,) *HttpsFetcher {
 	client := resty.New()
 	client.SetTimeout(time.Duration(10) * time.Second)
 
-	return &HttpsFetcher{uri, cache, client}
+	return &HttpsFetcher{uri, cache, security, client}
 }
 
 func (h *HttpsFetcher) Refresh() error {

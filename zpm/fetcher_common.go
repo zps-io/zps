@@ -21,16 +21,16 @@ type Fetcher interface {
 	Fetch(pkg *zps.Pkg) error
 }
 
-func NewFetcher(uri *url.URL, cache *Cache) Fetcher {
+func NewFetcher(uri *url.URL, cache *Cache, security Security) Fetcher {
 	switch uri.Scheme {
 	case "file":
-		return NewFileFetcher(uri, cache)
+		return NewFileFetcher(uri, cache, security)
 	case "https":
-		return NewHttpsFetcher(uri, cache)
+		return NewHttpsFetcher(uri, cache, security)
 	case "local":
-		return NewLocalFetcher(uri, cache)
+		return NewLocalFetcher(uri, cache, security)
 	case "s3":
-		return NewS3Fetcher(uri, cache)
+		return NewS3Fetcher(uri, cache, security)
 	default:
 		return nil
 	}

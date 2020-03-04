@@ -23,11 +23,13 @@ import (
 
 type FileFetcher struct {
 	uri   *url.URL
+
 	cache *Cache
+	security Security
 }
 
-func NewFileFetcher(uri *url.URL, cache *Cache) *FileFetcher {
-	return &FileFetcher{uri, cache}
+func NewFileFetcher(uri *url.URL, cache *Cache, security Security) *FileFetcher {
+	return &FileFetcher{uri, cache, security}
 }
 
 func (f *FileFetcher) Refresh() error {

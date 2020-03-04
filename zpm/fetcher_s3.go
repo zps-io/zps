@@ -31,11 +31,14 @@ import (
 
 type S3Fetcher struct {
 	uri     *url.URL
+
 	cache   *Cache
+	security Security
+
 	session *session.Session
 }
 
-func NewS3Fetcher(uri *url.URL, cache *Cache) *S3Fetcher {
+func NewS3Fetcher(uri *url.URL, cache *Cache, security Security) *S3Fetcher {
 	sess := session.Must(session.NewSession())
 
 	user := uri.User.Username()
@@ -57,7 +60,7 @@ func NewS3Fetcher(uri *url.URL, cache *Cache) *S3Fetcher {
 
 	sess.Config.Region = aws.String(region)
 
-	return &S3Fetcher{uri, cache, sess}
+	return &S3Fetcher{uri, cache, security, sess}
 }
 
 func (s *S3Fetcher) Refresh() error {

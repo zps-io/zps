@@ -21,11 +21,13 @@ import (
 
 type LocalFetcher struct {
 	uri   *url.URL
+
 	cache *Cache
+	security Security
 }
 
-func NewLocalFetcher(uri *url.URL, cache *Cache) *LocalFetcher {
-	return &LocalFetcher{uri, cache}
+func NewLocalFetcher(uri *url.URL, cache *Cache, security Security) *LocalFetcher {
+	return &LocalFetcher{uri, cache, security}
 }
 
 func (f *LocalFetcher) Refresh() error {
