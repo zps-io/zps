@@ -20,9 +20,9 @@ import (
 )
 
 type LocalFetcher struct {
-	uri   *url.URL
+	uri *url.URL
 
-	cache *Cache
+	cache    *Cache
 	security Security
 }
 

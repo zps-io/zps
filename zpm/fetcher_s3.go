@@ -30,9 +30,9 @@ import (
 )
 
 type S3Fetcher struct {
-	uri     *url.URL
+	uri *url.URL
 
-	cache   *Cache
+	cache    *Cache
 	security Security
 
 	session *session.Session

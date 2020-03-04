@@ -22,9 +22,9 @@ import (
 )
 
 type FileFetcher struct {
-	uri   *url.URL
+	uri *url.URL
 
-	cache *Cache
+	cache    *Cache
 	security Security
 }
 

@@ -22,15 +22,15 @@ import (
 )
 
 type HttpsFetcher struct {
-	uri    *url.URL
+	uri *url.URL
 
-	cache  *Cache
+	cache    *Cache
 	security Security
 
 	client *resty.Client
 }
 
-func NewHttpsFetcher(uri *url.URL, cache *Cache, security Security,) *HttpsFetcher {
+func NewHttpsFetcher(uri *url.URL, cache *Cache, security Security) *HttpsFetcher {
 	client := resty.New()
 	client.SetTimeout(time.Duration(10) * time.Second)
 
