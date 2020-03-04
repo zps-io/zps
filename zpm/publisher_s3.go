@@ -38,18 +38,18 @@ import (
 type S3Publisher struct {
 	*emission.Emitter
 
+	security Security
+
 	workPath string
 
 	uri   *url.URL
 	name  string
 	prune int
 
-	keyPair *KeyPairEntry
-
 	session *session.Session
 }
 
-func NewS3Publisher(emitter *emission.Emitter, workPath string, uri *url.URL, name string, prune int, keyPair *KeyPairEntry) *S3Publisher {
+func NewS3Publisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) *S3Publisher {
 	sess := session.Must(session.NewSession())
 
 	user := uri.User.Username()
@@ -72,7 +72,7 @@ func NewS3Publisher(emitter *emission.Emitter, workPath string, uri *url.URL, na
 
 	sess.Config.Region = aws.String(region)
 
-	return &S3Publisher{emitter, workPath, uri, name, prune, keyPair, sess}
+	return &S3Publisher{emitter, security, workPath, uri, name, prune, sess}
 }
 
 func (s *S3Publisher) Init() error {
@@ -131,13 +131,20 @@ func (s *S3Publisher) Init() error {
 	})
 
 	// Sign and upload
-	if len(s.keyPair.Key) != 0 {
-		rsaKey, err := s.keyPair.RSAKey()
+	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
+	if err != nil {
+		return err
+	}
+
+	if keyPair == nil {
+		s.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(s.uri)))
+	} else {
+		rsaKey, err := keyPair.RSAKey()
 		if err != nil {
 			return err
 		}
 
-		err = sec.SecuritySignFile(configPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		err = sec.SecuritySignFile(configPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 		if err != nil {
 			return err
 		}
@@ -205,13 +212,20 @@ func (s *S3Publisher) Update() error {
 	})
 
 	// Sign and upload
-	if len(s.keyPair.Key) != 0 {
-		rsaKey, err := s.keyPair.RSAKey()
+	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
+	if err != nil {
+		return err
+	}
+
+	if keyPair == nil {
+		s.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(s.uri)))
+	} else {
+		rsaKey, err := keyPair.RSAKey()
 		if err != nil {
 			return err
 		}
 
-		err = sec.SecuritySignFile(configPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		err = sec.SecuritySignFile(configPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 		if err != nil {
 			return err
 		}
@@ -232,13 +246,20 @@ func (s *S3Publisher) Update() error {
 }
 
 func (s *S3Publisher) Channel(pkg string, channel string) error {
-	for _, osarch := range zps.Platforms() {
+	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
+	if err != nil {
+		return err
+	}
 
-		err := s.channel(osarch, pkg, channel)
+	if keyPair == nil {
+		s.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(s.uri)))
+	}
+
+	for _, osarch := range zps.Platforms() {
+		err := s.channel(osarch, pkg, channel, keyPair)
 		if err != nil {
 			return err
 		}
-
 	}
 
 	return nil
@@ -262,11 +283,19 @@ func (s *S3Publisher) Publish(pkgs ...string) error {
 		zpkgs[file] = pkg
 	}
 
-	for _, osarch := range zps.Platforms() {
+	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
+	if err != nil {
+		return err
+	}
 
+	if keyPair == nil {
+		s.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(s.uri)))
+	}
+
+	for _, osarch := range zps.Platforms() {
 		pkgFiles, pkgs := FilterPackagesByArch(osarch, zpkgs)
 		if len(pkgFiles) > 0 {
-			err := s.publish(osarch, pkgFiles, pkgs)
+			err := s.publish(osarch, pkgFiles, pkgs, keyPair)
 			if err != nil {
 				return err
 			}
@@ -276,7 +305,7 @@ func (s *S3Publisher) Publish(pkgs ...string) error {
 	return nil
 }
 
-func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string) error {
+func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
 	tmpDir, err := ioutil.TempDir(s.workPath, "channel")
 	if err != nil {
 		return err
@@ -332,13 +361,13 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string) er
 	})
 
 	// Sign and upload
-	if len(s.keyPair.Key) != 0 {
-		rsaKey, err := s.keyPair.RSAKey()
+	if keyPair != nil {
+		rsaKey, err := keyPair.RSAKey()
 		if err != nil {
 			return err
 		}
 
-		err = sec.SecuritySignFile(metaPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		err = sec.SecuritySignFile(metaPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 		if err != nil {
 			return err
 		}
@@ -358,7 +387,7 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string) er
 	return err
 }
 
-func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
+func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
 	tmpDir, err := ioutil.TempDir(s.workPath, "publish")
 	if err != nil {
 		return err
@@ -460,13 +489,13 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		})
 
 		// Sign and upload
-		if len(s.keyPair.Key) != 0 {
-			rsaKey, err := s.keyPair.RSAKey()
+		if keyPair != nil {
+			rsaKey, err := keyPair.RSAKey()
 			if err != nil {
 				return err
 			}
 
-			err = sec.SecuritySignFile(metaPath, sigPath, s.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+			err = sec.SecuritySignFile(metaPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 			if err != nil {
 				return err
 			}

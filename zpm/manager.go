@@ -40,11 +40,16 @@ import (
 
 type Manager struct {
 	*emission.Emitter
+
 	config *config.ZpsConfig
-	state  *State
-	cache  *Cache
-	pki    *Pki
-	lock   lockfile.Lockfile
+
+	state *State
+	cache *Cache
+	pki   *Pki
+
+	security Security
+
+	lock lockfile.Lockfile
 }
 
 func NewManager(image string) (*Manager, error) {
@@ -66,6 +71,11 @@ func NewManager(image string) (*Manager, error) {
 	mgr.state = NewState(mgr.config.StatePath())
 	mgr.cache = NewCache(mgr.config.CachePath())
 	mgr.pki = NewPki(mgr.config.PkiPath())
+
+	mgr.security, err = NewSecurity(mgr.config.Security, mgr.pki)
+	if err != nil {
+		return nil, err
+	}
 
 	return mgr, nil
 }
@@ -92,22 +102,8 @@ func (m *Manager) CacheClear() error {
 
 func (m *Manager) Channel(repo string, pkg string, channel string) error {
 	for _, r := range m.config.Repos {
-		kp := &KeyPairEntry{}
-		publisher := PublisherFromUri(r.Publish.Uri)
-
-		pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
-		if err != nil {
-			return err
-		}
-
-		if len(pairs) == 0 {
-			m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
-		} else {
-			kp = pairs[0]
-		}
-
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune, kp)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
 			err := pb.Channel(pkg, channel)
 
@@ -450,21 +446,7 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			kp := &KeyPairEntry{}
-			publisher := PublisherFromUri(r.Publish.Uri)
-
-			pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
-			if err != nil {
-				return err
-			}
-
-			if len(pairs) == 0 {
-				m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
-			} else {
-				kp = pairs[0]
-			}
-
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune, kp)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
 			return pb.Publish(pkgs...)
 		}
@@ -538,21 +520,7 @@ func (m *Manager) Remove(args []string) error {
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			kp := &KeyPairEntry{}
-			publisher := PublisherFromUri(repo.Publish.Uri)
-
-			pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
-			if err != nil {
-				return err
-			}
-
-			if len(pairs) == 0 {
-				m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
-			} else {
-				kp = pairs[0]
-			}
-
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune, kp)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
 			return pb.Init()
 		}
@@ -640,21 +608,7 @@ func (m *Manager) RepoList() ([]string, error) {
 func (m *Manager) RepoUpdate(name string) error {
 	for _, repo := range m.config.Repos {
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			kp := &KeyPairEntry{}
-			publisher := PublisherFromUri(repo.Publish.Uri)
-
-			pairs, err := m.pki.KeyPairs.GetByPublisher(publisher)
-			if err != nil {
-				return err
-			}
-
-			if len(pairs) == 0 {
-				m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", publisher))
-			} else {
-				kp = pairs[0]
-			}
-
-			pb := NewPublisher(m.Emitter, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune, kp)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
 			return pb.Update()
 		}
@@ -794,23 +748,27 @@ func (m *Manager) ZpkgBuild(zpfPath string, targetPath string, workPath string, 
 		return err
 	}
 
-	kp, err := m.pki.KeyPairs.GetByPublisher(manifest.Zpkg.Publisher)
+	kp, err := m.security.KeyPair(manifest.Zpkg.Publisher)
+	if err != nil {
+		return err
+	}
 
-	if len(kp) == 0 {
+	if kp == nil {
 		m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", manifest.Zpkg.Publisher))
+
 		return err
 	}
 
 	signer := zpkg.NewSigner(filename, workPath)
 
-	rsaKey, err := kp[0].RSAKey()
+	rsaKey, err := kp.RSAKey()
 	if err != nil {
 		return err
 	}
 
-	err = signer.Sign(kp[0].Fingerprint, rsaKey)
+	err = signer.Sign(kp.Fingerprint, rsaKey)
 	if err == nil {
-		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp[0].Subject))
+		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp.Subject))
 	}
 
 	return err
@@ -912,7 +870,7 @@ func (m *Manager) ZpkgManifest(path string) (string, error) {
 }
 
 func (m *Manager) ZpkgSign(path string, workPath string) error {
-	reader := zpkg.NewReader(path, "")
+	reader := zpkg.NewReader(path, workPath)
 
 	err := reader.Read()
 	if err != nil {
@@ -920,23 +878,27 @@ func (m *Manager) ZpkgSign(path string, workPath string) error {
 	}
 	reader.Close()
 
-	kp, err := m.pki.KeyPairs.GetByPublisher(reader.Manifest.Zpkg.Publisher)
+	kp, err := m.security.KeyPair(reader.Manifest.Zpkg.Publisher)
+	if err != nil {
+		return err
+	}
 
-	if len(kp) == 0 {
+	if kp == nil {
 		m.Emitter.Emit("manager.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", reader.Manifest.Zpkg.Publisher))
+
 		return err
 	}
 
 	signer := zpkg.NewSigner(path, workPath)
 
-	rsaKey, err := kp[0].RSAKey()
+	rsaKey, err := kp.RSAKey()
 	if err != nil {
 		return err
 	}
 
-	err = signer.Sign(kp[0].Fingerprint, rsaKey)
+	err = signer.Sign(kp.Fingerprint, rsaKey)
 	if err == nil {
-		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp[0].Subject))
+		m.Emitter.Emit("manager.info", fmt.Sprintf("Signed with keypair: %s", kp.Subject))
 	}
 
 	return err
@@ -951,7 +913,6 @@ func (m *Manager) ZpkgValidate(path string) error {
 		return err
 	}
 
-	// TODO wire in mode config
 	security, err := NewSecurity(m.config.Security, m.pki)
 	if err != nil {
 		return err

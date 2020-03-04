@@ -12,6 +12,7 @@ package zpm
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -29,16 +30,16 @@ import (
 type FilePublisher struct {
 	*emission.Emitter
 
+	security Security
+
 	uri  *url.URL
 	name string
 
 	prune int
-
-	keyPair *KeyPairEntry
 }
 
-func NewFilePublisher(emitter *emission.Emitter, uri *url.URL, name string, prune int, keyPair *KeyPairEntry) *FilePublisher {
-	return &FilePublisher{emitter, uri, name, prune, keyPair}
+func NewFilePublisher(emitter *emission.Emitter, security Security, uri *url.URL, name string, prune int) *FilePublisher {
+	return &FilePublisher{emitter, security, uri, name, prune}
 }
 
 func (f *FilePublisher) Init() error {
@@ -59,13 +60,20 @@ func (f *FilePublisher) Init() error {
 		return err
 	}
 
-	if len(f.keyPair.Key) != 0 {
-		rsaKey, err := f.keyPair.RSAKey()
+	keyPair, err := f.security.KeyPair(PublisherFromUri(f.uri))
+	if err != nil {
+		return err
+	}
+
+	if keyPair == nil {
+		f.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(f.uri)))
+	} else {
+		rsaKey, err := keyPair.RSAKey()
 		if err != nil {
 			return err
 		}
 
-		err = sec.SecuritySignFile(configPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		err = sec.SecuritySignFile(configPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 		if err != nil {
 			return err
 		}
@@ -84,13 +92,20 @@ func (f *FilePublisher) Update() error {
 		return err
 	}
 
-	if len(f.keyPair.Key) != 0 {
-		rsaKey, err := f.keyPair.RSAKey()
+	keyPair, err := f.security.KeyPair(PublisherFromUri(f.uri))
+	if err != nil {
+		return err
+	}
+
+	if keyPair == nil {
+		f.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(f.uri)))
+	} else {
+		rsaKey, err := keyPair.RSAKey()
 		if err != nil {
 			return err
 		}
 
-		err = sec.SecuritySignFile(configPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+		err = sec.SecuritySignFile(configPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 		if err != nil {
 			return err
 		}
@@ -100,8 +115,17 @@ func (f *FilePublisher) Update() error {
 }
 
 func (f *FilePublisher) Channel(pkg string, channel string) error {
+	keyPair, err := f.security.KeyPair(PublisherFromUri(f.uri))
+	if err != nil {
+		return err
+	}
+
+	if keyPair == nil {
+		f.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(f.uri)))
+	}
+
 	for _, osarch := range zps.Platforms() {
-		err := f.channel(osarch, pkg, channel)
+		err := f.channel(osarch, pkg, channel, keyPair)
 		if err != nil {
 			return err
 		}
@@ -128,11 +152,20 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 		zpkgs[file] = pkg
 	}
 
-	for _, osarch := range zps.Platforms() {
+	keyPair, err := f.security.KeyPair(PublisherFromUri(f.uri))
+	if err != nil {
+		return err
+	}
 
+	if keyPair == nil {
+		f.Emitter.Emit("publisher.warn", fmt.Sprintf("No keypair found for publisher %s, not signing.", PublisherFromUri(f.uri)))
+	}
+
+	for _, osarch := range zps.Platforms() {
 		pkgFiles, pkgs := FilterPackagesByArch(osarch, zpkgs)
+
 		if len(pkgFiles) > 0 {
-			err := f.publish(osarch, pkgFiles, pkgs)
+			err := f.publish(osarch, pkgFiles, pkgs, keyPair)
 			if err != nil {
 				return err
 			}
@@ -142,7 +175,7 @@ func (f *FilePublisher) Publish(pkgs ...string) error {
 	return nil
 }
 
-func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) error {
+func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
 	var err error
 
 	metaPath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
@@ -174,13 +207,13 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 			return err
 		}
 
-		if len(f.keyPair.Key) != 0 {
-			rsaKey, err := f.keyPair.RSAKey()
+		if keyPair != nil {
+			rsaKey, err := keyPair.RSAKey()
 			if err != nil {
 				return err
 			}
 
-			err = sec.SecuritySignFile(metaPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+			err = sec.SecuritySignFile(metaPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 			if err != nil {
 				return err
 			}
@@ -192,7 +225,7 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string) 
 	return nil
 }
 
-func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg) error {
+func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
 	var err error
 
 	metaPath := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
@@ -260,13 +293,13 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 			metadata.Put(pkg.(*zps.Pkg))
 		}
 
-		if len(f.keyPair.Key) != 0 {
-			rsaKey, err := f.keyPair.RSAKey()
+		if keyPair != nil {
+			rsaKey, err := keyPair.RSAKey()
 			if err != nil {
 				return err
 			}
 
-			err = sec.SecuritySignFile(metaPath, sigPath, f.keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
+			err = sec.SecuritySignFile(metaPath, sigPath, keyPair.Fingerprint, rsaKey, sec.DefaultDigestMethod)
 			if err != nil {
 				return err
 			}
