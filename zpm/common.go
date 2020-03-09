@@ -2,10 +2,14 @@ package zpm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"sort"
 	"strings"
+
+	"github.com/fezz-io/zps/action"
 
 	"github.com/chuckpreslar/emission"
 	"github.com/fezz-io/zps/phase"
@@ -37,6 +41,29 @@ func PublisherFromUri(uri *url.URL) string {
 	} else {
 		return parts[len(parts)-2]
 	}
+}
+
+func ValidateFileSignature(security Security, contentPath string, signaturePath string) error {
+	contentBytes, err := ioutil.ReadFile(contentPath)
+	if err != nil {
+		return err
+	}
+
+	sigBytes, err := ioutil.ReadFile(signaturePath)
+	if err != nil {
+		return err
+	}
+
+	sig := &action.Signature{}
+
+	err = json.Unmarshal(sigBytes, sig)
+	if err != nil {
+		return err
+	}
+
+	_, err = security.Verify(&contentBytes, []*action.Signature{sig})
+
+	return err
 }
 
 // TODO move to higher level zpkg util

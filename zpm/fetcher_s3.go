@@ -83,6 +83,35 @@ func (s *S3Fetcher) Refresh() error {
 		return errors.New(fmt.Sprintf("refresh failed: %s", s.uri.String()))
 	}
 
+	if s.security.Mode() != SecurityModeNone {
+		sdst, err := os.OpenFile(s.cache.GetConfigSig(s.uri.String()), os.O_RDWR|os.O_CREATE, 0640)
+		if err != nil {
+			return err
+		}
+		defer sdst.Close()
+
+		_, err = client.Download(sdst, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
+		})
+		if err != nil {
+			sdst.Close()
+			os.Remove(s.cache.GetConfigSig(s.uri.String()))
+
+			return errors.New(fmt.Sprintf("refresh failed: %s", s.uri.String()))
+		}
+
+		// Validate config signature
+		err = ValidateFileSignature(s.security, s.cache.GetConfig(s.uri.String()), s.cache.GetConfigSig(s.uri.String()))
+		if err != nil {
+			// Remove the config and sig if validation fails
+			os.Remove(s.cache.GetConfig(s.uri.String()))
+			os.Remove(s.cache.GetConfigSig(s.uri.String()))
+
+			return err
+		}
+	}
+
 	for _, osarch := range zps.Platforms() {
 		err := s.refresh(osarch)
 		if err != nil {
@@ -140,6 +169,40 @@ func (s *S3Fetcher) refresh(osarch *zps.OsArch) error {
 		} else {
 			dst.Close()
 			os.Remove(dest)
+		}
+	}
+
+	if s.security.Mode() != SecurityModeNone {
+		starget := path.Join(s.uri.Path, osarch.String(), "metadata.sig")
+		sdest := s.cache.GetMetaSig(osarch.String(), s.uri.String())
+
+		sdst, err := os.OpenFile(sdest, os.O_RDWR|os.O_CREATE, 0640)
+		if err != nil {
+			return err
+		}
+		defer sdst.Close()
+
+		_, err = client.Download(sdst, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(starget),
+		})
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
+				return errors.New(fmt.Sprintf("unable to download: %s", target))
+			} else {
+				dst.Close()
+				os.Remove(sdest)
+			}
+		}
+
+		// Validate metadata signature
+		err = ValidateFileSignature(s.security, s.cache.GetMeta(osarch.String(), s.uri.String()), s.cache.GetMetaSig(osarch.String(), s.uri.String()))
+		if err != nil {
+			// Remove the config and sig if validation fails
+			os.Remove(s.cache.GetMeta(osarch.String(), s.uri.String()))
+			os.Remove(s.cache.GetMetaSig(osarch.String(), s.uri.String()))
+
+			return err
 		}
 	}
 

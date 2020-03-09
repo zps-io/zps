@@ -11,18 +11,14 @@
 package zpm
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 
 	"github.com/chuckpreslar/emission"
-	"github.com/fezz-io/zps/action"
-
 	"github.com/fezz-io/zps/zps"
 	"github.com/nightlyone/lockfile"
 )
@@ -86,25 +82,7 @@ func (f *FileFetcher) Refresh() error {
 			return err
 		}
 
-		// Validate config signature
-		cfgBytes, err := ioutil.ReadFile(f.cache.GetConfig(f.uri.String()))
-		if err != nil {
-			return err
-		}
-
-		sigBytes, err := ioutil.ReadFile(f.cache.GetConfigSig(f.uri.String()))
-		if err != nil {
-			return err
-		}
-
-		sig := &action.Signature{}
-
-		err = json.Unmarshal(sigBytes, sig)
-		if err != nil {
-			return err
-		}
-
-		_, err = f.security.Verify(&cfgBytes, []*action.Signature{sig})
+		err = ValidateFileSignature(f.security, f.cache.GetConfig(f.uri.String()), f.cache.GetConfigSig(f.uri.String()))
 		if err != nil {
 			// Remove the config and sig if validation fails
 			os.Remove(f.cache.GetConfig(f.uri.String()))
@@ -237,25 +215,7 @@ func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 				return err
 			}
 
-			// Validate meta signature
-			metaBytes, err := ioutil.ReadFile(f.cache.GetMeta(osarch.String(), f.uri.String()))
-			if err != nil {
-				return err
-			}
-
-			sigBytes, err := ioutil.ReadFile(f.cache.GetMetaSig(osarch.String(), f.uri.String()))
-			if err != nil {
-				return err
-			}
-
-			sig := &action.Signature{}
-
-			err = json.Unmarshal(sigBytes, sig)
-			if err != nil {
-				return err
-			}
-
-			_, err = f.security.Verify(&metaBytes, []*action.Signature{sig})
+			err = ValidateFileSignature(f.security, f.cache.GetMeta(osarch.String(), f.uri.String()), f.cache.GetMetaSig(osarch.String(), f.uri.String()))
 			if err != nil {
 				// Remove the config and sig if validation fails
 				os.Remove(f.cache.GetMeta(osarch.String(), f.uri.String()))
