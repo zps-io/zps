@@ -64,19 +64,22 @@ func NewS3Fetcher(uri *url.URL, cache *Cache, security Security) *S3Fetcher {
 }
 
 func (s *S3Fetcher) Refresh() error {
-	d, err := os.Create(s.cache.GetConfig(s.uri.String()))
+	dst, err := os.OpenFile(s.cache.GetConfig(s.uri.String()), os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer dst.Close()
 
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(d, &s3.GetObjectInput{
+	_, err = client.Download(dst, &s3.GetObjectInput{
 		Bucket: aws.String(s.uri.Host),
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 	})
 	if err != nil {
+		dst.Close()
+		os.Remove(s.cache.GetConfig(s.uri.String()))
+
 		return errors.New(fmt.Sprintf("refresh failed: %s", s.uri.String()))
 	}
 
@@ -95,15 +98,15 @@ func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	osarch := &zps.OsArch{pkg.Os(), pkg.Arch()}
 	target := path.Join(s.uri.Path, osarch.String(), pkg.FileName())
 
-	d, err := os.Create(s.cache.GetFile(pkg.FileName()))
+	dst, err := os.OpenFile(s.cache.GetFile(pkg.FileName()), os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer dst.Close()
 
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(d, &s3.GetObjectInput{
+	_, err = client.Download(dst, &s3.GetObjectInput{
 		Bucket: aws.String(s.uri.Host),
 		Key:    aws.String(target),
 	})
@@ -119,15 +122,15 @@ func (s *S3Fetcher) refresh(osarch *zps.OsArch) error {
 	target := path.Join(s.uri.Path, osarch.String(), "metadata.db")
 	dest := s.cache.GetMeta(osarch.String(), s.uri.String())
 
-	d, err := os.Create(dest)
+	dst, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer dst.Close()
 
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(d, &s3.GetObjectInput{
+	_, err = client.Download(dst, &s3.GetObjectInput{
 		Bucket: aws.String(s.uri.Host),
 		Key:    aws.String(target),
 	})
@@ -135,7 +138,7 @@ func (s *S3Fetcher) refresh(osarch *zps.OsArch) error {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
 			return errors.New(fmt.Sprintf("unable to download: %s", target))
 		} else {
-			d.Close()
+			dst.Close()
 			os.Remove(dest)
 		}
 	}

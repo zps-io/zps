@@ -149,7 +149,7 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	defer s.Close()
 
 	if !f.cache.Exists(cacheFile) {
-		d, err := os.Create(cacheFile)
+		d, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}

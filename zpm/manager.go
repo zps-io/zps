@@ -471,7 +471,7 @@ func (m *Manager) Refresh() error {
 		} else if strings.Contains(err.Error(), "no trusted certificates") {
 			m.Emit("manager.error", fmt.Sprint("metadata validation failed: ", r.Fetch.Uri.String()))
 		} else if strings.Contains(err.Error(), "refresh failed") {
-			m.Emit("manager.error", fmt.Sprint("refresh failed: ", r.Fetch.Uri.String()))
+			m.Emit("manager.error", fmt.Sprint("fetch metadata failed: ", r.Fetch.Uri.String()))
 		} else {
 			m.Emit("manager.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
 		}

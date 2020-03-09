@@ -40,24 +40,24 @@ func (f *LocalFetcher) Fetch(pkg *zps.Pkg) error {
 	repofile := filepath.Join(f.uri.Path, packagefile)
 	cachefile := f.cache.GetFile(packagefile)
 
-	s, err := os.OpenFile(repofile, os.O_RDWR|os.O_CREATE, 0640)
+	src, err := os.Open(repofile)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer src.Close()
 
 	if !f.cache.Exists(cachefile) {
-		d, err := os.Create(cachefile)
+		dst, err := os.OpenFile(cachefile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}
+		defer dst.Close()
 
-		if _, err := io.Copy(d, s); err != nil {
-			d.Close()
+		if _, err := io.Copy(dst, src); err != nil {
 			return err
 		}
 
-		return d.Close()
+		return nil
 	}
 
 	return nil
