@@ -9,11 +9,17 @@ import (
 )
 
 type Security interface {
-	Verify(publisher string, content *[]byte, signatures []*action.Signature) (*action.Signature, error)
+	Mode() string
+	Verify(content *[]byte, signatures []*action.Signature) (*action.Signature, error)
 	KeyPair(publisher string) (*KeyPairEntry, error)
 }
 
 func NewSecurity(mode string, pki *Pki) (Security, error) {
+	// Short circuit for none
+	if mode == SecurityModeNone {
+		return &SecurityNone{}, nil
+	}
+
 	// Setup initial PKI verify opts, loading CAs and Intermediates from pki store
 	cas := x509.NewCertPool()
 	intermediates := x509.NewCertPool()

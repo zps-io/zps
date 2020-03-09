@@ -53,8 +53,16 @@ func (c *Cache) GetConfig(uri string) string {
 	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), ".config.db"))
 }
 
+func (c *Cache) GetConfigSig(uri string) string {
+	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), ".config.sig"))
+}
+
 func (c *Cache) GetMeta(osarch string, uri string) string {
 	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), "-", osarch, ".metadata.db"))
+}
+
+func (c *Cache) GetMetaSig(osarch string, uri string) string {
+	return filepath.Join(c.path, fmt.Sprint(c.getId(uri), "-", osarch, ".metadata.sig"))
 }
 
 func (c *Cache) GetFile(name string) string {

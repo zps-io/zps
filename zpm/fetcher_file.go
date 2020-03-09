@@ -11,11 +11,17 @@
 package zpm
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
+
+	"github.com/chuckpreslar/emission"
+	"github.com/fezz-io/zps/action"
 
 	"github.com/fezz-io/zps/zps"
 	"github.com/nightlyone/lockfile"
@@ -33,26 +39,79 @@ func NewFileFetcher(uri *url.URL, cache *Cache, security Security) *FileFetcher 
 }
 
 func (f *FileFetcher) Refresh() error {
-	configfile := filepath.Join(f.uri.Path, "config.db")
+	configFile := filepath.Join(f.uri.Path, "config.db")
 
-	if _, err := os.Stat(configfile); os.IsNotExist(err) {
+	// Refresh config db
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		return errors.New("repo config not found")
 	}
 
-	s, err := os.OpenFile(configfile, os.O_RDWR, 0640)
+	srcCfg, err := os.Open(configFile)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer srcCfg.Close()
 
-	d, err := os.Create(f.cache.GetConfig(f.uri.String()))
+	dstCfg, err := os.OpenFile(f.cache.GetConfig(f.uri.String()), os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
+	defer dstCfg.Close()
 
-	defer d.Close()
-	if _, err := io.Copy(d, s); err != nil {
+	if _, err := io.Copy(dstCfg, srcCfg); err != nil {
 		return err
+	}
+
+	if f.security.Mode() != SecurityModeNone {
+		configSig := filepath.Join(f.uri.Path, "config.sig")
+
+		// Refresh config signature
+		if _, err := os.Stat(configSig); os.IsNotExist(err) {
+			return errors.New("repo config signature not found")
+		}
+
+		srcSig, err := os.Open(configSig)
+		if err != nil {
+			return err
+		}
+		defer srcSig.Close()
+
+		destSig, err := os.OpenFile(f.cache.GetConfigSig(f.uri.String()), os.O_RDWR|os.O_CREATE, 0640)
+		if err != nil {
+			return err
+		}
+		defer destSig.Close()
+
+		if _, err := io.Copy(destSig, srcSig); err != nil {
+			return err
+		}
+
+		// Validate config signature
+		cfgBytes, err := ioutil.ReadFile(f.cache.GetConfig(f.uri.String()))
+		if err != nil {
+			return err
+		}
+
+		sigBytes, err := ioutil.ReadFile(f.cache.GetConfigSig(f.uri.String()))
+		if err != nil {
+			return err
+		}
+
+		sig := &action.Signature{}
+
+		err = json.Unmarshal(sigBytes, sig)
+		if err != nil {
+			return err
+		}
+
+		_, err = f.security.Verify(&cfgBytes, []*action.Signature{sig})
+		if err != nil {
+			// Remove the config and sig if validation fails
+			os.Remove(f.cache.GetConfig(f.uri.String()))
+			os.Remove(f.cache.GetConfigSig(f.uri.String()))
+
+			return err
+		}
 	}
 
 	for _, osarch := range zps.Platforms() {
@@ -68,9 +127,9 @@ func (f *FileFetcher) Refresh() error {
 func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	var err error
 	osarch := &zps.OsArch{pkg.Os(), pkg.Arch()}
-	packagefile := pkg.FileName()
-	repofile := filepath.Join(f.uri.Path, osarch.String(), packagefile)
-	cachefile := f.cache.GetFile(packagefile)
+	packageFile := pkg.FileName()
+	repoFile := filepath.Join(f.uri.Path, osarch.String(), packageFile)
+	cacheFile := f.cache.GetFile(packageFile)
 
 	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
 	if err != nil {
@@ -83,14 +142,14 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	}
 	defer lock.Unlock()
 
-	s, err := os.OpenFile(repofile, os.O_RDWR|os.O_CREATE, 0640)
+	s, err := os.Open(repoFile)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 
-	if !f.cache.Exists(cachefile) {
-		d, err := os.Create(cachefile)
+	if !f.cache.Exists(cacheFile) {
+		d, err := os.Create(cacheFile)
 		if err != nil {
 			return err
 		}
@@ -98,6 +157,16 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 		if _, err := io.Copy(d, s); err != nil {
 			d.Close()
 			return err
+		}
+
+		// Validate pkg
+		if f.security.Mode() != SecurityModeNone {
+			err = ValidateZpkg(&emission.Emitter{}, f.security, cacheFile, true)
+			if err != nil {
+				os.Remove(cacheFile)
+
+				return errors.New(fmt.Sprintf("failed to validate signature: %s", packageFile))
+			}
 		}
 
 		return d.Close()
@@ -109,13 +178,13 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 
-	metadatafile := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
+	metadataFile := filepath.Join(f.uri.Path, osarch.String(), "metadata.db")
 
 	if _, err = os.Stat(filepath.Join(f.uri.Path, osarch.String())); os.IsNotExist(err) {
 		return nil
 	}
 
-	if _, err = os.Stat(metadatafile); os.IsNotExist(err) {
+	if _, err = os.Stat(metadataFile); os.IsNotExist(err) {
 		return nil
 	}
 
@@ -131,23 +200,72 @@ func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	defer lock.Unlock()
 
 	if err == nil {
-		s, err := os.OpenFile(metadatafile, os.O_RDWR|os.O_CREATE, 0640)
+		// Fetch meta
+		srcMeta, err := os.Open(metadataFile)
 		if err != nil {
 			return err
 		}
-		defer s.Close()
+		defer srcMeta.Close()
 
-		d, err := os.Create(f.cache.GetMeta(osarch.String(), f.uri.String()))
+		dstMeta, err := os.OpenFile(f.cache.GetMeta(osarch.String(), f.uri.String()), os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}
+		defer dstMeta.Close()
 
-		if _, err := io.Copy(d, s); err != nil {
-			d.Close()
+		if _, err := io.Copy(dstMeta, srcMeta); err != nil {
 			return err
 		}
 
-		return d.Close()
+		if f.security.Mode() != SecurityModeNone {
+			metadataSig := filepath.Join(f.uri.Path, osarch.String(), "metadata.sig")
+
+			// Fetch meta sig
+			srcSig, err := os.Open(metadataSig)
+			if err != nil {
+				return err
+			}
+			defer srcMeta.Close()
+
+			dstSig, err := os.OpenFile(f.cache.GetMetaSig(osarch.String(), f.uri.String()), os.O_RDWR|os.O_CREATE, 0640)
+			if err != nil {
+				return err
+			}
+			defer dstMeta.Close()
+
+			if _, err := io.Copy(dstSig, srcSig); err != nil {
+				return err
+			}
+
+			// Validate meta signature
+			metaBytes, err := ioutil.ReadFile(f.cache.GetMeta(osarch.String(), f.uri.String()))
+			if err != nil {
+				return err
+			}
+
+			sigBytes, err := ioutil.ReadFile(f.cache.GetMetaSig(osarch.String(), f.uri.String()))
+			if err != nil {
+				return err
+			}
+
+			sig := &action.Signature{}
+
+			err = json.Unmarshal(sigBytes, sig)
+			if err != nil {
+				return err
+			}
+
+			_, err = f.security.Verify(&metaBytes, []*action.Signature{sig})
+			if err != nil {
+				// Remove the config and sig if validation fails
+				os.Remove(f.cache.GetMeta(osarch.String(), f.uri.String()))
+				os.Remove(f.cache.GetMetaSig(osarch.String(), f.uri.String()))
+
+				return err
+			}
+		}
+
+		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}

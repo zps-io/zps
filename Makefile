@@ -98,4 +98,4 @@ zps: clean
 fmt:
 	goimports -w .
 
-.PHONY: deps fmt
+.PHONY: fmt

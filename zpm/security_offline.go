@@ -22,6 +22,10 @@ type SecurityOffline struct {
 	intermediateCache *x509.CertPool
 }
 
+func (s *SecurityOffline) Mode() string {
+	return SecurityModeOffline
+}
+
 func (s *SecurityOffline) KeyPair(publisher string) (*KeyPairEntry, error) {
 	pairs, err := s.pki.KeyPairs.GetByPublisher(publisher)
 	if err != nil {
@@ -36,7 +40,7 @@ func (s *SecurityOffline) KeyPair(publisher string) (*KeyPairEntry, error) {
 }
 
 // TODO warn on the presence of invalid signatures
-func (s *SecurityOffline) Verify(publisher string, content *[]byte, signatures []*action.Signature) (*action.Signature, error) {
+func (s *SecurityOffline) Verify(content *[]byte, signatures []*action.Signature) (*action.Signature, error) {
 	if len(signatures) == 0 {
 		return nil, errors.New("no signatures present")
 	}

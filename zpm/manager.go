@@ -468,6 +468,8 @@ func (m *Manager) Refresh() error {
 		err = fe.Refresh()
 		if err == nil {
 			m.Emit("manager.refresh", fmt.Sprint("refreshed: ", r.Fetch.Uri.String()))
+		} else if strings.Contains(err.Error(), "no trusted certificates") {
+			m.Emit("manager.error", fmt.Sprint("signature validation failed: ", r.Fetch.Uri.String()))
 		} else {
 			m.Emit("manager.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
 		}
@@ -906,52 +908,7 @@ func (m *Manager) ZpkgSign(path string, workPath string) error {
 
 // TODO also verify file digests
 func (m *Manager) ZpkgValidate(path string) error {
-	reader := zpkg.NewReader(path, "")
-
-	err := reader.Read()
-	if err != nil {
-		return err
-	}
-
-	security, err := NewSecurity(m.config.Security, m.pki)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	var content []byte
-	content = []byte(reader.Manifest.ToSigningJson())
-
-	sig, err := security.Verify(reader.Manifest.Zpkg.Publisher, &content, reader.Manifest.Signatures)
-	if err != nil {
-		return err
-	}
-
-	m.Emit("manager.info", fmt.Sprintf("Manifest signature validated with key fingerpint: %s", sig.FingerPrint))
-
-	// Validate payload
-
-	options := &provider.Options{}
-	ctx := m.getContext(phase.VALIDATE, options)
-	ctx = context.WithValue(ctx, "payload", reader.Payload)
-
-	contents := reader.Manifest.Section("File")
-	sort.Sort(contents)
-
-	factory := provider.DefaultFactory(m.Emitter)
-
-	m.Emit("manager.info", "Validating payload ...")
-
-	for _, fsObject := range contents {
-		err = factory.Get(fsObject).Realize(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	m.Emit("manager.info", fmt.Sprintf("Package verified: %s", path))
-
-	return nil
+	return ValidateZpkg(m.Emitter, m.security, path, false)
 }
 
 func (m *Manager) image() (*zps.Repo, error) {
