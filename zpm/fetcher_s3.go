@@ -77,7 +77,7 @@ func (s *S3Fetcher) Refresh() error {
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 	})
 	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+		return errors.New(fmt.Sprintf("refresh failed: %s", s.uri.String()))
 	}
 
 	for _, osarch := range zps.Platforms() {
