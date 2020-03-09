@@ -14,8 +14,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"time"
+
+	"github.com/chuckpreslar/emission"
 
 	"github.com/fezz-io/zps/zps"
 	"gopkg.in/resty.v1"
@@ -64,6 +67,41 @@ func (h *HttpsFetcher) Refresh() error {
 		}
 	}
 
+	if h.security.Mode() != SecurityModeNone {
+		sigUri, _ := url.Parse(h.uri.String())
+		sigUri.Path = path.Join(sigUri.Path, "config.sig")
+
+		resp, err := h.client.R().
+			SetBasicAuth(user, password).
+			SetOutput(h.cache.GetConfigSig(h.uri.String())).
+			Get(sigUri.String())
+
+		if err != nil {
+			return errors.New(fmt.Sprintf("error connecting to: %s", h.uri.Host))
+		}
+
+		if resp.IsError() {
+			switch resp.StatusCode() {
+			case 404:
+				return errors.New(fmt.Sprintf("not found: %s", sigUri.String()))
+			case 403:
+				return errors.New(fmt.Sprintf("access denied: %s", sigUri.String()))
+			default:
+				return errors.New(fmt.Sprintf("server error %d: %s", resp.StatusCode(), sigUri.String()))
+			}
+		}
+
+		// Validate config signature
+		err = ValidateFileSignature(h.security, h.cache.GetConfig(h.uri.String()), h.cache.GetConfigSig(h.uri.String()))
+		if err != nil {
+			// Remove the config and sig if validation fails
+			os.Remove(h.cache.GetConfig(h.uri.String()))
+			os.Remove(h.cache.GetConfigSig(h.uri.String()))
+
+			return err
+		}
+	}
+
 	for _, osarch := range zps.Platforms() {
 		err := h.refresh(osarch)
 		if err != nil {
@@ -81,12 +119,14 @@ func (h *HttpsFetcher) Fetch(pkg *zps.Pkg) error {
 	fileUri, _ := url.Parse(h.uri.String())
 	fileUri.Path = path.Join(fileUri.Path, osarch.String(), pkg.FileName())
 
+	cacheFile := h.cache.GetFile(pkg.FileName())
+
 	user := fileUri.User.Username()
 	password, _ := fileUri.User.Password()
 
 	resp, err := h.client.R().
 		SetBasicAuth(user, password).
-		SetOutput(h.cache.GetFile(pkg.FileName())).
+		SetOutput(cacheFile).
 		Get(fileUri.String())
 
 	if err != nil {
@@ -101,6 +141,16 @@ func (h *HttpsFetcher) Fetch(pkg *zps.Pkg) error {
 			return errors.New(fmt.Sprintf("access denied: %s", fileUri.String()))
 		default:
 			return errors.New(fmt.Sprintf("server error %d: %s", resp.StatusCode(), fileUri.String()))
+		}
+	}
+
+	// Validate pkg
+	if h.security.Mode() != SecurityModeNone {
+		err = ValidateZpkg(&emission.Emitter{}, h.security, cacheFile, true)
+		if err != nil {
+			os.Remove(cacheFile)
+
+			return errors.New(fmt.Sprintf("failed to validate signature: %s", pkg.FileName()))
 		}
 	}
 
@@ -133,6 +183,41 @@ func (h *HttpsFetcher) refresh(osarch *zps.OsArch) error {
 			return nil
 		default:
 			return errors.New(fmt.Sprintf("server error %d: %s", resp.StatusCode(), metadataUri.String()))
+		}
+	}
+
+	if h.security.Mode() != SecurityModeNone {
+		sigUri, _ := url.Parse(h.uri.String())
+		sigUri.Path = path.Join(sigUri.Path, osarch.String(), "metadata.sig")
+
+		resp, err := h.client.R().
+			SetBasicAuth(user, password).
+			SetOutput(h.cache.GetMetaSig(osarch.String(), h.uri.String())).
+			Get(sigUri.String())
+
+		if err != nil {
+			return errors.New(fmt.Sprintf("error connecting to: %s", h.uri.Host))
+		}
+
+		if resp.IsError() {
+			switch resp.StatusCode() {
+			case 404:
+				return errors.New(fmt.Sprintf("not found: %s", sigUri.String()))
+			case 403:
+				return errors.New(fmt.Sprintf("access denied: %s", sigUri.String()))
+			default:
+				return errors.New(fmt.Sprintf("server error %d: %s", resp.StatusCode(), sigUri.String()))
+			}
+		}
+
+		// Validate config signature
+		err = ValidateFileSignature(h.security, h.cache.GetMeta(osarch.String(), h.uri.String()), h.cache.GetMetaSig(osarch.String(), h.uri.String()))
+		if err != nil {
+			// Remove the config and sig if validation fails
+			os.Remove(h.cache.GetMeta(osarch.String(), h.uri.String()))
+			os.Remove(h.cache.GetMetaSig(osarch.String(), h.uri.String()))
+
+			return err
 		}
 	}
 

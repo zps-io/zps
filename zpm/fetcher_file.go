@@ -120,20 +120,20 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	}
 	defer lock.Unlock()
 
-	s, err := os.Open(repoFile)
+	src, err := os.Open(repoFile)
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer src.Close()
 
 	if !f.cache.Exists(cacheFile) {
-		d, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
+		dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}
-		defer d.Close()
+		defer dst.Close()
 
-		if _, err := io.Copy(d, s); err != nil {
+		if _, err := io.Copy(dst, src); err != nil {
 			return err
 		}
 

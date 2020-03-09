@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/chuckpreslar/emission"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -126,8 +128,9 @@ func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	var err error
 	osarch := &zps.OsArch{pkg.Os(), pkg.Arch()}
 	target := path.Join(s.uri.Path, osarch.String(), pkg.FileName())
+	cacheFile := s.cache.GetFile(pkg.FileName())
 
-	dst, err := os.OpenFile(s.cache.GetFile(pkg.FileName()), os.O_RDWR|os.O_CREATE, 0640)
+	dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
@@ -141,6 +144,16 @@ func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	})
 	if err != nil {
 		return errors.New(fmt.Sprintf("unable to download: %s", target))
+	}
+
+	// Validate pkg
+	if s.security.Mode() != SecurityModeNone {
+		err = ValidateZpkg(&emission.Emitter{}, s.security, cacheFile, true)
+		if err != nil {
+			os.Remove(cacheFile)
+
+			return errors.New(fmt.Sprintf("failed to validate signature: %s", pkg.FileName()))
+		}
 	}
 
 	return err

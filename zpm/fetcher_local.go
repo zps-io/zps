@@ -11,10 +11,14 @@
 package zpm
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"path/filepath"
+
+	"github.com/chuckpreslar/emission"
 
 	"github.com/fezz-io/zps/zps"
 )
@@ -36,18 +40,18 @@ func (f *LocalFetcher) Refresh() error {
 
 func (f *LocalFetcher) Fetch(pkg *zps.Pkg) error {
 	var err error
-	packagefile := pkg.FileName()
-	repofile := filepath.Join(f.uri.Path, packagefile)
-	cachefile := f.cache.GetFile(packagefile)
+	packageFile := pkg.FileName()
+	repoFile := filepath.Join(f.uri.Path, packageFile)
+	cacheFile := f.cache.GetFile(packageFile)
 
-	src, err := os.Open(repofile)
+	src, err := os.Open(repoFile)
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	if !f.cache.Exists(cachefile) {
-		dst, err := os.OpenFile(cachefile, os.O_RDWR|os.O_CREATE, 0640)
+	if !f.cache.Exists(cacheFile) {
+		dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
 		}
@@ -55,6 +59,16 @@ func (f *LocalFetcher) Fetch(pkg *zps.Pkg) error {
 
 		if _, err := io.Copy(dst, src); err != nil {
 			return err
+		}
+
+		// Validate pkg
+		if f.security.Mode() != SecurityModeNone {
+			err = ValidateZpkg(&emission.Emitter{}, f.security, cacheFile, true)
+			if err != nil {
+				os.Remove(cacheFile)
+
+				return errors.New(fmt.Sprintf("failed to validate signature: %s", packageFile))
+			}
 		}
 
 		return nil
