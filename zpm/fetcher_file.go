@@ -153,9 +153,9 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 		if err != nil {
 			return err
 		}
+		defer d.Close()
 
 		if _, err := io.Copy(d, s); err != nil {
-			d.Close()
 			return err
 		}
 
@@ -169,7 +169,7 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 			}
 		}
 
-		return d.Close()
+		return nil
 	}
 
 	return nil
