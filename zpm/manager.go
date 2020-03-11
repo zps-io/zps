@@ -554,20 +554,29 @@ func (m *Manager) RepoContents(name string) ([]string, error) {
 			for _, osarch := range osArches {
 				metafile := m.cache.GetMeta(osarch.String(), repo.Fetch.Uri.String())
 
-				repo := &zps.Repo{}
+				zrepo := &zps.Repo{}
 
 				metadata := NewMetadata(metafile)
 				if !metadata.Exists() {
 					continue
 				}
 
+				// Validate metadata signature
+				if m.security.Mode() != SecurityModeNone {
+					err := ValidateFileSignature(m.security, m.cache.GetMeta(osarch.String(), repo.Fetch.Uri.String()), m.cache.GetMetaSig(osarch.String(), repo.Fetch.Uri.String()))
+					if err != nil {
+						m.Emit("manager.error", fmt.Sprintf("invalid metadata signature: %s", repo.Fetch.Uri))
+						continue
+					}
+				}
+
 				meta, err := metadata.All()
 				if err != nil {
 					return nil, err
 				}
-				repo.Load(meta)
+				zrepo.Load(meta)
 
-				for _, pkg := range repo.Solvables() {
+				for _, pkg := range zrepo.Solvables() {
 					contents = append(contents, strings.Join([]string{pkg.(*zps.Pkg).Name(), pkg.(*zps.Pkg).Id()}, "|"))
 				}
 			}
@@ -1000,6 +1009,15 @@ func (m *Manager) pool(files ...string) (*zps.Pool, error) {
 					continue
 				}
 
+				// Validate metadata signature
+				if m.security.Mode() != SecurityModeNone {
+					err := ValidateFileSignature(m.security, m.cache.GetMeta(osarch.String(), r.Fetch.Uri.String()), m.cache.GetMetaSig(osarch.String(), r.Fetch.Uri.String()))
+					if err != nil {
+						m.Emit("manager.error", fmt.Sprintf("invalid metadata signature: %s", r.Fetch.Uri))
+						continue
+					}
+				}
+
 				meta, err := metadata.All()
 				if err != nil && !strings.Contains(err.Error(), "no such file") {
 					return nil, err
@@ -1036,14 +1054,22 @@ func (m *Manager) repoConfig(uri string) (map[string]string, error) {
 		return nil, errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
+	// Validate config signature
+	if m.security.Mode() != SecurityModeNone {
+		err := ValidateFileSignature(m.security, m.cache.GetConfig(uri), m.cache.GetConfigSig(uri))
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("Repo config signature validation failed: %s", uri))
+		}
+	}
+
 	configDb := NewConfig(configPath)
 
-	config, err := configDb.All()
+	cfg, err := configDb.All()
 	if err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return cfg, nil
 }
 
 func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
