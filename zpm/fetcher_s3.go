@@ -130,20 +130,23 @@ func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	target := path.Join(s.uri.Path, osarch.String(), pkg.FileName())
 	cacheFile := s.cache.GetFile(pkg.FileName())
 
-	dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
+	// Fetch package if not in cache
+	if !s.cache.Exists(cacheFile) {
+		dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
+		if err != nil {
+			return err
+		}
+		defer dst.Close()
 
-	client := s3manager.NewDownloader(s.session)
+		client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(dst, &s3.GetObjectInput{
-		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(target),
-	})
-	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", target))
+		_, err = client.Download(dst, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(target),
+		})
+		if err != nil {
+			return errors.New(fmt.Sprintf("unable to download: %s", target))
+		}
 	}
 
 	// Validate pkg

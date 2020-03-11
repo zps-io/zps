@@ -44,13 +44,14 @@ func (f *LocalFetcher) Fetch(pkg *zps.Pkg) error {
 	repoFile := filepath.Join(f.uri.Path, packageFile)
 	cacheFile := f.cache.GetFile(packageFile)
 
-	src, err := os.Open(repoFile)
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
+	// Copy package if not in cache
 	if !f.cache.Exists(cacheFile) {
+		src, err := os.Open(repoFile)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
 		dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
@@ -60,18 +61,16 @@ func (f *LocalFetcher) Fetch(pkg *zps.Pkg) error {
 		if _, err := io.Copy(dst, src); err != nil {
 			return err
 		}
+	}
 
-		// Validate pkg
-		if f.security.Mode() != SecurityModeNone {
-			err = ValidateZpkg(&emission.Emitter{}, f.security, cacheFile, true)
-			if err != nil {
-				os.Remove(cacheFile)
+	// Validate pkg
+	if f.security.Mode() != SecurityModeNone {
+		err = ValidateZpkg(&emission.Emitter{}, f.security, cacheFile, true)
+		if err != nil {
+			os.Remove(cacheFile)
 
-				return errors.New(fmt.Sprintf("failed to validate signature: %s", packageFile))
-			}
+			return errors.New(fmt.Sprintf("failed to validate signature: %s", packageFile))
 		}
-
-		return nil
 	}
 
 	return nil

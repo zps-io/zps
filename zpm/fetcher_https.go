@@ -124,23 +124,26 @@ func (h *HttpsFetcher) Fetch(pkg *zps.Pkg) error {
 	user := fileUri.User.Username()
 	password, _ := fileUri.User.Password()
 
-	resp, err := h.client.R().
-		SetBasicAuth(user, password).
-		SetOutput(cacheFile).
-		Get(fileUri.String())
+	// Fetch package if not in cache
+	if !h.cache.Exists(cacheFile) {
+		resp, err := h.client.R().
+			SetBasicAuth(user, password).
+			SetOutput(cacheFile).
+			Get(fileUri.String())
 
-	if err != nil {
-		return errors.New(fmt.Sprintf("error connecting to: %s", h.uri.Host))
-	}
+		if err != nil {
+			return errors.New(fmt.Sprintf("error connecting to: %s", h.uri.Host))
+		}
 
-	if resp.IsError() {
-		switch resp.StatusCode() {
-		case 404:
-			return errors.New(fmt.Sprintf("not found: %s", fileUri.String()))
-		case 403:
-			return errors.New(fmt.Sprintf("access denied: %s", fileUri.String()))
-		default:
-			return errors.New(fmt.Sprintf("server error %d: %s", resp.StatusCode(), fileUri.String()))
+		if resp.IsError() {
+			switch resp.StatusCode() {
+			case 404:
+				return errors.New(fmt.Sprintf("not found: %s", fileUri.String()))
+			case 403:
+				return errors.New(fmt.Sprintf("access denied: %s", fileUri.String()))
+			default:
+				return errors.New(fmt.Sprintf("server error %d: %s", resp.StatusCode(), fileUri.String()))
+			}
 		}
 	}
 

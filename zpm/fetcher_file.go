@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/chuckpreslar/emission"
+
 	"github.com/fezz-io/zps/zps"
 	"github.com/nightlyone/lockfile"
 )
@@ -120,13 +121,14 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	}
 	defer lock.Unlock()
 
-	src, err := os.Open(repoFile)
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
+	// Copy package if not in cache
 	if !f.cache.Exists(cacheFile) {
+		src, err := os.Open(repoFile)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
 		dst, err := os.OpenFile(cacheFile, os.O_RDWR|os.O_CREATE, 0640)
 		if err != nil {
 			return err
@@ -136,18 +138,16 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 		if _, err := io.Copy(dst, src); err != nil {
 			return err
 		}
+	}
 
-		// Validate pkg
-		if f.security.Mode() != SecurityModeNone {
-			err = ValidateZpkg(&emission.Emitter{}, f.security, cacheFile, true)
-			if err != nil {
-				os.Remove(cacheFile)
+	// Validate pkg
+	if f.security.Mode() != SecurityModeNone {
+		err = ValidateZpkg(&emission.Emitter{}, f.security, cacheFile, true)
+		if err != nil {
+			os.Remove(cacheFile)
 
-				return errors.New(fmt.Sprintf("failed to validate signature: %s", packageFile))
-			}
+			return errors.New(fmt.Sprintf("failed to validate signature: %s", packageFile))
 		}
-
-		return nil
 	}
 
 	return nil
