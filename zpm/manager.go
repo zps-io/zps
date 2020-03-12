@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -141,6 +142,79 @@ func (m *Manager) Contents(pkgName string) ([]string, error) {
 	}
 
 	return output, nil
+}
+
+func (m *Manager) Fetch(args []string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	reqs, files, err := m.splitReqsFiles(args)
+
+	pool, err := m.pool(files...)
+	if err != nil {
+		return err
+	}
+
+	if pool.RepoCount() <= 1 {
+		return errors.New("No repo metadata found. Please run zpm refresh.")
+	}
+
+	request := zps.NewRequest()
+	for _, arg := range reqs {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return err
+		}
+
+		if len(pool.WhatProvides(req)) == 0 {
+			return errors.New(fmt.Sprint("No candidates found for ", arg))
+		}
+
+		request.Install(req)
+	}
+
+	// TODO: configure policy
+	policy := zps.NewPolicy("updated")
+
+	for _, job := range request.Jobs() {
+		pkg := policy.SelectRequest(pool.WhatProvides(job.Requirement()))
+
+		uri, _ := url.ParseRequestURI(pool.Location(pkg.Location()).Uri)
+		fe := NewFetcher(uri, m.cache, m.security)
+		err = fe.Fetch(pkg.(*zps.Pkg))
+		if err != nil {
+			return err
+		}
+
+		m.Emitter.Emit("manager.fetch", fmt.Sprint("fetching: ", pkg.Id()))
+
+		// Copy from cache to working directory
+		wd, err := os.Getwd()
+		if err != nil {
+			return errors.New("could not get current directory")
+		}
+
+		src, err := os.Open(m.cache.GetFile(pkg.FileName()))
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		dst, err := os.OpenFile(filepath.Join(wd, pkg.FileName()), os.O_RDWR|os.O_CREATE, 0640)
+		if err != nil {
+			return err
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 func (m *Manager) Freeze(args []string) error {
