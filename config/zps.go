@@ -15,6 +15,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/hashicorp/hcl2/hclparse"
+
 	"errors"
 	"fmt"
 
@@ -22,12 +24,12 @@ import (
 
 	"runtime"
 
-	"github.com/hashicorp/hcl"
+	"github.com/hashicorp/hcl2/gohcl"
 )
 
 type ZpsConfig struct {
-	Mode     string
-	Security string
+	Mode     string `hcl:"mode"`
+	Security string `hcl:"security"`
 
 	Root         string
 	CurrentImage *ImageConfig
@@ -132,22 +134,25 @@ func (z *ZpsConfig) LoadImages() error {
 		return nil
 	}
 
-	for _, iconfig := range imageConfigs {
+	for _, cfgPath := range imageConfigs {
 		image := &ImageConfig{}
+		parser := hclparse.NewParser()
 
-		bytes, err := ioutil.ReadFile(iconfig)
+		bytes, err := ioutil.ReadFile(cfgPath)
 		if err != nil {
 			return nil
 		}
 
-		imageHcl, err := hcl.Parse(string(bytes))
-		if err != nil {
-			return nil
+		// Parse HCL
+		ihcl, diag := parser.ParseHCL(bytes, cfgPath)
+		if diag.HasErrors() {
+			return diag
 		}
 
-		err = hcl.DecodeObject(&image, imageHcl)
-		if err != nil {
-			return nil
+		// Eval HCL
+		diag = gohcl.DecodeBody(ihcl.Body, nil, image)
+		if diag.HasErrors() {
+			return diag
 		}
 
 		z.Images = append(z.Images, image)
@@ -180,33 +185,23 @@ func (z *ZpsConfig) SelectImage(image string) error {
 }
 
 func (z *ZpsConfig) LoadMain() error {
-	var config map[string]interface{}
+	parser := hclparse.NewParser()
 
 	bytes, err := ioutil.ReadFile(path.Join(z.ConfigPath(), "main.conf"))
 	if err != nil {
 		return nil
 	}
 
-	mainHcl, err := hcl.Parse(string(bytes))
-	if err != nil {
-		return nil
+	// Parse HCL
+	mhcl, diag := parser.ParseHCL(bytes, path.Join(z.ConfigPath(), "main.conf"))
+	if diag.HasErrors() {
+		return diag
 	}
 
-	err = hcl.DecodeObject(&config, mainHcl)
-	if err != nil {
-		return nil
-	}
-
-	if val, ok := config["mode"]; ok {
-		z.Mode = val.(string)
-	} else {
-		z.Mode = "ancillary"
-	}
-
-	if val, ok := config["security"]; ok {
-		z.Security = val.(string)
-	} else {
-		z.Security = "offline"
+	// Eval HCL
+	diag = gohcl.DecodeBody(mhcl.Body, nil, z)
+	if diag.HasErrors() {
+		return diag
 	}
 
 	return nil
@@ -219,49 +214,32 @@ func (z *ZpsConfig) LoadRepos() error {
 		return nil
 	}
 
-	// Todo raise a warning for bad file, continue instead of returning
+	// TODO raise a warning for bad file, continue instead of returning
 	for _, rconfig := range repoConfigs {
-		var repoMap map[string]interface{}
 		repo := &RepoConfig{}
-		repo.Fetch = &FetchConfig{}
-		repo.Publish = &PublishConfig{}
+		parser := hclparse.NewParser()
 
 		bytes, err := ioutil.ReadFile(rconfig)
 		if err != nil {
 			continue
 		}
 
-		repoHcl, err := hcl.Parse(string(bytes))
-		if err != nil {
+		// Parse HCL
+		repoHcl, diag := parser.ParseHCL(bytes, rconfig)
+		if diag.HasErrors() {
 			continue
 		}
 
-		err = hcl.DecodeObject(&repoMap, repoHcl)
-		if err != nil {
+		// Eval HCL
+		diag = gohcl.DecodeBody(repoHcl.Body, nil, repo)
+		if diag.HasErrors() {
 			continue
 		}
 
-		if val, ok := repoMap["enabled"]; ok {
-			repo.Enabled = val.(bool)
-		} else {
-			repo.Enabled = true
-		}
-
-		if val, ok := repoMap["priority"]; ok {
-			repo.Priority = val.(int)
-		} else {
-			repo.Priority = 10
-		}
-
-		if val, ok := repoMap["channels"]; ok {
-			for _, ch := range val.([]interface{}) {
-				repo.Channels = append(repo.Channels, fmt.Sprint(ch))
-			}
-		}
-
-		if val, ok := repoMap["fetch"]; ok {
-			if uri, ok := val.([]map[string]interface{})[0]["uri"]; ok {
-				repo.Fetch.Uri, err = url.Parse(uri.(string))
+		// Validate fetch section
+		if repo.Fetch != nil {
+			if repo.Fetch.UriString != "" {
+				repo.Fetch.Uri, err = url.Parse(repo.Fetch.UriString)
 				if err != nil {
 					return err
 				}
@@ -272,26 +250,14 @@ func (z *ZpsConfig) LoadRepos() error {
 			return errors.New(fmt.Sprint("config: repo fetch section required in ", rconfig))
 		}
 
-		if val, ok := repoMap["publish"]; ok {
-			if uri, ok := val.([]map[string]interface{})[0]["uri"]; ok {
-				repo.Publish.Uri, err = url.Parse(uri.(string))
+		if repo.Publish != nil {
+			if repo.Publish.UriString != "" {
+				repo.Publish.Uri, err = url.Parse(repo.Publish.UriString)
 				if err != nil {
 					return err
 				}
 			} else {
 				return errors.New(fmt.Sprint("config: repo publish.uri required in ", rconfig))
-			}
-
-			if val, ok := val.([]map[string]interface{})[0]["name"]; ok {
-				repo.Publish.Name = val.(string)
-			} else {
-				return errors.New(fmt.Sprint("config: repo publish.name required in ", rconfig))
-			}
-
-			if prune, ok := val.([]map[string]interface{})[0]["prune"]; ok {
-				repo.Publish.Prune = prune.(int)
-			} else {
-				repo.Publish.Prune = 10
 			}
 		}
 

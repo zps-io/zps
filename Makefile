@@ -69,6 +69,7 @@ publish {
 }
 endef
 
+export CONFIG
 export REPO_A
 export REPO_B
 export REPO_F
