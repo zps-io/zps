@@ -820,6 +820,87 @@ func (m *Manager) TransActionList() ([]string, error) {
 	return output, nil
 }
 
+func (m *Manager) Update(reqs []string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	pool, err := m.pool()
+	if err != nil {
+		return err
+	}
+
+	if pool.RepoCount() <= 1 {
+		return errors.New("No repo metadata found. Please run zpm refresh.")
+	}
+
+	if len(reqs) == 0 {
+		image, err := m.image()
+		if err != nil {
+			return err
+		}
+
+		for _, pkg := range image.Solvables() {
+			reqs = append(reqs, pkg.Name())
+		}
+	}
+
+	request := zps.NewRequest()
+	for _, arg := range reqs {
+		req, err := zps.NewRequirementFromSimpleString(arg)
+		if err != nil {
+			return err
+		}
+
+		if len(pool.WhatProvides(req)) == 0 {
+			return errors.New(fmt.Sprint("No candidates found for ", arg))
+		}
+
+		request.Install(req)
+	}
+
+	// Updates require the update policy
+	solver := zps.NewSolver(pool, zps.NewPolicy("updated"))
+
+	solution, err := solver.Solve(request)
+	if err != nil {
+		return err
+	}
+
+	operations, err := solution.Graph()
+	if err != nil {
+		return err
+	}
+
+	for _, op := range operations {
+		switch op.Operation {
+		case phase.INSTALL:
+			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
+			fe := NewFetcher(uri, m.cache, m.security)
+			err = fe.Fetch(op.Package.(*zps.Pkg))
+			if err != nil {
+				return err
+			}
+
+			m.Emitter.Emit("manager.fetch", fmt.Sprint("fetching: ", op.Package.Id()))
+		case phase.NOOP:
+			m.Emit("transaction.noop", fmt.Sprint("using: ", op.Package.Id()))
+		}
+	}
+
+	if solution.Noop() {
+		return nil
+	}
+
+	tr := NewTransaction(m.Emitter, m.config.CurrentImage.Path, m.cache, m.state)
+
+	err = tr.Realize(solution)
+
+	return err
+}
+
 func (m *Manager) ZpkgBuild(zpfPath string, targetPath string, workPath string, outputPath string, restrict bool, secure bool) error {
 	builder := zpkg.NewBuilder()
 
