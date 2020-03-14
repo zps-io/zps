@@ -12,6 +12,7 @@ package config
 
 import (
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -128,8 +129,15 @@ func (z *ZpsConfig) LoadImages() error {
 
 	z.Images = append(z.Images, defaultImage)
 
+	loadPath := z.ConfigPath()
+
+	// Override image load path if external config exists
+	if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".zps", "image.d")); !os.IsNotExist(err) {
+		loadPath = filepath.Join(os.Getenv("HOME"), ".zps")
+	}
+
 	// Load defined images
-	imageConfigs, err := filepath.Glob(path.Join(z.ConfigPath(), "image.d", "*.conf"))
+	imageConfigs, err := filepath.Glob(filepath.Join(loadPath, "image.d", "*.conf"))
 	if err != nil {
 		return nil
 	}
@@ -162,26 +170,28 @@ func (z *ZpsConfig) LoadImages() error {
 }
 
 func (z *ZpsConfig) SelectImage(image string) error {
+	// Allow fallthrough for named image for matching path
 	if image == "" {
 		z.CurrentImage = z.Images[0]
-		return nil
+		image = z.CurrentImage.Path
 	}
 
-	// Select image
-
+	// Select image, do not return early since we want to return the defined name but preserve the default entry
 	for index, img := range z.Images {
 		if img.Path == image {
 			z.CurrentImage = z.Images[index]
-			break
 		}
 
 		if img.Name == image {
 			z.CurrentImage = z.Images[index]
-			break
 		}
 	}
 
-	return nil
+	if z.CurrentImage != nil {
+		return nil
+	}
+
+	return errors.New(fmt.Sprintf("image not found or configured: %s", image))
 }
 
 func (z *ZpsConfig) LoadMain() error {

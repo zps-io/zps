@@ -25,9 +25,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fezz-io/zps/sec"
-
 	"github.com/fezz-io/zps/provider"
+	"github.com/fezz-io/zps/sec"
 
 	"github.com/fezz-io/zps/action"
 	"github.com/fezz-io/zps/phase"
@@ -241,6 +240,68 @@ func (m *Manager) Freeze(args []string) error {
 		} else {
 			m.state.Frozen.Put(target.Id())
 			m.Emit("manager.freeze", fmt.Sprint("froze ", target.Id()))
+		}
+	}
+
+	return nil
+}
+
+// TODO implement when ZPS itself is a package
+func (m *Manager) ImageInit(imagePath string) error {
+
+	return nil
+}
+
+func (m *Manager) ImageCurrent(image string) error {
+	if image == "" {
+		m.Emit("manager.out", fmt.Sprintf("%s %s", m.config.CurrentImage.Name, m.config.CurrentImage.Path))
+
+		return nil
+	}
+
+	err := m.config.SelectImage(image)
+	if err != nil {
+		return err
+	}
+
+	home := os.Getenv("HOME")
+	if home == "" {
+		return errors.New("could not determine home directory")
+	}
+
+	settingsPath := filepath.Join(home, ".zps")
+
+	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
+		err := os.Mkdir(settingsPath, 0700)
+		if err != nil {
+			return err
+		}
+	}
+
+	content := "ZPS_IMAGE=" + m.config.CurrentImage.Path + "\n"
+	content += "PATH=${ZPS_IMAGE}/usr/bin:$PATH\n"
+	content += "export ZPS_IMAGE PATH"
+
+	err = ioutil.WriteFile(filepath.Join(settingsPath, "init.sh"), []byte(content), 0600)
+	if err != nil {
+		return err
+	}
+
+	if os.Getenv("ZPS_IMAGE") == "" {
+		m.Emit("manager.warn", fmt.Sprintf("%s may not be added to your shell profile or rc", filepath.Join(settingsPath, "init.sh")))
+	}
+
+	m.Emit("manager.info", fmt.Sprintf("current image: %s reload your shell to use", m.config.CurrentImage.Path))
+
+	return nil
+}
+
+func (m *Manager) ImageList() error {
+	for _, image := range m.config.Images {
+		if image == m.config.CurrentImage {
+			m.Emit("manager.out", fmt.Sprintf("* %s %s", image.Name, image.Path))
+		} else {
+			m.Emit("manager.out", fmt.Sprintf("  %s %s", image.Name, image.Path))
 		}
 	}
 

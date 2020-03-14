@@ -12,30 +12,32 @@ package commands
 
 import (
 	"github.com/fezz-io/zps/cli"
+
 	"github.com/spf13/cobra"
 )
 
-type ZpmCacheCommand struct {
+type ZpmImageCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpmCacheCommand() *ZpmCacheCommand {
-	cmd := &ZpmCacheCommand{}
+func NewZpmImageCommand() *ZpmImageCommand {
+	cmd := &ZpmImageCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "cache"
-	cmd.Short = "Work with ZPS image cache"
-	cmd.Long = "Work with ZPS image cache"
+	cmd.Use = "image"
+	cmd.Short = "Manage ZPS images"
+	cmd.Long = "Manage ZPS images"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
-	cmd.AddCommand(NewZpmCacheCleanCommand().Command)
-	cmd.AddCommand(NewZpmCacheClearCommand().Command)
+	cmd.AddCommand(NewZpmImageInitCommand().Command)
+	cmd.AddCommand(NewZpmImageCurrentCommand().Command)
+	cmd.AddCommand(NewZpmImageListCommand().Command)
 	return cmd
 }
 
-func (z *ZpmCacheCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpmImageCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -43,6 +45,6 @@ func (z *ZpmCacheCommand) setup(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (z *ZpmCacheCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpmImageCommand) run(cmd *cobra.Command, args []string) error {
 	return cmd.Help()
 }

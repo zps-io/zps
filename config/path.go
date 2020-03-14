@@ -23,5 +23,5 @@ func InstallPrefix() (string, error) {
 		return "", err
 	}
 
-	return strings.Replace(binPath, "usr"+string(os.PathSeparator)+"bin", "", 1), nil
+	return strings.Replace(binPath, string(os.PathSeparator)+"usr"+string(os.PathSeparator)+"bin", "", 1), nil
 }

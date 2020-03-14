@@ -11,7 +11,7 @@
 package config
 
 type ImageConfig struct {
-	Name string `hcl:"name,label"`
+	Name string `hcl:"name"`
 	Path string `hcl:"path"`
 	Os   string `hcl:"os"`
 	Arch string `hcl:"arch"`
