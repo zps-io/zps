@@ -94,7 +94,6 @@ zps: clean
 	echo "$$REPO_F" > dist/etc/zps/repo.d/filteredrepo.conf
 	echo "$$REPO_S" > dist/etc/zps/repo.d/s3repo.conf
 	go build -o dist/usr/bin/zps github.com/fezz-io/zps/cli/zps
-	ln dist/usr/bin/zps dist/usr/bin/zpm
 
 fmt:
 	goimports -w .

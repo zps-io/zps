@@ -12,21 +12,13 @@ package main
 
 import (
 	"os"
-	"path"
 
-	zpmcmds "github.com/fezz-io/zps/cli/zpm/commands"
+	"github.com/fezz-io/zps/cli/zps/commands"
 )
 
 func main() {
-	switch path.Base(os.Args[0]) {
-
-	case "zpm":
-		command := zpmcmds.NewZpmRootCommand()
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
-
-	default:
-		os.Exit(0)
+	command := commands.NewZpsRootCommand()
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
 	}
 }
