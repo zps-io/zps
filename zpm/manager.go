@@ -439,7 +439,13 @@ func (m *Manager) List() ([]string, error) {
 }
 
 func (m *Manager) PkiKeyPairImport(certPath string, keyPath string) error {
-	err := sec.SecurityValidateKeyPair(certPath, keyPath)
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	err = sec.SecurityValidateKeyPair(certPath, keyPath)
 	if err != nil {
 		return err
 	}
@@ -490,18 +496,71 @@ func (m *Manager) PkiKeyPairImport(certPath string, keyPath string) error {
 	return nil
 }
 
+func (m *Manager) PkiKeyPairList() ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	kps, err := m.pki.KeyPairs.All()
+	if err != nil {
+		return nil, err
+	}
+
+	var output []string
+
+	for _, entry := range kps {
+		output = append(output, strings.Join([]string{
+			entry.Subject,
+			entry.Publisher,
+			entry.Fingerprint,
+		}, "|"))
+	}
+
+	return output, nil
+}
+
+func (m *Manager) PkiKeyPairRemove(fingerprint string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	kp, err := m.pki.KeyPairs.Get(fingerprint)
+	if err != nil {
+		return err
+	}
+
+	err = m.pki.KeyPairs.Del(fingerprint)
+	if err != nil {
+		return err
+	}
+
+	m.Emit("manager.info", fmt.Sprintf("removed keypair: %s", kp.Subject))
+
+	return err
+}
+
 func (m *Manager) PkiTrustImport(certPath string, typ string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	certPem, err := ioutil.ReadFile(certPath)
 	if err != nil {
 		return err
 	}
 
-	_, publisher, fingerprint, err := sec.SecurityCertMetaFromBytes(&certPem)
+	subject, publisher, fingerprint, err := sec.SecurityCertMetaFromBytes(&certPem)
 	if err != nil {
 		return err
 	}
 
-	err = m.pki.Certificates.Put(fingerprint, publisher, typ, certPem)
+	err = m.pki.Certificates.Put(fingerprint, subject, publisher, typ, certPem)
 	if err != nil {
 		return err
 	}
@@ -509,6 +568,54 @@ func (m *Manager) PkiTrustImport(certPath string, typ string) error {
 	m.Emit("manager.info", fmt.Sprintf("Imported certificate for publisher %s", publisher))
 
 	return nil
+}
+
+func (m *Manager) PkiTrustList() ([]string, error) {
+	err := m.lock.TryLock()
+	if err != nil {
+		return nil, errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	kps, err := m.pki.Certificates.All()
+	if err != nil {
+		return nil, err
+	}
+
+	var output []string
+
+	for _, entry := range kps {
+		output = append(output, strings.Join([]string{
+			entry.Subject,
+			entry.Publisher,
+			entry.Type,
+			entry.Fingerprint,
+		}, "|"))
+	}
+
+	return output, nil
+}
+
+func (m *Manager) PkiTrustRemove(fingerprint string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	cert, err := m.pki.Certificates.Get(fingerprint)
+	if err != nil {
+		return err
+	}
+
+	err = m.pki.Certificates.Del(fingerprint)
+	if err != nil {
+		return err
+	}
+
+	m.Emit("manager.info", fmt.Sprintf("removed certficate: %s", cert.Subject))
+
+	return err
 }
 
 func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {

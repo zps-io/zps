@@ -31,6 +31,8 @@ func NewZpmPkiKeyPairCommand() *ZpmPkiKeyPairCommand {
 	cmd.RunE = cmd.run
 
 	cmd.AddCommand(NewZpmPkiKeyPairImportCommand().Command)
+	cmd.AddCommand(NewZpmPkiKeyPairListCommand().Command)
+	cmd.AddCommand(NewZpmPkiKeyPairRemoveCommand().Command)
 
 	return cmd
 }

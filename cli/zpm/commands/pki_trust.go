@@ -31,6 +31,8 @@ func NewZpmPkiTrustCommand() *ZpmPkiTrustCommand {
 	cmd.RunE = cmd.run
 
 	cmd.AddCommand(NewZpmPkiTrustImportCommand().Command)
+	cmd.AddCommand(NewZpmPkiTrustListCommand().Command)
+	cmd.AddCommand(NewZpmPkiTrustRemoveCommand().Command)
 
 	return cmd
 }
