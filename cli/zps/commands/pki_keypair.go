@@ -25,8 +25,8 @@ func NewZpsPkiKeyPairCommand() *ZpsPkiKeyPairCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "keypair"
-	cmd.Short = "Manage ZPM pki signing key pairs"
-	cmd.Long = "Manage ZPM pki signing key pairs"
+	cmd.Short = "Manage ZPS pki signing key pairs"
+	cmd.Long = "Manage ZPS pki signing key pairs"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

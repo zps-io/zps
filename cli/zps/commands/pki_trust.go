@@ -25,8 +25,8 @@ func NewZpsPkiTrustCommand() *ZpsPkiTrustCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "trust"
-	cmd.Short = "Manage ZPM pki trust store"
-	cmd.Long = "Manage ZPM pki trust store"
+	cmd.Short = "Manage ZPS pki trust store"
+	cmd.Long = "Manage ZPS pki trust store"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

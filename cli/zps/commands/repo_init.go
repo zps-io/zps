@@ -28,8 +28,8 @@ func NewZpsRepoInitCommand() *ZpsRepoInitCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "init"
-	cmd.Short = "Initialize a ZPM repository"
-	cmd.Long = "Initialize a ZPM repository"
+	cmd.Short = "Initialize a ZPS repository"
+	cmd.Long = "Initialize a ZPS repository"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

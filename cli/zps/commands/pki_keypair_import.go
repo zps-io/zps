@@ -28,8 +28,8 @@ func NewZpsPkiKeyPairImportCommand() *ZpsPkiKeyPairImportCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "import [CERT_FILE] [KEY_FILE]"
-	cmd.Short = "Import signing key pair into ZPM pki store"
-	cmd.Long = "Import signing key pair into ZPM pki store"
+	cmd.Short = "Import signing key pair into ZPS pki store"
+	cmd.Long = "Import signing key pair into ZPS pki store"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

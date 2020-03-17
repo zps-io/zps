@@ -29,8 +29,8 @@ func NewZpsRepoContentsCommand() *ZpsRepoContentsCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "contents"
-	cmd.Short = "Show contents of a ZPM repository"
-	cmd.Long = "Show contents of a ZPM repository"
+	cmd.Short = "Show contents of a ZPS repository"
+	cmd.Long = "Show contents of a ZPS repository"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

@@ -25,8 +25,8 @@ func NewZpsPkiCommand() *ZpsPkiCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "pki"
-	cmd.Short = "Manage ZPM pki store"
-	cmd.Long = "Manage ZPM pki store"
+	cmd.Short = "Manage ZPS pki store"
+	cmd.Long = "Manage ZPS pki store"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

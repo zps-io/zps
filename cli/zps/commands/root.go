@@ -24,9 +24,9 @@ func NewZpsRootCommand() *ZpsRootCommand {
 	cmd := &ZpsRootCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "zpm"
-	cmd.Short = "ZPM is the package management component of ZPS the Z Package System"
-	cmd.Long = "ZPM is the package management component of ZPS the Z Package System"
+	cmd.Use = "zps"
+	cmd.Short = "ZPS the Z Package System"
+	cmd.Long = "ZPS the Z Package System"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
@@ -67,6 +67,5 @@ func (z *ZpsRootCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpsRootCommand) run(cmd *cobra.Command, args []string) error {
-	z.Help()
-	return nil
+	return z.Help()
 }

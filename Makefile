@@ -1,80 +1,16 @@
-ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+VERSION = "0.1.0"
 
-define CONFIG
-mode = "ancillary"
-security = "offline"
-endef
-
-define REPO_A
+define REPO
 priority = 10
 enabled = true
 
 fetch {
-	uri = "file://$(ROOT_DIR)/test/fezz.io/testrepo"
-}
-
-publish {
-	uri = "file://$(ROOT_DIR)/test/fezz.io/testrepo"
-	name = "Test Repo"
-	prune = 3
+	uri = "https://packages.zps.io/zps.io/zps"
 }
 endef
 
-define REPO_B
-priority = 10
-enabled = true
-
-fetch {
-	uri = "file://$(ROOT_DIR)/test/fezz.io/anotherrepo"
-}
-
-publish {
-	uri = "file://$(ROOT_DIR)/test/fezz.io/anotherrepo"
-	name = "Another Repo"
-	prune = 3
-}
-endef
-
-define REPO_F
-priority = 10
-enabled = true
-
-channels = [
-	"spoon"
-]
-
-fetch {
-	uri = "file://$(ROOT_DIR)/test/fezz.io/filterrepo"
-}
-
-publish {
-	uri = "file://$(ROOT_DIR)/test/fezz.io/filterrepo"
-	name = "Filtered Repo"
-	prune = 3
-}
-endef
-
-define REPO_S
-priority = 10
-enabled = true
-
-fetch {
-	uri = "s3://packages.fezz.io/fezz.io/s3repo"
-}
-
-publish {
-	uri = "s3://packages.fezz.io/fezz.io/s3repo"
-	name = "S3 Repo"
-	prune = 3
-}
-endef
-
-export CONFIG
-export REPO_A
-export REPO_B
-export REPO_F
-export REPO_S
-
+export REPO
+export VERSION
 
 all: zps
 
@@ -88,12 +24,8 @@ zps: clean
 	mkdir -p dist/var/lib/zps
 	mkdir -p dist/var/cache/zps
 	mkdir -p dist/var/tmp/zps
-	echo "$$CONFIG" > dist/etc/zps/main.conf
-	echo "$$REPO_A" > dist/etc/zps/repo.d/testrepo.conf
-	echo "$$REPO_B" > dist/etc/zps/repo.d/anotherrepo.conf
-	echo "$$REPO_F" > dist/etc/zps/repo.d/filteredrepo.conf
-	echo "$$REPO_S" > dist/etc/zps/repo.d/s3repo.conf
-	go build -o dist/usr/bin/zps github.com/fezz-io/zps/cli/zps
+	echo "$$REPO" > dist/etc/zps/repo.d/zps.conf
+	go build -ldflags "-X github.com/fezz-io/zps/cli/zps/commands.Version=${VERSION}" -o dist/usr/bin/zps github.com/fezz-io/zps/cli/zps
 
 fmt:
 	goimports -w .

@@ -1,0 +1,12 @@
+Zpkg "zps" {
+  publisher = "zps.io"
+  version = "${env.VERSION}"
+  summary = "ZPS the last word in package management"
+  description = "The Z package system, hopefully the last package manager you will ever use."
+  os = "${env.OS}"
+  arch = "x86_64"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/fezz-io/zps"
+}

@@ -28,8 +28,8 @@ func NewZpsPkiTrustImportCommand() *ZpsPkiTrustImportCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "import [CERT_FILE]"
-	cmd.Short = "Import trusted certificate into ZPM pki store"
-	cmd.Long = "Import trusted certificate into ZPM pki store"
+	cmd.Short = "Import trusted certificate into ZPS pki store"
+	cmd.Long = "Import trusted certificate into ZPS pki store"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

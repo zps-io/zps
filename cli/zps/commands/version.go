@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Version string
+
 type ZpsVersionCommand struct {
 	*cobra.Command
 	*cli.Ui
@@ -25,8 +27,8 @@ func NewZpsVersionCommand() *ZpsVersionCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "version"
-	cmd.Short = "Print the version number of ZPM"
-	cmd.Long = "Print the version number of ZPM"
+	cmd.Short = "Print the version number of ZPS"
+	cmd.Long = "Print the version number of ZPS"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
@@ -42,6 +44,6 @@ func (z *ZpsVersionCommand) setup(cmd *cobra.Command, args []string) error {
 }
 
 func (z *ZpsVersionCommand) run(cmd *cobra.Command, args []string) error {
-	z.Out("ZPM v0.1.0")
+	z.Out("ZPS v" + Version)
 	return nil
 }

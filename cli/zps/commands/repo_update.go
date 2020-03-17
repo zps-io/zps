@@ -28,8 +28,8 @@ func NewZpsRepoUpdateCommand() *ZpsRepoUpdateCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "update"
-	cmd.Short = "Update a ZPM repository configuration"
-	cmd.Long = "Update a ZPM repository configuration"
+	cmd.Short = "Update a ZPS repository configuration"
+	cmd.Long = "Update a ZPS repository configuration"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

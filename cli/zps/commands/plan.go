@@ -28,8 +28,8 @@ func NewZpsPlanCommand() *ZpsPlanCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "plan"
-	cmd.Short = "Plan ZPM transaction"
-	cmd.Long = "Plan ZPM transaction"
+	cmd.Short = "Plan ZPS transaction"
+	cmd.Long = "Plan ZPS transaction"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

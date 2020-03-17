@@ -26,8 +26,8 @@ func NewZpsRefreshCommand() *ZpsRefreshCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "refresh"
-	cmd.Short = "Refresh ZPM repository metadata"
-	cmd.Long = "Refresh ZPM repository metadata"
+	cmd.Short = "Refresh ZPS repository metadata"
+	cmd.Long = "Refresh ZPS repository metadata"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
