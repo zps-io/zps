@@ -199,7 +199,15 @@ func (z *ZpsConfig) LoadMain() error {
 
 	bytes, err := ioutil.ReadFile(path.Join(z.ConfigPath(), "main.conf"))
 	if err != nil {
-		return nil
+		// Generate defaults for now so we don't have to ship a default config
+		if os.IsNotExist(err) {
+			z.Mode = "ancillary"
+			z.Security = "offline"
+
+			return nil
+		}
+
+		return err
 	}
 
 	// Parse HCL
