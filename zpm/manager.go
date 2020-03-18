@@ -277,10 +277,8 @@ func (m *Manager) ImageCurrent(image string) error {
 		}
 	}
 
-	path = append([]string{filepath.Join(m.config.CurrentImage.Path, "usr", "bin")}, path...)
-
-	os.Setenv("PATH", strings.Join(path, ":"))
-
+	os.Setenv("PATH", filepath.Join(m.config.CurrentImage.Path, "usr", "bin")+":"+strings.Join(path, ":"))
+	os.Setenv("ZPS_IMAGE", filepath.Join(m.config.CurrentImage.Path, "usr", "bin"))
 	switch os.Getenv("SHELL") {
 	case "/bin/bash", "/bin/zsh", "/usr/bin/bash", "/usr/bin/zsh":
 		m.Emit("manager.info", fmt.Sprintf("%s %s", m.config.CurrentImage.Name, m.config.CurrentImage.Path))
