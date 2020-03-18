@@ -16,6 +16,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/fezz-io/zps/provider"
+	"github.com/fezz-io/zps/sec"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -24,10 +26,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
-
-	"github.com/fezz-io/zps/provider"
-	"github.com/fezz-io/zps/sec"
 
 	"github.com/fezz-io/zps/action"
 	"github.com/fezz-io/zps/phase"
@@ -260,34 +258,24 @@ func (m *Manager) ImageCurrent(image string) error {
 		return nil
 	}
 
-	prevPath := m.config.CurrentImage.Path
-
 	err := m.config.SelectImage(image)
 	if err != nil {
 		return err
 	}
 
-	// Modify path
-	path := strings.Split(os.Getenv("PATH"), ":")
+	// Write new image path to ZPS Session
+	session := os.Getenv("ZPS_SESSION")
 
-	for index := range path {
-		if path[index] == filepath.Join(prevPath, "usr", "bin") {
-			path = append(path[:index], path[index+1:]...)
-			break
-		}
+	if !strings.Contains(session, "zps.sess") {
+		return errors.New("zps session not found, ensure the shell helper is loaded")
 	}
 
-	os.Setenv("PATH", filepath.Join(m.config.CurrentImage.Path, "usr", "bin")+":"+strings.Join(path, ":"))
-	os.Setenv("ZPS_IMAGE", filepath.Join(m.config.CurrentImage.Path, "usr", "bin"))
-	switch os.Getenv("SHELL") {
-	case "/bin/bash", "/bin/zsh", "/usr/bin/bash", "/usr/bin/zsh":
-		m.Emit("manager.info", fmt.Sprintf("%s %s", m.config.CurrentImage.Name, m.config.CurrentImage.Path))
-
-		err := syscall.Exec(os.Getenv("SHELL"), []string{"-i"}, os.Environ())
-		if err != nil {
-			return err
-		}
+	err = ioutil.WriteFile(session, []byte(m.config.CurrentImage.Path), 0600)
+	if err != nil {
+		return err
 	}
+
+	m.Emit("manager.info", fmt.Sprintf("%s %s", m.config.CurrentImage.Name, m.config.CurrentImage.Path))
 
 	return nil
 }
