@@ -18,6 +18,7 @@ all: clean $(os)
 
 clean:
 	rm -rf dist
+	rm -rf *.zpkg
 
 $(os):
 	mkdir -p dist/${@}-x86_64/etc/zps/image.d

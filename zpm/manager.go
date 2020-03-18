@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/fezz-io/zps/provider"
 	"github.com/fezz-io/zps/sec"
@@ -259,39 +260,36 @@ func (m *Manager) ImageCurrent(image string) error {
 		return nil
 	}
 
+	prevPath := m.config.CurrentImage.Path
+
 	err := m.config.SelectImage(image)
 	if err != nil {
 		return err
 	}
 
-	home := os.Getenv("HOME")
-	if home == "" {
-		return errors.New("could not determine home directory")
+	// Modify path
+	path := strings.Split(os.Getenv("PATH"), ":")
+
+	for index := range path {
+		if path[index] == filepath.Join(prevPath, "usr", "bin") {
+			path = append(path[:index], path[index+1:]...)
+			break
+		}
 	}
 
-	settingsPath := filepath.Join(home, ".zps")
+	path = append([]string{filepath.Join(m.config.CurrentImage.Path, "usr", "bin")}, path...)
 
-	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
-		err := os.Mkdir(settingsPath, 0700)
+	os.Setenv("PATH", strings.Join(path, ":"))
+
+	switch os.Getenv("SHELL") {
+	case "/bin/bash", "/bin/zsh", "/usr/bin/bash", "/usr/bin/zsh":
+		m.Emit("manager.info", fmt.Sprintf("%s %s", m.config.CurrentImage.Name, m.config.CurrentImage.Path))
+
+		err := syscall.Exec(os.Getenv("SHELL"), []string{"-i"}, os.Environ())
 		if err != nil {
 			return err
 		}
 	}
-
-	content := "ZPS_IMAGE=" + m.config.CurrentImage.Path + "\n"
-	content += "PATH=${ZPS_IMAGE}/usr/bin:$PATH\n"
-	content += "export ZPS_IMAGE PATH"
-
-	err = ioutil.WriteFile(filepath.Join(settingsPath, "init.sh"), []byte(content), 0600)
-	if err != nil {
-		return err
-	}
-
-	if os.Getenv("ZPS_IMAGE") == "" {
-		m.Emit("manager.warn", fmt.Sprintf("%s may not be added to your shell profile or rc", filepath.Join(settingsPath, "init.sh")))
-	}
-
-	m.Emit("manager.info", fmt.Sprintf("current image: %s reload your shell to use", m.config.CurrentImage.Path))
 
 	return nil
 }
