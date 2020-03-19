@@ -128,6 +128,10 @@ func (z *ZpsConfig) CachePath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "cache", "zps")
 }
 
+func (z *ZpsConfig) CertPath() string {
+	return filepath.Join(z.CurrentImage.Path, "usr", "share", "zps", "certs")
+}
+
 func (z *ZpsConfig) LockPath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "lib", "zps")
 }

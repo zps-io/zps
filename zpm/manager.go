@@ -250,7 +250,6 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
-// TODO implement when ZPS itself is a package
 func (m *Manager) ImageInit(imagePath string) error {
 	var err error
 
@@ -272,9 +271,35 @@ func (m *Manager) ImageInit(imagePath string) error {
 
 	// HACK
 	m.config.CurrentImage.Path = imagePath
+
+	// Create state db
 	os.MkdirAll(m.config.StatePath(), 0755)
+	os.Chmod(m.config.StatePath(), 0750)
 	m.state = NewState(m.config.StatePath())
+
+	// Install zps into changed root
 	err = m.Install([]string{"zps"})
+	if err != nil {
+		return err
+	}
+
+	// Create pki db and import zps trust
+	m.pki = NewPki(m.config.PkiPath())
+
+	err = m.PkiTrustImport(filepath.Join(m.config.CertPath(), "zps.io", "ca.pem"), "ca")
+	if err != nil {
+		return err
+	}
+
+	err = m.PkiTrustImport(filepath.Join(m.config.CertPath(), "zps.io", "intermediate.pem"), "intermediate")
+	if err != nil {
+		return err
+	}
+
+	err = m.PkiTrustImport(filepath.Join(m.config.CertPath(), "zps.io", "zps.pem"), "user")
+	if err != nil {
+		return err
+	}
 
 	return err
 }
