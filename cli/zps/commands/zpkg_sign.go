@@ -27,7 +27,7 @@ func NewZpsZpkgSignCommand() *ZpsZpkgSignCommand {
 	cmd := &ZpsZpkgSignCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "sign [ZPKGFILE PATH]"
+	cmd.Use = "sign [ZPKG_PATH]"
 	cmd.Short = "Sign a ZPKG"
 	cmd.Long = "Sign a ZPKG"
 	cmd.PreRunE = cmd.setup

@@ -25,7 +25,7 @@ func NewZpsImageInitCommand() *ZpsImageInitCommand {
 	cmd := &ZpsImageInitCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "init"
+	cmd.Use = "init [PATH]"
 	cmd.Short = "Initialize new ZPS image"
 	cmd.Long = "Initialize new ZPS image"
 	cmd.PreRunE = cmd.setup

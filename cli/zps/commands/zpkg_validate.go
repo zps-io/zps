@@ -27,7 +27,7 @@ func NewZpsZpkgValidateCommand() *ZpsZpkgValidateCommand {
 	cmd := &ZpsZpkgValidateCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "validate [ZPKGFILE PATH]"
+	cmd.Use = "validate [ZPKG_PATH]"
 	cmd.Short = "Validate a ZPKG"
 	cmd.Long = "Validate a ZPKG"
 	cmd.PreRunE = cmd.setup

@@ -26,7 +26,7 @@ func NewZpsUpdateCommand() *ZpsUpdateCommand {
 	cmd := &ZpsUpdateCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "update"
+	cmd.Use = "update [PKG ...]"
 	cmd.Short = "Update ZPS image packages"
 	cmd.Long = "Update ZPS image packages"
 	cmd.PreRunE = cmd.setup

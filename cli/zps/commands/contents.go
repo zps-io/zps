@@ -30,7 +30,7 @@ func NewZpsContentsCommand() *ZpsContentsCommand {
 	cmd := &ZpsContentsCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "contents"
+	cmd.Use = "contents [PKG]"
 	cmd.Short = "List contents of installed package"
 	cmd.Long = "List contents of installed package"
 	cmd.PreRunE = cmd.setup
@@ -52,7 +52,7 @@ func (z *ZpsContentsCommand) run(cmd *cobra.Command, args []string) error {
 	var err error
 
 	if cmd.Flags().NArg() == 0 {
-		return errors.New("Must provide a package uri to query")
+		return errors.New("Must provide a package name to query")
 	}
 
 	// Load manager

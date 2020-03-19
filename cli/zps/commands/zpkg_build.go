@@ -25,7 +25,7 @@ func NewZpsZpkgBuildCommand() *ZpsZpkgBuildCommand {
 	cmd := &ZpsZpkgBuildCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "build [ZPKGFILE PATH]"
+	cmd.Use = "build [ZPKGFILE_PATH]"
 	cmd.Short = "Build a ZPKG from a Zpkgfile"
 	cmd.Long = "Build a ZPKG from a Zpkgfile"
 	cmd.PreRunE = cmd.setup

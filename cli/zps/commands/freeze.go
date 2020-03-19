@@ -28,7 +28,7 @@ func NewZpsFreezeCommand() *ZpsFreezeCommand {
 	cmd := &ZpsFreezeCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "freeze"
+	cmd.Use = "freeze [PKG ...]"
 	cmd.Short = "Freeze package version in ZPS image"
 	cmd.Long = "Freeze package version in ZPS image"
 	cmd.PreRunE = cmd.setup

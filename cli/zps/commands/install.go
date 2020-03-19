@@ -28,7 +28,7 @@ func NewZpsInstallCommand() *ZpsInstallCommand {
 	cmd := &ZpsInstallCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "install"
+	cmd.Use = "install [PKG ...]"
 	cmd.Short = "Install packages into ZPS image"
 	cmd.Long = "Install packages into ZPS image"
 	cmd.PreRunE = cmd.setup

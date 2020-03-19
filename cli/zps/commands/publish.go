@@ -27,7 +27,7 @@ func NewZpsPublishCommand() *ZpsPublishCommand {
 	cmd := &ZpsPublishCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "publish"
+	cmd.Use = "publish [REPO_NAME] [PKG ...]"
 	cmd.Short = "Publish to a ZPS repository"
 	cmd.Long = "Publish to a ZPS repository"
 	cmd.PreRunE = cmd.setup

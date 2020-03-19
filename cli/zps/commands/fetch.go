@@ -28,7 +28,7 @@ func NewZpsFetchCommand() *ZpsFetchCommand {
 	cmd := &ZpsFetchCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "fetch"
+	cmd.Use = "fetch [PKG ...]"
 	cmd.Short = "Fetch packages from configured repositories"
 	cmd.Long = "Fetch packages from configured repositories"
 	cmd.PreRunE = cmd.setup

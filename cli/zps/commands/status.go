@@ -30,9 +30,9 @@ func NewZpsStatusCommand() *ZpsStatusCommand {
 	cmd := &ZpsStatusCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "status"
-	cmd.Short = "Show status of specified zpkg uri"
-	cmd.Long = "Show status of specified zpkg uri"
+	cmd.Use = "status [PKG]"
+	cmd.Short = "Show status of specified package"
+	cmd.Long = "Show status of specified package"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
@@ -52,7 +52,7 @@ func (z *ZpsStatusCommand) run(cmd *cobra.Command, args []string) error {
 	var err error
 
 	if cmd.Flags().NArg() == 0 {
-		return errors.New("Must provide a package uri to query")
+		return errors.New("Must provide a package to query")
 	}
 
 	// Load manager

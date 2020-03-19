@@ -29,7 +29,7 @@ func NewZpsZpkgExtractCommand() *ZpsZpkgExtractCommand {
 	cmd := &ZpsZpkgExtractCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "extract [ZPKG path] [extract path]"
+	cmd.Use = "extract [ZPKG_PATH] [EXTRACT_PATH]"
 	cmd.Short = "Extract contents of a ZPKG"
 	cmd.Long = "Extract contents of a ZPKG"
 	cmd.PreRunE = cmd.setup

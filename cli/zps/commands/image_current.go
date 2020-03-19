@@ -25,7 +25,7 @@ func NewZpsImageCurrentCommand() *ZpsImageCurrentCommand {
 	cmd := &ZpsImageCurrentCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "current"
+	cmd.Use = "current [IMAGE_NAME|IMAGE_PATH]"
 	cmd.Short = "Select or show current ZPS image"
 	cmd.Long = "Select or show current ZPS image"
 	cmd.PreRunE = cmd.setup

@@ -17,7 +17,7 @@ func NewZpsChannelCommand() *ZpsChannelCommand {
 	cmd := &ZpsChannelCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "channel"
+	cmd.Use = "channel [REPO_NAME] [CHANNEL]"
 	cmd.Short = "Add a package to a channel with a ZPS repository"
 	cmd.Long = "Add a package to a channel with a ZPS repository"
 	cmd.PreRunE = cmd.setup

@@ -28,7 +28,7 @@ func NewZpsZpkgManifestCommand() *ZpsZpkgManifestCommand {
 	cmd := &ZpsZpkgManifestCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "manifest [ZPKG PATH]"
+	cmd.Use = "manifest [ZPKG_PATH]"
 	cmd.Short = "Dump ZPKG file manifest"
 	cmd.Long = "Dump ZPKG file manifest"
 	cmd.PreRunE = cmd.setup

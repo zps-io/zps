@@ -29,7 +29,7 @@ func NewZpsZpkgContentsCommand() *ZpsZpkgContentsCommand {
 	cmd := &ZpsZpkgContentsCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "contents [ZPKG path]"
+	cmd.Use = "contents [ZPKG_PATH]"
 	cmd.Short = "List contents of a ZPKG"
 	cmd.Long = "List contents of a ZPKG"
 	cmd.PreRunE = cmd.setup

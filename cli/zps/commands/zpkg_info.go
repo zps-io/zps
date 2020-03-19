@@ -28,7 +28,7 @@ func NewZpsZpkgInfoCommand() *ZpsZpkgInfoCommand {
 	cmd := &ZpsZpkgInfoCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "info [ZPKG path]"
+	cmd.Use = "info [ZPKG_PATH]"
 	cmd.Short = "Display ZPKG file information"
 	cmd.Long = "Display ZPKG file information"
 	cmd.PreRunE = cmd.setup

@@ -30,7 +30,7 @@ func NewZpsInfoCommand() *ZpsInfoCommand {
 	cmd := &ZpsInfoCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "info"
+	cmd.Use = "info [PKG]"
 	cmd.Short = "Show installed package metadata"
 	cmd.Long = "Show installed package metadata"
 	cmd.PreRunE = cmd.setup
