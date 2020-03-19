@@ -1,11 +1,13 @@
 package config
 
-var ZshHelper = `
-ZPS_IMAGE_DEFAULT=%s
+var ZshHelper = `ZPS_IMAGE_DEFAULT=%s
 
 zps_setup() {
-    ZPS_SESSION=$(mktemp -t zps.XXXXXXXX)
+    ZPS_SESSION=$(mktemp -t zps.sess)
     export ZPS_SESSION
+
+    precmd_functions+=(zps_reload)
+    typeset -U precmd_functions
 
     if [[ -n "$ZPS_IMAGE" ]]; then
         return
@@ -13,11 +15,8 @@ zps_setup() {
 
     ZPS_PREV_PATH=$PATH
     ZPS_IMAGE=${ZPS_IMAGE_DEFAULT}
-    ZPS_SESSION=$(mktemp -t zps.sess)
 
     PATH=${ZPS_IMAGE}/usr/bin:$ZPS_PREV_PATH
-
-    precmd_functions+=(zps_reload)
 
     export ZPS_PREV_PATH ZPS_IMAGE PATH
 }

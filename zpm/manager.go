@@ -16,8 +16,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fezz-io/zps/provider"
-	"github.com/fezz-io/zps/sec"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -26,6 +24,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/fezz-io/zps/provider"
+	"github.com/fezz-io/zps/sec"
 
 	"github.com/fezz-io/zps/action"
 	"github.com/fezz-io/zps/phase"

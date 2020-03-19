@@ -100,13 +100,13 @@ func (z *ZpsConfig) SetupHelper() error {
 
 	zpsUserPath := filepath.Join(os.Getenv("HOME"), ".zps")
 
-	if _, err := os.Stat(zpsUserPath); !os.IsNotExist(err) {
+	if _, err := os.Stat(zpsUserPath); os.IsNotExist(err) {
 		os.Mkdir(zpsUserPath, 0700)
 	}
 
 	zpsUserSettingsPath := filepath.Join(zpsUserPath, "init.sh")
 
-	if _, err := os.Stat(zpsUserSettingsPath); !os.IsNotExist(err) {
+	if _, err := os.Stat(zpsUserSettingsPath); os.IsNotExist(err) {
 		err := ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, z.Root)), 0600)
 		if err != nil {
 			return err
