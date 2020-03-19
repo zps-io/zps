@@ -236,7 +236,7 @@ func (t *Transaction) install(pkg zps.Solvable) error {
 	}
 
 	var contents action.Actions
-	contents = reader.Manifest.Section("dir", "file", "symlink")
+	contents = reader.Manifest.Section("Dir", "File", "SymLink")
 
 	sort.Sort(contents)
 

@@ -102,6 +102,10 @@ func (m *Manager) CacheClear() error {
 
 func (m *Manager) Channel(repo string, pkg string, channel string) error {
 	for _, r := range m.config.Repos {
+		if r.Publish == nil {
+			continue
+		}
+
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
 			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
@@ -248,8 +252,31 @@ func (m *Manager) Freeze(args []string) error {
 
 // TODO implement when ZPS itself is a package
 func (m *Manager) ImageInit(imagePath string) error {
+	var err error
 
-	return nil
+	if imagePath != "" {
+		if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+			imagePath, err = filepath.Abs(imagePath)
+			if err != nil {
+				return err
+			}
+
+			os.Mkdir(imagePath, 0755)
+		}
+	} else {
+		imagePath, err = os.Getwd()
+		if err != nil {
+			return err
+		}
+	}
+
+	// HACK
+	m.config.CurrentImage.Path = imagePath
+	os.MkdirAll(m.config.StatePath(), 0755)
+	m.state = NewState(m.config.StatePath())
+	err = m.Install([]string{"zps"})
+
+	return err
 }
 
 func (m *Manager) ImageCurrent(image string) error {
@@ -672,6 +699,10 @@ func (m *Manager) Plan(action string, args []string) (*zps.Solution, error) {
 
 func (m *Manager) Publish(repo string, pkgs ...string) error {
 	for _, r := range m.config.Repos {
+		if r.Publish == nil {
+			continue
+		}
+
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
 			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
 
@@ -750,6 +781,10 @@ func (m *Manager) Remove(args []string) error {
 
 func (m *Manager) RepoInit(name string) error {
 	for _, repo := range m.config.Repos {
+		if repo.Publish == nil {
+			continue
+		}
+
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
 			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
@@ -847,6 +882,10 @@ func (m *Manager) RepoList() ([]string, error) {
 
 func (m *Manager) RepoUpdate(name string) error {
 	for _, repo := range m.config.Repos {
+		if repo.Publish == nil {
+			continue
+		}
+
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
 			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
 
