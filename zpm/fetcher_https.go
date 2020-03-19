@@ -57,6 +57,8 @@ func (h *HttpsFetcher) Refresh() error {
 	}
 
 	if resp.IsError() {
+		os.Remove(h.cache.GetConfig(h.uri.String()))
+
 		switch resp.StatusCode() {
 		case 404:
 			return errors.New(fmt.Sprintf("not found: %s", configUri.String()))
@@ -81,6 +83,8 @@ func (h *HttpsFetcher) Refresh() error {
 		}
 
 		if resp.IsError() {
+			os.Remove(h.cache.GetConfig(h.uri.String()))
+
 			switch resp.StatusCode() {
 			case 404:
 				return errors.New(fmt.Sprintf("not found: %s", sigUri.String()))
@@ -136,6 +140,8 @@ func (h *HttpsFetcher) Fetch(pkg *zps.Pkg) error {
 		}
 
 		if resp.IsError() {
+			os.Remove(cacheFile)
+
 			switch resp.StatusCode() {
 			case 404:
 				return errors.New(fmt.Sprintf("not found: %s", fileUri.String()))
@@ -179,6 +185,8 @@ func (h *HttpsFetcher) refresh(osarch *zps.OsArch) error {
 	}
 
 	if resp.IsError() {
+		os.Remove(h.cache.GetMeta(osarch.String(), h.uri.String()))
+
 		switch resp.StatusCode() {
 		case 404:
 			return nil
@@ -203,6 +211,8 @@ func (h *HttpsFetcher) refresh(osarch *zps.OsArch) error {
 		}
 
 		if resp.IsError() {
+			os.Remove(h.cache.GetMeta(osarch.String(), h.uri.String()))
+
 			switch resp.StatusCode() {
 			case 404:
 				return errors.New(fmt.Sprintf("not found: %s", sigUri.String()))

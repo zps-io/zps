@@ -1,6 +1,7 @@
 .DS_Store
 *.db
 *.zpkg
+*.tar.gz
 dist/
 extract/
 test/extract
