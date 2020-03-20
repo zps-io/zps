@@ -91,6 +91,12 @@ func (c *Cache) Clear() error {
 		os.Remove(f)
 	}
 
+	sigfiles, _ := filepath.Glob(filepath.Join(c.path, "*.sig"))
+
+	for _, f := range sigfiles {
+		os.Remove(f)
+	}
+
 	return nil
 }
 

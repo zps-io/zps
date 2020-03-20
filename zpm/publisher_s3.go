@@ -470,7 +470,10 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		metadata.Empty()
 
 		for _, pkg := range repo.Solvables() {
-			metadata.Put(pkg.(*zps.Pkg))
+			err := metadata.Put(pkg.(*zps.Pkg))
+			if err != nil {
+				return err
+			}
 		}
 
 		// Upload metadata
