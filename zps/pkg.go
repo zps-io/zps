@@ -203,8 +203,8 @@ func (p *Pkg) FileName() string {
 func (p *Pkg) Columns() string {
 	return strings.Join([]string{
 		p.Name(),
-		p.Summary(),
 		p.Id(),
+		p.Summary(),
 	}, "|")
 }
 

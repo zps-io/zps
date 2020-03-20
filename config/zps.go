@@ -94,11 +94,11 @@ func (z *ZpsConfig) SetRoot() error {
 }
 
 func (z *ZpsConfig) SetupHelper() error {
-	if os.Getenv("HOME") == "" {
+	if z.UserPath() == "" {
 		return nil
 	}
 
-	zpsUserPath := filepath.Join(os.Getenv("HOME"), ".zps")
+	zpsUserPath := z.UserPath()
 
 	if _, err := os.Stat(zpsUserPath); os.IsNotExist(err) {
 		os.Mkdir(zpsUserPath, 0700)
@@ -146,6 +146,14 @@ func (z *ZpsConfig) PkiPath() string {
 
 func (z *ZpsConfig) WorkPath() string {
 	return filepath.Join(z.CurrentImage.Path, "var", "tmp", "zps")
+}
+
+func (z *ZpsConfig) UserPath() string {
+	if os.Getenv("HOME") == "" {
+		return ""
+	}
+
+	return filepath.Join(os.Getenv("HOME"), ".zps")
 }
 
 func (z *ZpsConfig) LoadImages() error {

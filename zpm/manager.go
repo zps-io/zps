@@ -250,8 +250,25 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
-func (m *Manager) ImageInit(imagePath string) error {
+func (m *Manager) ImageInit(imagePath string, name string, imageOs string, arch string) error {
 	var err error
+
+	// TODO move this into OsArch
+	switch imageOs {
+	case "":
+	case "darwin", "linux":
+		m.config.CurrentImage.Os = imageOs
+	default:
+		return fmt.Errorf("unsupported os %s", imageOs)
+	}
+
+	switch arch {
+	case "":
+	case "x86_64":
+		m.config.CurrentImage.Os = arch
+	default:
+		return fmt.Errorf("unsupported arch %s", imageOs)
+	}
 
 	if imagePath != "" {
 		if _, err := os.Stat(imagePath); os.IsNotExist(err) {
@@ -269,7 +286,26 @@ func (m *Manager) ImageInit(imagePath string) error {
 		}
 	}
 
-	// HACK
+	if name == "" {
+		name = filepath.Base(imagePath)
+	}
+
+	// Write config
+	conf := `name = "%s"
+path = "%s"
+arch = "%s"
+os = "%s"
+`
+	userImagePath := filepath.Join(m.config.UserPath(), "image.d")
+	defaultImagePath := filepath.Join(m.config.ConfigPath(), "image.d")
+	finalConfig := []byte(fmt.Sprintf(conf, name, imagePath, m.config.CurrentImage.Arch, m.config.CurrentImage.Os))
+
+	if _, err := os.Stat(userImagePath); !os.IsNotExist(err) {
+		ioutil.WriteFile(filepath.Join(userImagePath, name+".conf"), finalConfig, 0640)
+	} else {
+		ioutil.WriteFile(filepath.Join(defaultImagePath, name+".conf"), finalConfig, 0640)
+	}
+
 	m.config.CurrentImage.Path = imagePath
 
 	// Create state db
