@@ -1,5 +1,5 @@
 Zpkg "moo" {
-  publisher = "fezz.io"
+  publisher = "zps.io"
   version = "0.1.1"
   summary = "Zpkg moo pkg"
   description = "Moo is the epic sound a cow makes because yes"
@@ -8,5 +8,5 @@ Zpkg "moo" {
 }
 
 Tag "zps.vcs.uri" {
-  value = "https://github.com/fezz-io/moo"
+  value = "https://github.com/zps-io/moo"
 }

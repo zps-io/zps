@@ -273,8 +273,8 @@ func (m *Manager) ImageInit(imagePath string, name string, imageOs string, arch 
 	if imagePath != "" {
 		imagePath, err = filepath.Abs(imagePath)
 		if err != nil {
-				return err
-			}
+			return err
+		}
 	} else {
 		imagePath, err = os.Getwd()
 		if err != nil {

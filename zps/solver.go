@@ -24,11 +24,12 @@ type Solver struct {
 	request      *Request
 	satSolutions []*sat.Solution
 	solutions    Solutions
+	seen         map[string]bool
 	solver       *sat.Solver
 }
 
 func NewSolver(pool *Pool, policy Policy) *Solver {
-	solver := &Solver{pool, policy, nil, nil, nil, sat.NewSolver()}
+	solver := &Solver{pool, policy, nil, nil, nil, make(map[string]bool), sat.NewSolver()}
 	return solver
 }
 
@@ -72,7 +73,7 @@ func (s *Solver) addClauses() {
 			if candidate != nil {
 				clause = sat.NewVariable(candidate.Id())
 				s.solver.AddClause(clause)
-				s.addReqClauses(nil, candidate)
+				s.addReqClauses(candidate)
 			}
 		case "remove":
 			var clause sat.LiteralEncoder
@@ -89,7 +90,7 @@ func (s *Solver) addClauses() {
 	}
 }
 
-func (s *Solver) addReqClauses(parent Solvable, solvable Solvable) {
+func (s *Solver) addReqClauses(solvable Solvable) {
 	for _, req := range solvable.Requirements() {
 		// Continue if a requirement references itself
 		if solvable.Name() == req.Name {
@@ -106,14 +107,13 @@ func (s *Solver) addReqClauses(parent Solvable, solvable Solvable) {
 			for _, candidate := range provides {
 				clause = append(clause, sat.NewVariable(candidate.Id()))
 
-				// recurse if candidate is not in fact the parent
-				if parent != nil {
-					if candidate.Name() == parent.Name() {
-						continue
-					}
+				// recurse if candidate has not been processed
+				if s.seen[candidate.Id()] {
+					continue
 				}
 
-				s.addReqClauses(solvable, candidate)
+				s.seen[candidate.Id()] = true
+				s.addReqClauses(candidate)
 			}
 
 			s.solver.AddClause(clause...)

@@ -158,7 +158,7 @@ func (t *Transaction) solutionConflicts() error {
 			return err
 		}
 
-		actions := reader.Manifest.Section("dir", "file", "symlink")
+		actions := reader.Manifest.Section("Dir", "File", "SymLink")
 
 		// build lookup index, TODO revisit this
 		for _, act := range actions {
@@ -172,7 +172,7 @@ func (t *Transaction) solutionConflicts() error {
 	for index, act := range fsActions {
 		prev := index - 1
 		if prev != -1 {
-			if act.Key() == fsActions[prev].Key() && act.Type() != "dir" && fsActions[prev].Type() != "dir" {
+			if act.Key() == fsActions[prev].Key() && act.Type() != "Dir" && fsActions[prev].Type() != "Dir" {
 				return errors.New(fmt.Sprint(
 					"Package Conflicts:\n",
 					lookup[fsActions[prev]].Name(), " ", strings.ToUpper(fsActions[prev].Type()), " => ", fsActions[prev].Key(), "\n",
@@ -194,7 +194,7 @@ func (t *Transaction) imageConflicts() error {
 			return err
 		}
 
-		for _, action := range reader.Manifest.Section("dir", "file", "symlink") {
+		for _, action := range reader.Manifest.Section("Dir", "File", "SymLink") {
 			fsEntries, err := t.state.Objects.Get(action.Key())
 
 			if err != nil {
@@ -202,7 +202,7 @@ func (t *Transaction) imageConflicts() error {
 			}
 
 			for _, entry := range fsEntries {
-				if entry.Pkg != pkg.Name() && entry.Type != "dir" && action.Type() != "dir" {
+				if entry.Pkg != pkg.Name() && entry.Type != "Dir" && action.Type() != "Dir" {
 					return errors.New(fmt.Sprint(
 						entry.Type,
 						" ",
@@ -284,7 +284,7 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 		}
 
 		var contents action.Actions
-		contents = lookup.Section("dir", "file", "symlink")
+		contents = lookup.Section("Dir", "File", "SymLink")
 
 		// Reverse the actionlist
 		sort.Sort(sort.Reverse(contents))
