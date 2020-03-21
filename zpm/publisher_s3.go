@@ -447,11 +447,15 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 	if len(repo.Solvables()) > 0 {
 		for _, file := range pkgFiles {
 			if !rejectIndex[filepath.Base(file)] {
-				s.Emit("publisher.publish", file)
+				s.Emit("spin.start", fmt.Sprintf("publishing: %s", file))
+
 				err = s.upload(file, path.Join(s.uri.Path, osarch.String(), filepath.Base(file)))
 				if err != nil {
+					s.Emit("spin.error", fmt.Sprintf("failed: %s", file))
 					return err
 				}
+
+				s.Emit("spin.success", fmt.Sprintf("published: %s", file))
 			}
 		}
 
