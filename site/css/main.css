@@ -49,6 +49,11 @@ hr {
     font-weight: bold;
 }
 
+.github {
+    margin-top: 40px;
+    text-align: center;
+}
+
 .footer {
     margin: 150px auto auto;
     width: 75%;

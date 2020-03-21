@@ -71,6 +71,22 @@ func SetupEventHandlers(emitter *emission.Emitter, ui *cli.Ui) {
 		ui.Yellow(fmt.Sprint("* ", message))
 	})
 
+	emitter.On("manager.spin.start", func(message string) {
+		ui.Spin(" " + message)
+	})
+
+	emitter.On("manager.spin.success", func(message string) {
+		ui.SpinSuccess("* " + message)
+	})
+
+	emitter.On("manager.spin.error", func(message string) {
+		ui.SpinError("x " + message)
+	})
+
+	emitter.On("manager.spin.error", func(message string) {
+		ui.SpinWarn("~ " + message)
+	})
+
 	emitter.On("publisher.publish", func(message string) {
 		ui.Info(fmt.Sprint("* published ", message))
 	})

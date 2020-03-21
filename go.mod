@@ -11,6 +11,7 @@ require (
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/dsnet/compress v0.0.1
 	github.com/fezz-io/sat v0.0.0-20190412034122-acaa8fa26246
+	github.com/gernest/wow v0.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/hashicorp/hcl2 v0.0.0-20190909202536-66c59f909e25
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0

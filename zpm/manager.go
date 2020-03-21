@@ -456,12 +456,14 @@ func (m *Manager) Install(args []string) error {
 		case phase.INSTALL:
 			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
 			fe := NewFetcher(uri, m.cache, m.security)
+
+			m.Emitter.Emit("manager.spin.start", fmt.Sprint("fetching: ", op.Package.Id()))
 			err = fe.Fetch(op.Package.(*zps.Pkg))
 			if err != nil {
 				return err
 			}
 
-			m.Emitter.Emit("manager.fetch", fmt.Sprint("fetching: ", op.Package.Id()))
+			m.Emitter.Emit("manager.spin.success", fmt.Sprint("fetched: ", op.Package.Id()))
 		case phase.NOOP:
 			m.Emit("transaction.noop", fmt.Sprint("using: ", op.Package.Id()))
 		}
@@ -789,15 +791,16 @@ func (m *Manager) Refresh() error {
 
 		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security)
 
+		m.Emit("manager.spin.start", fmt.Sprint("refreshing: ", r.Fetch.Uri.String()))
 		err = fe.Refresh()
 		if err == nil {
-			m.Emit("manager.refresh", fmt.Sprint("refreshed: ", r.Fetch.Uri.String()))
+			m.Emit("manager.spin.success", fmt.Sprint("refreshed: ", r.Fetch.Uri.String()))
 		} else if strings.Contains(err.Error(), "no trusted certificates") {
-			m.Emit("manager.error", fmt.Sprint("metadata validation failed: ", r.Fetch.Uri.String()))
+			m.Emit("manager.spin.error", fmt.Sprint("metadata validation failed: ", r.Fetch.Uri.String()))
 		} else if strings.Contains(err.Error(), "refresh failed") {
-			m.Emit("manager.error", fmt.Sprint("fetch metadata failed: ", r.Fetch.Uri.String()))
+			m.Emit("manager.spin.error", fmt.Sprint("fetch metadata failed: ", r.Fetch.Uri.String()))
 		} else {
-			m.Emit("manager.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
+			m.Emit("manager.spin.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
 		}
 	}
 

@@ -14,6 +14,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/gernest/wow"
+	"github.com/gernest/wow/spin"
 	"github.com/mitchellh/colorstring"
 )
 
@@ -24,6 +26,8 @@ type Ui struct {
 	info  *log.Logger
 	warn  *log.Logger
 	error *log.Logger
+
+	spinner *wow.Wow
 
 	colorize *colorstring.Colorize
 }
@@ -93,4 +97,42 @@ func (u *Ui) Blue(content string) {
 
 func (u *Ui) Red(content string) {
 	u.info.Println(u.colorize.Color("[red]" + content))
+}
+
+// Spin
+func (u *Ui) Spin(content string) {
+	u.spinner = wow.New(
+		os.Stderr,
+		spin.Spinner{
+			Name:     1,
+			Interval: 80,
+			Frames: []string{
+				u.colorize.Color(`[green]⠋`),
+				u.colorize.Color(`[green]⠙`),
+				u.colorize.Color(`[green]⠹`),
+				u.colorize.Color(`[green]⠸`),
+				u.colorize.Color(`[green]⠼`),
+				u.colorize.Color(`[green]⠴`),
+				u.colorize.Color(`[green]⠦`),
+				u.colorize.Color(`[green]⠧`),
+				u.colorize.Color(`[green]⠇`),
+				u.colorize.Color(`[green]⠏`),
+			},
+		},
+		u.colorize.Color("[green]"+content),
+	)
+
+	u.spinner.Start()
+}
+
+func (u *Ui) SpinSuccess(content string) {
+	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[green]"+content))
+}
+
+func (u *Ui) SpinError(content string) {
+	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[red]"+content))
+}
+
+func (u *Ui) SpinWarn(content string) {
+	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[yellow]"+content))
 }
