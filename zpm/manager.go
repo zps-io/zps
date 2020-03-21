@@ -336,6 +336,10 @@ os = "%s"
 		return err
 	}
 
+	// Ensure we have metadata for the new image
+	m.cache = NewCache(m.config.CachePath())
+	err = m.Refresh()
+
 	// Rewrite helper if required
 	return m.config.SetupHelper(helper)
 }
