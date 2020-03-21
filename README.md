@@ -23,7 +23,7 @@ by teams that execute rapidly as well as the compliance problems of those that r
 
 #### Platform and Architectures
 
-- Architecture support will be limited to amd64 (initially) and arm64 (eventually)
+- Architecture support will be limited to x86_64 (initially) and arm64 (eventually)
 - OS support will be limited to OSX, Linux, FreeBSD (initially)
 - Must support cross platform builds with variable interpolation
 
