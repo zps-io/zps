@@ -84,7 +84,7 @@ cleanup() {
   rm -f "${DOWNLOAD_PATH}/${DOWNLOAD_FILE}"
 
   log_info "ZPS Installed!"
-  log_info "Please add .zps/init.sh to your shell profile"
+  log_info "Please add .zps/init.sh to your shell profile (zsh only)"
 }
 
 IMAGE_PATH="$1"
