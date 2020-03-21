@@ -70,6 +70,8 @@ func (f *FileUnix) install(ctx context.Context) error {
 		var digest string
 		var err error
 
+		os.Remove(target)
+
 		digest, err = payload.Get(target, int64(f.file.Offset), int64(f.file.Size))
 		if err != nil {
 			return err
