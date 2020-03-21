@@ -24,6 +24,54 @@
             <p>INSTALL</p>
             <div id="script">curl https://zps.io/setup.sh -o ./setup.sh && chmod 700 setup.sh && ./setup.sh ${your_image_dir}</div>
         </div>
+        <div class="action">
+            <div id="help">
+                <pre>
+ZPS (Z Package System) The last word in package management
+
+Usage:
+  zps [flags]
+  zps [command]zps
+
+Manage Current Image:
+  cache       Manage ZPS image cache
+  contents    List contents of installed package
+  freeze      Freeze package version in ZPS image
+  info        Show installed package metadata
+  install     Install packages into ZPS image
+  list        List packages installed in ZPS image
+  pki         Manage ZPS pki store
+  plan        Plan ZPS transaction
+  refresh     Refresh ZPS repository metadata
+  remove      Remove packages from a ZPS image
+  repo        Manage ZPS repositories
+  status      Show status of specified package
+  thaw        Un-freeze package version in ZPS image
+  transaction Manage ZPS image transactions
+  update      Update ZPS image packages
+
+Package Publishing/Fetching:
+  channel     Add a package to a channel within a ZPS repository
+  fetch       Fetch packages from configured repositories
+  publish     Publish ZPKG(s) to a ZPS repository
+
+Images and ZPKGs:
+  image       Manage ZPS images
+  zpkg        Manage ZPKG files
+
+ZPS:
+  help        Help about any command
+  version     Print the version number of ZPS
+
+Flags:
+  -h, --help           help for zps
+  --image string   ZPS image name/id
+  --no-color       Disable color
+
+Use "zps [command] --help" for more information about a command.
+                </pre>
+            </div>
+        </div>
         <div class="github">
             <a class="github-button" href="https://github.com/fezz-io/zps" data-color-scheme="no-preference: dark; light: dark; dark: dark;" data-size="large" data-show-count="true" aria-label="Star fezz-io/zps on GitHub">Star</a>
         </div>

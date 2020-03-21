@@ -98,8 +98,8 @@ func NewZpsRootCommand() *ZpsRootCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "zps"
-	cmd.Short = "ZPS the Z Package System"
-	cmd.Long = "ZPS the Z Package System"
+	cmd.Short = "ZPS (Z Package System) The last word in package management"
+	cmd.Long = "ZPS (Z Package System) The last word in package management"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

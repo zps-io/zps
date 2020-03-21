@@ -46,6 +46,23 @@ hr {
     box-shadow: 3px 3px #000000;
 }
 
+#help {
+    margin: 20px auto auto;
+    text-align: left;
+    background-color: #252525;
+    width: 75%;
+    padding: 10px;
+    box-shadow: 3px 3px #000000;
+}
+
+#help pre {
+    font-weight: normal;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: smaller;
+    margin: auto;
+    width: 50%;
+}
+
 .action {
     text-align: center;
     font-weight: bold;
