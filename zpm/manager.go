@@ -782,6 +782,11 @@ func (m *Manager) Refresh() error {
 	defer m.lock.Unlock()
 
 	for _, r := range m.config.Repos {
+		if r.Enabled == false {
+			m.Emit("manager.warn", fmt.Sprint("skipped disabled: ", r.Fetch.Uri.String()))
+			continue
+		}
+
 		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security)
 
 		err = fe.Refresh()
