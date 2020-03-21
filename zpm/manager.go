@@ -250,7 +250,7 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
-func (m *Manager) ImageInit(imagePath string, name string, imageOs string, arch string) error {
+func (m *Manager) ImageInit(imagePath string, name string, imageOs string, arch string, helper bool) error {
 	var err error
 
 	// TODO move this into OsArch
@@ -271,20 +271,19 @@ func (m *Manager) ImageInit(imagePath string, name string, imageOs string, arch 
 	}
 
 	if imagePath != "" {
-		if _, err := os.Stat(imagePath); os.IsNotExist(err) {
-			imagePath, err = filepath.Abs(imagePath)
-			if err != nil {
+		imagePath, err = filepath.Abs(imagePath)
+		if err != nil {
 				return err
 			}
-
-			os.Mkdir(imagePath, 0755)
-		}
 	} else {
 		imagePath, err = os.Getwd()
 		if err != nil {
 			return err
 		}
 	}
+
+	// Silently try dir create
+	os.Mkdir(imagePath, 0755)
 
 	if name == "" {
 		name = filepath.Base(imagePath)
@@ -337,7 +336,8 @@ os = "%s"
 		return err
 	}
 
-	return err
+	// Rewrite helper if required
+	return m.config.SetupHelper(helper)
 }
 
 func (m *Manager) ImageCurrent(image string) error {

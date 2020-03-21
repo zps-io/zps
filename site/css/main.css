@@ -1,0 +1,56 @@
+body {
+    background-image: url("../img/prism.png");
+    background-color: #333333;
+    color: #fff;
+    font-family: sans-serif;
+    font-size: medium;
+}
+
+hr {
+    margin-top: 35px;
+    margin-bottom: 35px;
+    width: 75%
+}
+
+#logo {
+    margin: 75px auto auto;
+    width: 50%
+}
+
+#logo img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 40%;
+    height: 40%;
+}
+
+#tag {
+    margin-top: 35px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#script {
+    margin: 20px auto auto;
+    font-weight: normal;
+    font-family: Courier, monospace;
+    font-size: small;
+    background-color: #252525;
+    width: 75%;
+    padding: 10px;
+    box-shadow: 3px 3px #000000;
+}
+
+.action {
+    text-align: center;
+    font-weight: bold;
+}
+
+.footer {
+    margin: 150px auto auto;
+    width: 75%;
+    font-weight: lighter;
+    font-size: smaller;
+    text-align: right;
+}

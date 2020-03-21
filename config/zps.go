@@ -49,12 +49,6 @@ func LoadConfig(image string) (*ZpsConfig, error) {
 		return nil, err
 	}
 
-	// Setup shell helper
-	err = config.SetupHelper()
-	if err != nil {
-		return nil, err
-	}
-
 	// Load configured image list based on current root
 	err = config.LoadImages()
 	if err != nil {
@@ -63,6 +57,12 @@ func LoadConfig(image string) (*ZpsConfig, error) {
 
 	// If image name, path, or hash id provided override image prefix
 	err = config.SelectImage(image)
+	if err != nil {
+		return nil, err
+	}
+
+	// Setup shell helper
+	err = config.SetupHelper(false)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (z *ZpsConfig) SetRoot() error {
 	return nil
 }
 
-func (z *ZpsConfig) SetupHelper() error {
+func (z *ZpsConfig) SetupHelper(overwrite bool) error {
 	if z.UserPath() == "" {
 		return nil
 	}
@@ -106,14 +106,16 @@ func (z *ZpsConfig) SetupHelper() error {
 
 	zpsUserSettingsPath := filepath.Join(zpsUserPath, "init.sh")
 
-	if _, err := os.Stat(zpsUserSettingsPath); os.IsNotExist(err) {
-		err := ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, z.Root)), 0600)
+	_, err := os.Stat(zpsUserSettingsPath)
+
+	if os.IsNotExist(err) || overwrite {
+		err := ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, z.CurrentImage.Path)), 0600)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (z *ZpsConfig) ConfigPath() string {

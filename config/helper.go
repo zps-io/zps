@@ -1,9 +1,13 @@
 package config
 
-var ZshHelper = `ZPS_IMAGE_DEFAULT=%s
+var ZshHelper = `###########
+# zsh only, bash support eventually
+###########
+
+ZPS_IMAGE_DEFAULT=%s
 
 zps_setup() {
-    ZPS_SESSION=$(mktemp -t zps.sess)
+    ZPS_SESSION=$(mktemp -t zps.sess.XXXXXX)
     export ZPS_SESSION
 
     precmd_functions+=(zps_reload)
