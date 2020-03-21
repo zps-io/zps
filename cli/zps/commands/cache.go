@@ -25,8 +25,8 @@ func NewZpsCacheCommand() *ZpsCacheCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "cache"
-	cmd.Short = "Work with ZPS image cache"
-	cmd.Long = "Work with ZPS image cache"
+	cmd.Short = "Manage ZPS image cache"
+	cmd.Long = "Manage ZPS image cache"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

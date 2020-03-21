@@ -15,6 +15,79 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TODO get rid of this once cobra cmd has command groups
+var UsageTemplate = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{.Name}}{{if and .HasAvailableSubCommands (eq .Name "zps")}}
+
+Manage Current Image:{{range .Commands}}{{if and .IsAvailableCommand (IsManageCmd .Name)}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
+Package Publishing/Fetching:{{range .Commands}}{{if and .IsAvailableCommand (IsPublishCmd .Name)}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
+Images and ZPKGs:{{range .Commands}}{{if and .IsAvailableCommand (IsImgZpkgCmd .Name)}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
+ZPS:{{range .Commands}}{{if or (eq .Name "help") (and .IsAvailableCommand (IsZpsCmd .Name))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if and .HasAvailableSubCommands (ne .Name "zps")}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+
+var ManageCommands = map[string]bool{
+	"cache":       true,
+	"contents":    true,
+	"configure":   true,
+	"freeze":      true,
+	"info":        true,
+	"install":     true,
+	"list":        true,
+	"pki":         true,
+	"plan":        true,
+	"refresh":     true,
+	"remove":      true,
+	"repo":        true,
+	"status":      true,
+	"thaw":        true,
+	"transaction": true,
+	"update":      true,
+}
+
+var PublishCommands = map[string]bool{
+	"channel": true,
+	"fetch":   true,
+	"publish": true,
+}
+
+var ImgPkgCommands = map[string]bool{
+	"image": true,
+	"zpkg":  true,
+}
+
+var ZpsCommands = map[string]bool{
+	"help":    true,
+	"version": true,
+}
+
 type ZpsRootCommand struct {
 	*cobra.Command
 	*cli.Ui
@@ -55,6 +128,12 @@ func NewZpsRootCommand() *ZpsRootCommand {
 	cmd.AddCommand(NewZpsVersionCommand().Command)
 	cmd.AddCommand(NewZpsZpkgCommand().Command)
 
+	cmd.SetUsageTemplate(UsageTemplate)
+	cobra.AddTemplateFunc("IsManageCmd", cmd.isManageCmd)
+	cobra.AddTemplateFunc("IsPublishCmd", cmd.isPublishCmd)
+	cobra.AddTemplateFunc("IsImgZpkgCmd", cmd.isImgZpkgCmd)
+	cobra.AddTemplateFunc("IsZpsCmd", cmd.isZpsCmd)
+
 	return cmd
 }
 
@@ -68,4 +147,20 @@ func (z *ZpsRootCommand) setup(cmd *cobra.Command, args []string) error {
 
 func (z *ZpsRootCommand) run(cmd *cobra.Command, args []string) error {
 	return z.Help()
+}
+
+func (z *ZpsRootCommand) isManageCmd(cmd string) bool {
+	return ManageCommands[cmd]
+}
+
+func (z *ZpsRootCommand) isPublishCmd(cmd string) bool {
+	return PublishCommands[cmd]
+}
+
+func (z *ZpsRootCommand) isImgZpkgCmd(cmd string) bool {
+	return ImgPkgCommands[cmd]
+}
+
+func (z *ZpsRootCommand) isZpsCmd(cmd string) bool {
+	return ZpsCommands[cmd]
 }

@@ -25,8 +25,8 @@ func NewZpsZpkgCommand() *ZpsZpkgCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "zpkg"
-	cmd.Short = "Work with ZPKG files"
-	cmd.Long = "Work with ZPKG files"
+	cmd.Short = "Manage ZPKG files"
+	cmd.Long = "Manage ZPKG files"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
