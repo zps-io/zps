@@ -1,0 +1,79 @@
+/*
+  HCL2 Imagefile
+
+  Variable Namespaces
+
+  Environment:
+
+  env.ENV_VAR
+*/
+
+Image "snarf" {
+  os = "${ env.OS }"
+  arch = "${ env.ARCH }"
+}
+
+Repo "somevendor" {
+  enabled = true
+  priority = 10
+
+  fetch {
+    uri = "file:///Users/sigil/Repos/somevendor.io/software"
+  }
+}
+
+Repo "anothervendor" {
+  enabled = true
+  priority = 10
+
+  fetch {
+    uri = "https://anothervendor.io/packages/anothervendor.io/software"
+  }
+}
+
+// Needs more thought
+// structure is fine, it would cool to be able to pass
+// a profile for example to a config run to change the
+// interpolated outcome
+Config "component-one" {
+  values = {
+    snarf = "darf"
+    nacho = {
+      value = "duffer"
+      age = 101
+    }
+    volume = 10
+  }
+}
+
+Config "component-two" {
+  values = {
+    snarf = "darf"
+    nacho = {
+      value = "duffer"
+      age = 101
+    }
+    volume = 10
+  }
+}
+
+Template "a-template" {
+  // package name to register with for config runs
+  register = "snarf"
+  source = "/path/to/template"
+  output = "/path/to/output"
+}
+
+Package "snarf" {
+  // ANY, GTE, LTE, EQ, EXQ
+  operation = "EQ"
+  version = "1.0.1"
+}
+
+Package "hodor" {
+  operation = "ANY"
+}
+
+Package "bacon" {
+  operation = "ANY"
+}
