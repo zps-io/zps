@@ -13,7 +13,7 @@ require (
 	github.com/fezz-io/sat v0.0.0-20190412034122-acaa8fa26246
 	github.com/gernest/wow v0.1.0
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/hashicorp/hcl2 v0.0.0-20190909202536-66c59f909e25
+	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/lunixbochs/struc v0.0.0-20190916212049-a5c72983bc42
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
@@ -22,7 +22,7 @@ require (
 	github.com/ryanuber/columnize v2.1.0+incompatible
 	github.com/segmentio/ksuid v1.0.2
 	github.com/spf13/cobra v0.0.5
-	github.com/zclconf/go-cty v1.0.0
+	github.com/zclconf/go-cty v1.3.1
 	go.etcd.io/bbolt v1.3.3
 	golang.org/x/net v0.0.0-20190916140828-c8589233b77d
 	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3 // indirect
