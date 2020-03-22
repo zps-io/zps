@@ -12,6 +12,8 @@ package commands
 
 import (
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
+	"os"
 
 	"github.com/chuckpreslar/emission"
 
@@ -72,18 +74,38 @@ func SetupEventHandlers(emitter *emission.Emitter, ui *cli.Ui) {
 	})
 
 	emitter.On("spin.start", func(message string) {
+		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+			ui.Info(fmt.Sprint("* ", message))
+			return
+		}
+
 		ui.Spin(" " + message)
 	})
 
 	emitter.On("spin.success", func(message string) {
+		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+			ui.Info(fmt.Sprint("* ", message))
+			return
+		}
+
 		ui.SpinSuccess("* " + message)
 	})
 
 	emitter.On("spin.error", func(message string) {
+		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+			ui.Error(fmt.Sprint("x ", message))
+			return
+		}
+
 		ui.SpinError("x " + message)
 	})
 
 	emitter.On("spin.error", func(message string) {
+		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+			ui.Warn(fmt.Sprint("~ ", message))
+			return
+		}
+
 		ui.SpinWarn("~ " + message)
 	})
 

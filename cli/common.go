@@ -132,28 +132,13 @@ func (u *Ui) Spin(content string) {
 }
 
 func (u *Ui) SpinSuccess(content string) {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		u.Info(content)
-		return
-	}
-
 	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[green]"+content))
 }
 
 func (u *Ui) SpinError(content string) {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		u.Error(content)
-		return
-	}
-
 	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[red]"+content))
 }
 
 func (u *Ui) SpinWarn(content string) {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		u.Warn(content)
-		return
-	}
-
 	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[yellow]"+content))
 }
