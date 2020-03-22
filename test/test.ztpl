@@ -1,4 +1,5 @@
 <dang>
-    <item>${upper("snarf")}</item>
-    <item>${os_test("barf")}</item>
+    <item>${ upper("snarf") }</item>
+    <item>${ os_test("barf") }</item>
+    <item>${ env.SHELL }</item>
 </dang>
