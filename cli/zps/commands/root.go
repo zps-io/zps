@@ -24,7 +24,7 @@ Aliases:
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
 Examples:
-{{.Example}}{{end}}{{.Name}}{{if and .HasAvailableSubCommands (eq .Name "zps")}}
+{{.Example}}{{end}}{{if and .HasAvailableSubCommands (eq .Name "zps")}}
 
 Manage Current Image:{{range .Commands}}{{if and .IsAvailableCommand (IsManageCmd .Name)}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
