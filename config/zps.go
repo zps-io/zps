@@ -17,12 +17,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/hcl2/hcl"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 
-	"github.com/hashicorp/hcl2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclparse"
 
 	"errors"
 	"fmt"
@@ -31,7 +31,7 @@ import (
 
 	"runtime"
 
-	"github.com/hashicorp/hcl2/gohcl"
+	"github.com/hashicorp/hcl/v2/gohcl"
 )
 
 type ZpsConfig struct {
