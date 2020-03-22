@@ -31,6 +31,8 @@ type Manifest struct {
 	Files    []*File    `hcl:"File,block" json:"file,omitempty"`
 	SymLinks []*SymLink `hcl:"SymLink,block" json:"symlink,omitempty"`
 
+	Templates []*Template `hcl:"Template,block" json:"template,omitempty"`
+
 	Signatures []*Signature `hcl:"Signature,block" json:"signature,omitempty"`
 
 	index map[string]int
@@ -69,6 +71,12 @@ func (m *Manifest) Add(action Action) {
 			m.Files[m.index[action.Id()]] = action.(*File)
 		} else {
 			m.Files = append(m.Files, action.(*File))
+		}
+	case "Template":
+		if m.Exists(action) {
+			m.Templates[m.index[action.Id()]] = action.(*Template)
+		} else {
+			m.Templates = append(m.Templates, action.(*Template))
 		}
 	case "Signature":
 		if m.Exists(action) {
@@ -118,6 +126,10 @@ func (m *Manifest) Section(filters ...string) Actions {
 			for _, item := range m.SymLinks {
 				items = append(items, item)
 			}
+		case "Template":
+			for _, item := range m.Templates {
+				items = append(items, item)
+			}
 		case "Signature":
 			for _, item := range m.Signatures {
 				items = append(items, item)
@@ -149,6 +161,10 @@ func (m *Manifest) Index() {
 		m.index[act.Id()] = index
 	}
 
+	for index, act := range m.Templates {
+		m.index[act.Id()] = index
+	}
+
 	for index, act := range m.Signatures {
 		m.index[act.Id()] = index
 	}
@@ -163,6 +179,7 @@ func (m *Manifest) Actions() Actions {
 	actions = append(actions, m.Zpkg)
 	actions = append(actions, m.Section("Tag")...)
 	actions = append(actions, m.Section("Requirement")...)
+	actions = append(actions, m.Section("Template")...)
 	actions = append(actions, m.Section("Signature")...)
 	actions = append(actions, fs...)
 
@@ -193,6 +210,16 @@ func (m *Manifest) Validate() error {
 					strings.ToUpper(actions[prev].Type()), " => ", actions[prev].Key(), "\n",
 					strings.ToUpper(action.Type()), " => ", action.Key()))
 			}
+		}
+	}
+
+	// Ensure that template actions refer to an existing file
+	tpls := m.Section("Template")
+	for _, tpl := range tpls {
+		if _, ok := m.index["File."+tpl.(*Template).Source]; ok {
+			continue
+		} else {
+			return errors.New("Action Template: template does not source packaged file")
 		}
 	}
 
