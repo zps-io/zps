@@ -93,6 +93,7 @@ func DefaultFactory(emitter *emission.Emitter) *Factory {
 		Register("Requirement", NewRequirementDefault).
 		Register("SymLink", NewSymLinkUnix).
 		Register("Tag", NewTagDefault).
+		Register("Template", NewTemplateDefault).
 		Register("Zpkg", NewZpkgDefault)
 
 	factory.
@@ -105,7 +106,8 @@ func DefaultFactory(emitter *emission.Emitter) *Factory {
 		On("File", phase.VALIDATE, "validate").
 		On("Symlink", phase.INSTALL, "install").
 		On("SymLink", phase.PACKAGE, "package").
-		On("SymLink", phase.REMOVE, "remove")
+		On("SymLink", phase.REMOVE, "remove").
+		On("Template", phase.CONFIGURE, "configure")
 
 	return factory
 }

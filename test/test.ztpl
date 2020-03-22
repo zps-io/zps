@@ -1,0 +1,4 @@
+<dang>
+    <item>${upper("snarf")}</item>
+    <item>${os_test("barf")}</item>
+</dang>

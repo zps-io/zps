@@ -1043,6 +1043,31 @@ func (m *Manager) Status(query string) (string, []string, error) {
 	return status, packages, nil
 }
 
+func (m *Manager) Tpl(tplPath string) error {
+	target, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	options := &provider.Options{TargetPath: target}
+
+	ctx := m.getContext(phase.CONFIGURE, options)
+	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext())
+
+	factory := provider.DefaultFactory(m.Emitter)
+
+	tpl := &action.Template{
+		Name:   "",
+		Source: tplPath,
+		Output: "",
+		Owner:  "",
+		Group:  "",
+		Mode:   "",
+	}
+
+	return factory.Get(tpl).Realize(ctx)
+}
+
 func (m *Manager) TransActionList() ([]string, error) {
 	err := m.lock.TryLock()
 	if err != nil {

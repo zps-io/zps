@@ -85,6 +85,7 @@ var ImgPkgCommands = map[string]bool{
 
 var ZpsCommands = map[string]bool{
 	"help":    true,
+	"tpl":     true,
 	"version": true,
 }
 
@@ -123,6 +124,7 @@ func NewZpsRootCommand() *ZpsRootCommand {
 	cmd.AddCommand(NewZpsRepoCommand().Command)
 	cmd.AddCommand(NewZpsStatusCommand().Command)
 	cmd.AddCommand(NewZpsThawCommand().Command)
+	cmd.AddCommand(NewZpsTplCommand().Command)
 	cmd.AddCommand(NewZpsTransactionCommand().Command)
 	cmd.AddCommand(NewZpsUpdateCommand().Command)
 	cmd.AddCommand(NewZpsVersionCommand().Command)

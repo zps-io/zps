@@ -52,13 +52,6 @@ func (t *TemplateDefault) Realize(ctx context.Context) error {
 func (t *TemplateDefault) configure(ctx context.Context) error {
 	options := Opts(ctx)
 
-	output := filepath.Join(options.TargetPath, t.template.Output)
-
-	mode, err := strconv.ParseUint(t.template.Mode, 0, 0)
-	if err != nil {
-		return err
-	}
-
 	// Process template
 	configBytes, err := ioutil.ReadFile(filepath.Join(options.TargetPath, t.template.Source))
 	if err != nil {
@@ -71,30 +64,41 @@ func (t *TemplateDefault) configure(ctx context.Context) error {
 	}
 
 	// TODO build eval context upstream and pass via context
-	val, diags := expr.Value(&hcl.EvalContext{})
+	val, diags := expr.Value(ctx.Value("hclCtx").(*hcl.EvalContext))
 	if diags.HasErrors() {
 		return diags
 	}
 
-	err = ioutil.WriteFile(output, []byte(val.AsString()), os.FileMode(mode))
-	if err != nil {
-		return err
+	if t.template.Output != "" {
+		output := filepath.Join(options.TargetPath, t.template.Output)
+
+		mode, err := strconv.ParseUint(t.template.Mode, 0, 0)
+		if err != nil {
+			return err
+		}
+
+		err = ioutil.WriteFile(output, []byte(val.AsString()), os.FileMode(mode))
+		if err != nil {
+			return err
+		}
+		// Silent failures are fine, only a super user can chown to another user
+		// Also a given user may not exist on a system though we should catch
+		// that elsewhere
+
+		owner, _ := user.Lookup(t.template.Owner)
+		grp, _ := group.Lookup(t.template.Group)
+		var uid int64
+		var gid int64
+
+		if owner != nil && grp != nil {
+			uid, _ = strconv.ParseInt(owner.Uid, 0, 0)
+			gid, _ = strconv.ParseInt(owner.Uid, 0, 0)
+		}
+
+		os.Chown(output, int(uid), int(gid))
+	} else {
+		_, err = os.Stdout.Write([]byte(val.AsString()))
 	}
-	// Silent failures are fine, only a super user can chown to another user
-	// Also a given user may not exist on a system though we should catch
-	// that elsewhere
 
-	owner, _ := user.Lookup(t.template.Owner)
-	grp, _ := group.Lookup(t.template.Group)
-	var uid int64
-	var gid int64
-
-	if owner != nil && grp != nil {
-		uid, _ = strconv.ParseInt(owner.Uid, 0, 0)
-		gid, _ = strconv.ParseInt(owner.Uid, 0, 0)
-	}
-
-	os.Chown(output, int(uid), int(gid))
-
-	return nil
+	return err
 }

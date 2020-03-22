@@ -15,6 +15,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
+
+	"github.com/hashicorp/hcl2/hcl"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/function"
+	"github.com/zclconf/go-cty/cty/function/stdlib"
 
 	"github.com/hashicorp/hcl2/hclparse"
 
@@ -37,6 +43,8 @@ type ZpsConfig struct {
 
 	Images []*ImageConfig
 	Repos  []*RepoConfig
+
+	hclCtx *hcl.EvalContext
 }
 
 func LoadConfig(image string) (*ZpsConfig, error) {
@@ -75,6 +83,12 @@ func LoadConfig(image string) (*ZpsConfig, error) {
 
 	// Load repository configs
 	err = config.LoadRepos()
+	if err != nil {
+		return nil, err
+	}
+
+	// Load HCL Eval Context
+	err = config.LoadHclContext()
 	if err != nil {
 		return nil, err
 	}
@@ -326,4 +340,32 @@ func (z *ZpsConfig) LoadRepos() error {
 	}
 
 	return nil
+}
+
+func (z *ZpsConfig) LoadHclContext() error {
+	z.hclCtx = &hcl.EvalContext{
+		Variables: map[string]cty.Value{},
+	}
+
+	// Load env namespace
+	envs := make(map[string]cty.Value)
+	for _, env := range os.Environ() {
+		key := strings.Split(env, "=")[0]
+		val, _ := os.LookupEnv(key)
+		envs[key] = cty.StringVal(val)
+	}
+
+	z.hclCtx.Variables["env"] = cty.ObjectVal(envs)
+	z.hclCtx.Functions = map[string]function.Function{
+		"upper":   stdlib.UpperFunc,
+		"lower":   stdlib.LowerFunc,
+		"length":  stdlib.LengthFunc,
+		"os_test": z.osTest(),
+	}
+
+	return nil
+}
+
+func (z *ZpsConfig) HclContext() *hcl.EvalContext {
+	return z.hclCtx
 }
