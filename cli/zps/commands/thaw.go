@@ -29,8 +29,8 @@ func NewZpsThawCommand() *ZpsThawCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "thaw [PKG ...]"
-	cmd.Short = "Un-freeze package version in ZPS image"
-	cmd.Long = "Un-freeze package version in ZPS image"
+	cmd.Short = "Un-freeze package version"
+	cmd.Long = "Un-freeze package version"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

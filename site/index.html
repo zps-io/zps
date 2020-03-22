@@ -34,39 +34,39 @@ Usage:
   zps [command]
 
 Manage Current Image:
-  cache       Manage ZPS image cache
+  cache       Manage metadata and file cache
   contents    List contents of installed package
-  freeze      Freeze package version in ZPS image
+  freeze      Freeze a package version
   info        Show installed package metadata
-  install     Install packages into ZPS image
-  list        List packages installed in ZPS image
-  pki         Manage ZPS pki store
-  plan        Plan ZPS transaction
-  refresh     Refresh ZPS repository metadata
-  remove      Remove packages from a ZPS image
-  repo        Manage ZPS repositories
+  install     Install packages
+  list        List installed packages
+  pki         Manage pki store
+  plan        Plan transaction
+  refresh     Refresh repository metadata
+  remove      Remove packages
+  repo        Manage repositories
   status      Show status of specified package
-  thaw        Un-freeze package version in ZPS image
-  transaction Manage ZPS image transactions
-  update      Update ZPS image packages
+  thaw        Un-freeze package version
+  transaction Manage transactions
+  update      Update packages
 
 Package Publishing/Fetching:
-  channel     Add a package to a channel within a ZPS repository
+  channel     Add a package to a channel within a repository
   fetch       Fetch packages from configured repositories
-  publish     Publish ZPKG(s) to a ZPS repository
+  publish     Publish ZPKG(s) to a repository
 
 Images and ZPKGs:
-  image       Manage ZPS images
+  image       Manage images
   zpkg        Manage ZPKG files
 
 ZPS:
   help        Help about any command
-  version     Print the version number of ZPS
+  version     Show version
 
 Flags:
   -h, --help           help for zps
-  --image string   ZPS image name/id
-  --no-color       Disable color
+      --image string   ZPS image name/id
+      --no-color       Disable color
 
 Use "zps [command] --help" for more information about a command.
                 </pre>

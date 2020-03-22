@@ -26,8 +26,8 @@ func NewZpsImageCommand() *ZpsImageCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "image"
-	cmd.Short = "Manage ZPS images"
-	cmd.Long = "Manage ZPS images"
+	cmd.Short = "Manage images"
+	cmd.Long = "Manage images"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

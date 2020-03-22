@@ -28,8 +28,8 @@ func NewZpsRemoveCommand() *ZpsRemoveCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "remove [PKG ...]"
-	cmd.Short = "Remove packages from a ZPS image"
-	cmd.Long = "remove packages from a ZPS image"
+	cmd.Short = "Remove packages"
+	cmd.Long = "remove packages"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

@@ -27,8 +27,8 @@ func NewZpsVersionCommand() *ZpsVersionCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "version"
-	cmd.Short = "Print the version number of ZPS"
-	cmd.Long = "Print the version number of ZPS"
+	cmd.Short = "Show version"
+	cmd.Long = "Show version"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

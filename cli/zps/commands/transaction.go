@@ -25,8 +25,8 @@ func NewZpsTransactionCommand() *ZpsTransactionCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "transaction"
-	cmd.Short = "Manage ZPS image transactions"
-	cmd.Long = "Manage ZPS image transactions"
+	cmd.Short = "Manage transactions"
+	cmd.Long = "Manage transactions"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 

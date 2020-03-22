@@ -29,8 +29,8 @@ func NewZpsListCommand() *ZpsListCommand {
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
 	cmd.Use = "list"
-	cmd.Short = "List packages installed in ZPS image"
-	cmd.Long = "List packages installed in ZPS image"
+	cmd.Short = "List installed packages"
+	cmd.Long = "List installed packages"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
