@@ -119,6 +119,48 @@ func (m *Manager) Channel(repo string, pkg string, channel string) error {
 }
 
 func (m *Manager) Configure(packages []string) error {
+	pool, err := m.pool()
+	if err != nil {
+		return err
+	}
+
+	options := &provider.Options{TargetPath: m.config.CurrentImage.Path}
+	ctx := m.getContext(phase.CONFIGURE, options)
+	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext())
+
+	factory := provider.DefaultFactory(m.Emitter)
+
+	if len(packages) == 0 {
+		installed, err := m.state.Packages.All()
+		if err != nil {
+			return err
+		}
+
+		for _, pkg := range installed {
+			packages = append(packages, pkg.Zpkg.Name)
+		}
+	}
+
+	for _, pkg := range packages {
+		req, err := zps.NewRequirementFromSimpleString(pkg)
+		if err != nil {
+			return err
+		}
+
+		if pool.Installed(req) != nil {
+			tpls, err := m.state.Templates.Get(pkg)
+			if err != nil {
+				return err
+			}
+
+			for _, tpl := range tpls {
+				err = factory.Get(tpl).Realize(ctx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 
 	return nil
 }
@@ -1049,12 +1091,7 @@ func (m *Manager) Status(query string) (string, []string, error) {
 }
 
 func (m *Manager) Tpl(tplPath string) error {
-	target, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	options := &provider.Options{TargetPath: target}
+	options := &provider.Options{TargetPath: m.config.CurrentImage.Path}
 
 	ctx := m.getContext(phase.CONFIGURE, options)
 	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext())
