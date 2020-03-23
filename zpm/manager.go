@@ -118,6 +118,11 @@ func (m *Manager) Channel(repo string, pkg string, channel string) error {
 	return errors.New("Repo: " + repo + " not found")
 }
 
+func (m *Manager) Configure(packages []string) error {
+
+	return nil
+}
+
 func (m *Manager) Contents(pkgName string) ([]string, error) {
 	err := m.lock.TryLock()
 	if err != nil {

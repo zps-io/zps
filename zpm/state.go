@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asdine/storm/q"
+
 	"github.com/asdine/storm"
 	"github.com/fezz-io/zps/action"
 	bolt "go.etcd.io/bbolt"
@@ -25,6 +27,7 @@ type State struct {
 	Frozen       *StateFrozen
 	Packages     *StatePackages
 	Objects      *StateObjects
+	Templates    *StateTemplates
 	Transactions *StateTransactions
 }
 
@@ -37,6 +40,10 @@ type StatePackages struct {
 }
 
 type StateObjects struct {
+	getDb func() (*storm.DB, error)
+}
+
+type StateTemplates struct {
 	getDb func() (*storm.DB, error)
 }
 
@@ -60,6 +67,19 @@ type FsEntry struct {
 	Type string `storm:"index"`
 }
 
+type TemplateEntry struct {
+	Id   string `storm:"id"`
+	Pkg  string `storm:"index"`
+	Name string
+
+	Source string
+	Output string
+
+	Owner string
+	Group string
+	Mode  string
+}
+
 type TransactionEntry struct {
 	Key       string `storm:"id"`
 	Id        string `storm:"index"`
@@ -78,6 +98,9 @@ func NewState(path string) *State {
 
 	state.Objects = &StateObjects{}
 	state.Objects.getDb = state.getDb
+
+	state.Templates = &StateTemplates{}
+	state.Templates.getDb = state.getDb
 
 	state.Transactions = &StateTransactions{}
 	state.Transactions.getDb = state.getDb
@@ -213,14 +236,15 @@ func (s *StateObjects) Get(path string) ([]*FsEntry, error) {
 	return entries, nil
 }
 
-func (s *StateObjects) Del(path string, pkg string) error {
+func (s *StateObjects) Del(pkg string) error {
 	db, err := s.getDb()
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	err = db.DeleteStruct(NewFsEntry(path, pkg, ""))
+	query := db.Select(q.Eq("Pkg", pkg))
+	err = query.Delete(&FsEntry{})
 
 	return err
 }
@@ -233,6 +257,89 @@ func (s *StateObjects) Put(path string, pkg string, typ string) error {
 	defer db.Close()
 
 	err = db.Save(NewFsEntry(path, pkg, typ))
+
+	return err
+}
+
+func (s *StateTemplates) All() ([]*TemplateEntry, error) {
+	db, err := s.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*TemplateEntry
+
+	err = db.All(&entries)
+
+	return entries, nil
+}
+
+func (s *StateTemplates) Get(pkg string) ([]*action.Template, error) {
+	db, err := s.getDb()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var entries []*TemplateEntry
+
+	err = db.Find("Pkg", pkg, &entries)
+	if err != nil {
+		if err == storm.ErrNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	var templates []*action.Template
+
+	for _, tpl := range entries {
+		templates = append(
+			templates, &action.Template{
+				Name:   tpl.Name,
+				Source: tpl.Source,
+				Output: tpl.Output,
+				Owner:  tpl.Owner,
+				Group:  tpl.Group,
+				Mode:   tpl.Mode,
+			})
+	}
+
+	return templates, nil
+}
+
+func (s *StateTemplates) Del(pkg string) error {
+	db, err := s.getDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	query := db.Select(q.Eq("Pkg", pkg))
+	err = query.Delete(&TemplateEntry{})
+
+	return err
+}
+
+func (s *StateTemplates) Put(pkg string, tpl *action.Template) error {
+	db, err := s.getDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	err = db.Save(&TemplateEntry{
+		Id:     pkg + ":" + tpl.Name,
+		Pkg:    pkg,
+		Name:   tpl.Name,
+		Source: tpl.Source,
+		Output: tpl.Output,
+		Owner:  tpl.Owner,
+		Group:  tpl.Group,
+		Mode:   tpl.Mode,
+	})
 
 	return err
 }

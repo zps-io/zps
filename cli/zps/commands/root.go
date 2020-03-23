@@ -110,6 +110,7 @@ func NewZpsRootCommand() *ZpsRootCommand {
 	cmd.AddCommand(NewZpsCacheCommand().Command)
 	cmd.AddCommand(NewZpsChannelCommand().Command)
 	cmd.AddCommand(NewZpsContentsCommand().Command)
+	cmd.AddCommand(NewZpsConfigureCommand().Command)
 	cmd.AddCommand(NewZpsFetchCommand().Command)
 	cmd.AddCommand(NewZpsFreezeCommand().Command)
 	cmd.AddCommand(NewZpsImageCommand().Command)

@@ -12,8 +12,9 @@ package commands
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/chuckpreslar/emission"
 

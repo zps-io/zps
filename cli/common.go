@@ -11,9 +11,10 @@
 package cli
 
 import (
-	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"

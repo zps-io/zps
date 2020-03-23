@@ -116,7 +116,7 @@ func (p *Pool) WhatProvides(req *Requirement) Solvables {
 
 	if _, ok := p.index[req.Name]; ok {
 		for _, candidate := range p.index[req.Name] {
-			if candidate.Satisfies(req) {
+			if candidate.Satisfies(req) || p.frozen[candidate.Id()] {
 				provides = append(provides, candidate)
 			}
 		}

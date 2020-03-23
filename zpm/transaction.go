@@ -261,6 +261,16 @@ func (t *Transaction) install(pkg zps.Solvable) error {
 		}
 	}
 
+	// Add templates to the tpl db
+	templates := reader.Manifest.Section("Template")
+
+	for _, tpl := range templates {
+		err = t.state.Templates.Put(pkg.Name(), tpl.(*action.Template))
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 
@@ -303,9 +313,19 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 		}
 
 		// Remove fs objects from fs db
-		for _, fsObject := range contents {
-			err = t.state.Objects.Del(fsObject.Key(), pkg.Name())
-			if err != nil {
+		err = t.state.Objects.Del(pkg.Name())
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		// Remove an existing frozen entry
+		err = t.state.Frozen.Del(pkg.Id())
+
+		// Remove templates from tpl db
+		err = t.state.Templates.Del(pkg.Name())
+		if err != nil {
+			if !strings.Contains(err.Error(), "not found") {
 				return err
 			}
 		}
