@@ -116,6 +116,8 @@ func (p *Pool) WhatProvides(req *Requirement) Solvables {
 
 	if _, ok := p.index[req.Name]; ok {
 		for _, candidate := range p.index[req.Name] {
+			// Exact equality will never satisfy provides for frozen entries
+			// this will insure exact install requests will fail
 			if candidate.Satisfies(req) || p.frozen[candidate.Id()] {
 				provides = append(provides, candidate)
 			}
