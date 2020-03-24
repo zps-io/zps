@@ -58,6 +58,8 @@ Template "a-template" {
   register = "snarf"
   source = "/path/to/template"
   output = "/path/to/output"
+
+  mode = "0644"
 }
 
 Package "snarf" {

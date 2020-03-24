@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fezz-io/zps/config"
+
 	"github.com/fezz-io/zps/action"
 
 	"github.com/chuckpreslar/emission"
@@ -116,4 +118,29 @@ func ValidateZpkg(emitter *emission.Emitter, security Security, path string, qui
 	}
 
 	return nil
+}
+
+func MergeTemplateConfig(pkgTpls []*action.Template, cfgTpls []*config.TplConfig) []*action.Template {
+	index := make(map[string]int)
+	var tpls []*action.Template
+
+	for i, tpl := range cfgTpls {
+		tpls = append(tpls, &action.Template{
+			Name:   tpl.Name,
+			Source: tpl.Source,
+			Output: tpl.Output,
+			Owner:  tpl.Owner,
+			Group:  tpl.Group,
+			Mode:   tpl.Mode,
+		})
+		index[tpl.Name] = i
+	}
+
+	for i := range pkgTpls {
+		if _, ok := index[pkgTpls[i].Name]; !ok {
+			tpls = append(tpls, pkgTpls[i])
+		}
+	}
+
+	return tpls
 }

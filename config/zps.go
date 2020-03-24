@@ -41,9 +41,10 @@ type ZpsConfig struct {
 	Root         string
 	CurrentImage *ImageConfig
 
-	Configs []*Config
-	Images  []*ImageConfig
-	Repos   []*RepoConfig
+	Configs   []*Config
+	Images    []*ImageConfig
+	Repos     []*RepoConfig
+	Templates []*TplConfig
 
 	hclCtx *hcl.EvalContext
 }
@@ -90,6 +91,12 @@ func LoadConfig(image string) (*ZpsConfig, error) {
 
 	// Load configurations
 	err = config.LoadConfigs()
+	if err != nil {
+		return nil, err
+	}
+
+	// Load templates
+	err = config.LoadTemplates()
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +390,55 @@ func (z *ZpsConfig) LoadConfigs() error {
 	return nil
 }
 
+func (z *ZpsConfig) LoadTemplates() error {
+	// Load defined images
+	configs, err := filepath.Glob(filepath.Join(z.ConfigPath(), "tpl.d", "*.conf"))
+	if err != nil {
+		return nil
+	}
+
+	for _, cfgPath := range configs {
+		tpl := &TplConfigFile{}
+		parser := hclparse.NewParser()
+
+		bytes, err := ioutil.ReadFile(cfgPath)
+		if err != nil {
+			return nil
+		}
+
+		// Parse HCL
+		ihcl, diag := parser.ParseHCL(bytes, cfgPath)
+		if diag.HasErrors() {
+			return diag
+		}
+
+		// Eval HCL
+		diag = gohcl.DecodeBody(ihcl.Body, nil, tpl)
+		if diag.HasErrors() {
+			return diag
+		}
+
+		z.Templates = append(z.Templates, tpl.Templates)
+	}
+
+	// Remove duplicates
+	index := make(map[string]int)
+	var tpls []*TplConfig
+
+	for i := range z.Templates {
+		if val, ok := index[z.Templates[i].Name]; ok {
+			tpls[val] = z.Templates[i]
+		} else {
+			tpls = append(tpls, z.Templates[i])
+			index[z.Templates[i].Name] = len(tpls) - 1
+		}
+	}
+
+	z.Templates = tpls
+
+	return nil
+}
+
 func (z *ZpsConfig) LoadHclContext() error {
 	z.hclCtx = &hcl.EvalContext{
 		Variables: map[string]cty.Value{},
@@ -423,4 +479,16 @@ func (z *ZpsConfig) HclContext(profile string) *hcl.EvalContext {
 	z.hclCtx.Variables["cfg"] = cty.ObjectVal(tree)
 
 	return z.hclCtx
+}
+
+func (z *ZpsConfig) TemplatesForPkg(pkg string) []*TplConfig {
+	var tpls []*TplConfig
+
+	for i := range z.Templates {
+		if z.Templates[i].Register == pkg {
+			tpls = append(tpls, z.Templates[i])
+		}
+	}
+
+	return tpls
 }

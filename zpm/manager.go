@@ -153,6 +153,10 @@ func (m *Manager) Configure(packages []string, profile string) error {
 				return err
 			}
 
+			// Merge templates
+			tpls = MergeTemplateConfig(tpls, m.config.TemplatesForPkg(pkg))
+
+			// Run package tpls first
 			for _, tpl := range tpls {
 				err = factory.Get(tpl).Realize(ctx)
 				if err != nil {
