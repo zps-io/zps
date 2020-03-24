@@ -101,7 +101,7 @@ func SetupEventHandlers(emitter *emission.Emitter, ui *cli.Ui) {
 		ui.SpinError("x " + message)
 	})
 
-	emitter.On("spin.error", func(message string) {
+	emitter.On("spin.warn", func(message string) {
 		if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 			ui.Warn(fmt.Sprint("~ ", message))
 			return
