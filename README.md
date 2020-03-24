@@ -49,7 +49,10 @@ by teams that execute rapidly as well as the compliance problems of those that r
 
 #### Current State
 
-M1 refactor is in progress, M1 can be considered a functional prototype. See GH issues for milestone information.
+M1 has been recently completed. M1 can be considered to be of functional prototype quality. Generally it should be fine
+for use, however breakage will occur and there are likely bugs.
+
+See GH issues for milestone information.
 
 #### Thank You
 
