@@ -96,6 +96,14 @@ func (t *TemplateDefault) configure(ctx context.Context) error {
 		}
 
 		os.Chown(output, int(uid), int(gid))
+
+		t.Emit("action.info", fmt.Sprintf(
+			"%s %s %s => %s",
+			t.template.Type(),
+			t.template.Key(),
+			filepath.Join(options.TargetPath, t.template.Source),
+			filepath.Join(options.TargetPath, t.template.Output),
+		))
 	} else {
 		_, err = os.Stdout.Write([]byte(val.AsString()))
 	}

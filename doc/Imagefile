@@ -31,29 +31,25 @@ Repo "anothervendor" {
   }
 }
 
-// Needs more thought
-// structure is fine, it would cool to be able to pass
-// a profile for example to a config run to change the
-// interpolated outcome
-Config "component-one" {
-  values = {
-    snarf = "darf"
-    nacho = {
-      value = "duffer"
-      age = 101
-    }
-    volume = 10
-  }
-}
-
 Config "component-two" {
-  values = {
-    snarf = "darf"
-    nacho = {
-      value = "duffer"
-      age = 101
+  profile "default" {
+    values = {
+      nacho = "horse"
+      types = [
+        "idiot",
+        "spleen"
+      ]
     }
-    volume = 10
+  }
+
+  profile "local" {
+    values = {
+      nacho = "darth"
+      types = [
+        "bacon",
+        "fresh"
+      ]
+    }
   }
 }
 

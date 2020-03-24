@@ -32,6 +32,8 @@ func NewZpsConfigureCommand() *ZpsConfigureCommand {
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
+	cmd.Flags().String("profile", "default", "Profile for configuration context")
+
 	return cmd
 }
 
@@ -45,6 +47,7 @@ func (z *ZpsConfigureCommand) setup(cmd *cobra.Command, args []string) error {
 
 func (z *ZpsConfigureCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
+	profile, _ := cmd.Flags().GetString("profile")
 
 	// Load manager
 	mgr, err := zpm.NewManager(image)
@@ -54,7 +57,7 @@ func (z *ZpsConfigureCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.Configure(cmd.Flags().Args())
+	err = mgr.Configure(cmd.Flags().Args(), profile)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

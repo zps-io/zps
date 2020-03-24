@@ -17,8 +17,8 @@ import (
 
 type Template struct {
 	Name   string `json:"name" hcl:"path,label"`
-	Source string `json:"path" hcl:"source"`
-	Output string `json:"path" hcl:"output"`
+	Source string `json:"source" hcl:"source"`
+	Output string `json:"output" hcl:"output"`
 
 	Owner string `json:"owner" hcl:"owner,optional"`
 	Group string `json:"group" hcl:"group,optional"`

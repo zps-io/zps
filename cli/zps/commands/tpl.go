@@ -35,6 +35,8 @@ func NewZpsTplCommand() *ZpsTplCommand {
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
+	cmd.Flags().String("profile", "default", "Profile for configuration context")
+
 	return cmd
 }
 
@@ -48,7 +50,7 @@ func (z *ZpsTplCommand) setup(cmd *cobra.Command, args []string) error {
 
 func (z *ZpsTplCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
-	var err error
+	profile, _ := cmd.Flags().GetString("profile")
 
 	if cmd.Flags().NArg() == 0 {
 		return errors.New("Must provide the path to a template file")
@@ -62,7 +64,7 @@ func (z *ZpsTplCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.Tpl(cmd.Flags().Arg(0))
+	err = mgr.Tpl(cmd.Flags().Arg(0), profile)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

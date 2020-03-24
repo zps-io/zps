@@ -53,42 +53,49 @@ func (m *Manifest) Add(action Action) {
 			m.Tags[m.index[action.Id()]] = action.(*Tag)
 		} else {
 			m.Tags = append(m.Tags, action.(*Tag))
+			m.index[action.Id()] = len(m.Tags) - 1
 		}
 	case "Requirement":
 		if m.Exists(action) {
 			m.Requirements[m.index[action.Id()]] = action.(*Requirement)
 		} else {
 			m.Requirements = append(m.Requirements, action.(*Requirement))
+			m.index[action.Id()] = len(m.Requirements) - 1
 		}
 	case "Dir":
 		if m.Exists(action) {
 			m.Dirs[m.index[action.Id()]] = action.(*Dir)
 		} else {
 			m.Dirs = append(m.Dirs, action.(*Dir))
+			m.index[action.Id()] = len(m.Dirs) - 1
 		}
 	case "File":
 		if m.Exists(action) {
 			m.Files[m.index[action.Id()]] = action.(*File)
 		} else {
 			m.Files = append(m.Files, action.(*File))
+			m.index[action.Id()] = len(m.Files) - 1
 		}
 	case "Template":
 		if m.Exists(action) {
 			m.Templates[m.index[action.Id()]] = action.(*Template)
 		} else {
 			m.Templates = append(m.Templates, action.(*Template))
+			m.index[action.Id()] = len(m.Templates) - 1
 		}
 	case "Signature":
 		if m.Exists(action) {
 			m.Signatures[m.index[action.Id()]] = action.(*Signature)
 		} else {
 			m.Signatures = append(m.Signatures, action.(*Signature))
+			m.index[action.Id()] = len(m.Signatures) - 1
 		}
 	case "SymLink":
 		if m.Exists(action) {
 			m.SymLinks[m.index[action.Id()]] = action.(*SymLink)
 		} else {
 			m.SymLinks = append(m.SymLinks, action.(*SymLink))
+			m.index[action.Id()] = len(m.SymLinks) - 1
 		}
 	}
 }

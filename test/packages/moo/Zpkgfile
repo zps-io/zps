@@ -10,3 +10,10 @@ Zpkg "moo" {
 Tag "zps.vcs.uri" {
   value = "https://github.com/zps-io/moo"
 }
+
+Template "moo-tpl" {
+  source = "opt/moo/tpl/test.ztpl"
+  output = "etc/moo.conf"
+
+  mode = "0644"
+}

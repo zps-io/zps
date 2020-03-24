@@ -41,8 +41,9 @@ type ZpsConfig struct {
 	Root         string
 	CurrentImage *ImageConfig
 
-	Images []*ImageConfig
-	Repos  []*RepoConfig
+	Configs []*Config
+	Images  []*ImageConfig
+	Repos   []*RepoConfig
 
 	hclCtx *hcl.EvalContext
 }
@@ -83,6 +84,12 @@ func LoadConfig(image string) (*ZpsConfig, error) {
 
 	// Load repository configs
 	err = config.LoadRepos()
+	if err != nil {
+		return nil, err
+	}
+
+	// Load configurations
+	err = config.LoadConfigs()
 	if err != nil {
 		return nil, err
 	}
@@ -342,6 +349,40 @@ func (z *ZpsConfig) LoadRepos() error {
 	return nil
 }
 
+func (z *ZpsConfig) LoadConfigs() error {
+	// Load defined images
+	configs, err := filepath.Glob(filepath.Join(z.ConfigPath(), "config.d", "*.conf"))
+	if err != nil {
+		return nil
+	}
+
+	for _, cfgPath := range configs {
+		cfg := &ConfigFile{}
+		parser := hclparse.NewParser()
+
+		bytes, err := ioutil.ReadFile(cfgPath)
+		if err != nil {
+			return nil
+		}
+
+		// Parse HCL
+		ihcl, diag := parser.ParseHCL(bytes, cfgPath)
+		if diag.HasErrors() {
+			return diag
+		}
+
+		// Eval HCL
+		diag = gohcl.DecodeBody(ihcl.Body, nil, cfg)
+		if diag.HasErrors() {
+			return diag
+		}
+
+		z.Configs = append(z.Configs, cfg.Configs)
+	}
+
+	return nil
+}
+
 func (z *ZpsConfig) LoadHclContext() error {
 	z.hclCtx = &hcl.EvalContext{
 		Variables: map[string]cty.Value{},
@@ -357,15 +398,29 @@ func (z *ZpsConfig) LoadHclContext() error {
 
 	z.hclCtx.Variables["env"] = cty.ObjectVal(envs)
 	z.hclCtx.Functions = map[string]function.Function{
-		"upper":   stdlib.UpperFunc,
-		"lower":   stdlib.LowerFunc,
-		"length":  stdlib.LengthFunc,
-		"os_test": z.osTest(),
+		"upper":          stdlib.UpperFunc,
+		"lower":          stdlib.LowerFunc,
+		"length":         stdlib.LengthFunc,
+		"config_default": z.configDefault(),
 	}
 
 	return nil
 }
 
-func (z *ZpsConfig) HclContext() *hcl.EvalContext {
+func (z *ZpsConfig) HclContext(profile string) *hcl.EvalContext {
+	// Create config tree
+	tree := make(map[string]cty.Value)
+
+	for _, cfg := range z.Configs {
+		for _, prf := range cfg.Profiles {
+			if prf.Name == profile {
+				tree[cfg.Namespace] = prf.Values
+				break
+			}
+		}
+	}
+
+	z.hclCtx.Variables["cfg"] = cty.ObjectVal(tree)
+
 	return z.hclCtx
 }

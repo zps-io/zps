@@ -118,7 +118,7 @@ func (m *Manager) Channel(repo string, pkg string, channel string) error {
 	return errors.New("Repo: " + repo + " not found")
 }
 
-func (m *Manager) Configure(packages []string) error {
+func (m *Manager) Configure(packages []string, profile string) error {
 	pool, err := m.pool()
 	if err != nil {
 		return err
@@ -126,7 +126,7 @@ func (m *Manager) Configure(packages []string) error {
 
 	options := &provider.Options{TargetPath: m.config.CurrentImage.Path}
 	ctx := m.getContext(phase.CONFIGURE, options)
-	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext())
+	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext(profile))
 
 	factory := provider.DefaultFactory(m.Emitter)
 
@@ -1090,11 +1090,11 @@ func (m *Manager) Status(query string) (string, []string, error) {
 	return status, packages, nil
 }
 
-func (m *Manager) Tpl(tplPath string) error {
-	options := &provider.Options{TargetPath: m.config.CurrentImage.Path}
+func (m *Manager) Tpl(tplPath string, profile string) error {
+	options := &provider.Options{TargetPath: ""}
 
 	ctx := m.getContext(phase.CONFIGURE, options)
-	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext())
+	ctx = context.WithValue(ctx, "hclCtx", m.config.HclContext(profile))
 
 	factory := provider.DefaultFactory(m.Emitter)
 

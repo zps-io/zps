@@ -21,8 +21,10 @@ clean:
 	rm -rf *.zpkg
 
 $(os):
+	mkdir -p -m 0750 dist/${@}-x86_64/etc/zps/config.d
 	mkdir -p -m 0750 dist/${@}-x86_64/etc/zps/image.d
 	mkdir -p -m 0750 dist/${@}-x86_64/etc/zps/policy.d
+	mkdir -p -m 0750 dist/${@}-x86_64/etc/zps/tpl.d
 	mkdir -p -m 0750 dist/${@}-x86_64/etc/zps/repo.d
 	mkdir -p -m 0750 dist/${@}-x86_64/var/lib/zps
 	mkdir -p -m 0750 dist/${@}-x86_64/var/cache/zps

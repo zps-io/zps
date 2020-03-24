@@ -325,9 +325,7 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 		// Remove templates from tpl db
 		err = t.state.Templates.Del(pkg.Name())
 		if err != nil {
-			if !strings.Contains(err.Error(), "not found") {
-				return err
-			}
+			return err
 		}
 	}
 
