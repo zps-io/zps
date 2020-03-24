@@ -156,7 +156,7 @@ func (m *Manager) Configure(packages []string, profile string) error {
 			for _, tpl := range tpls {
 				err = factory.Get(tpl).Realize(ctx)
 				if err != nil {
-					return err
+					m.Emit("manager.error", fmt.Sprintf("Template %s failed: %s", tpl.Key(), err.Error()))
 				}
 			}
 		}
