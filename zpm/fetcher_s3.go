@@ -185,6 +185,7 @@ func (s *S3Fetcher) refresh(osarch *zps.OsArch) error {
 		} else {
 			dst.Close()
 			os.Remove(dest)
+			return nil
 		}
 	}
 
