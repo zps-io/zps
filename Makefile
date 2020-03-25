@@ -35,7 +35,7 @@ $(os):
 	chmod 640 dist/${@}-x86_64/etc/zps/repo.d/*
 	GOOS=${@} go build -ldflags "-s -w -X github.com/fezz-io/zps/cli/zps/commands.Version=${VERSION}" -o dist/${@}-x86_64/usr/bin/zps \
 	github.com/fezz-io/zps/cli/zps
-	OS=${@} Version=${VERSION} zps zpkg build --target-path dist/${@}-x86_64
+	OS=${@} VERSION=${VERSION} zps zpkg build --secure --target-path dist/${@}-x86_64
 	tar -zcf zps-${@}-x86_64.tar.gz -C dist/${@}-x86_64 .
 
 release: clean $(os)

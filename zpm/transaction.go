@@ -315,17 +315,21 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 		// Remove fs objects from fs db
 		err = t.state.Objects.Del(pkg.Name())
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 
 		// Remove an existing frozen entry
 		err = t.state.Frozen.Del(pkg.Id())
+		if err != nil {
+			return err
+		}
 
 		// Remove templates from tpl db
 		err = t.state.Templates.Del(pkg.Name())
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "not found") {
+				return err
+			}
 		}
 	}
 
