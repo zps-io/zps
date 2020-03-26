@@ -445,6 +445,7 @@ func (z *ZpsConfig) LoadHclContext() error {
 	}
 
 	// Load env namespace
+	// TODO this code is in three places, do something about that
 	envs := make(map[string]cty.Value)
 	for _, env := range os.Environ() {
 		key := strings.Split(env, "=")[0]

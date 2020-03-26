@@ -301,43 +301,88 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
-func (m *Manager) ImageInit(imagePath string, name string, imageOs string, arch string, helper bool) error {
-	var err error
+func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string, imageOs string, arch string, force bool, helper bool) error {
+	image := &config.ImageFile{}
+	err := image.Load(imageFilePath)
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return err
+		}
+	} else {
+		m.Emit("manager.info", fmt.Sprintf("using Imagefile from: %s", image.FilePath))
+	}
+
+	// Flags override ImageFile content
+	if imagePath != "" {
+		image.Image.Path = imagePath
+	}
+	if name != "" {
+		image.Image.Name = name
+	}
+	if imageOs != "" {
+		image.Image.Os = imageOs
+	}
+	if arch != "" {
+		image.Image.Arch = arch
+	}
 
 	// TODO move this into OsArch
-	switch imageOs {
+	switch image.Image.Os {
 	case "":
 	case "darwin", "linux":
-		m.config.CurrentImage.Os = imageOs
+		m.config.CurrentImage.Os = image.Image.Os
 	default:
-		return fmt.Errorf("unsupported os %s", imageOs)
+		return fmt.Errorf("unsupported os %s", image.Image.Os)
 	}
 
 	switch arch {
 	case "":
 	case "x86_64":
-		m.config.CurrentImage.Os = arch
+		m.config.CurrentImage.Os = image.Image.Arch
 	default:
-		return fmt.Errorf("unsupported arch %s", imageOs)
+		return fmt.Errorf("unsupported arch %s", image.Image.Arch)
 	}
 
-	if imagePath != "" {
-		imagePath, err = filepath.Abs(imagePath)
+	if image.Image.Path != "" {
+		image.Image.Path, err = filepath.Abs(imagePath)
 		if err != nil {
 			return err
 		}
 	} else {
-		imagePath, err = os.Getwd()
+		image.Image.Path, err = os.Getwd()
 		if err != nil {
 			return err
 		}
 	}
 
-	// Silently try dir create
-	os.Mkdir(imagePath, 0755)
+	// Auto set name
+	if image.Image.Name == "" {
+		image.Image.Name = filepath.Base(image.Image.Path)
+	}
 
-	if name == "" {
-		name = filepath.Base(imagePath)
+	// Look for name conflicts
+	for _, img := range m.config.Images {
+		if img.Name == image.Image.Name && img.Path != image.Image.Path {
+			return fmt.Errorf("name %s conflicts with existing image: %s", image.Image.Name, img.Path)
+		}
+	}
+
+	// Silently try dir create
+	os.Mkdir(image.Image.Path, 0755)
+
+	// Exit if the image path is not empty
+	empty, err := m.IsEmptyDir(image.Image.Path)
+	if err != nil {
+		return err
+	}
+
+	if !empty && !force {
+		return fmt.Errorf("selected init path is not empty: %s", image.Image.Path)
+	}
+
+	if force {
+		os.RemoveAll(image.Image.Path)
+		os.Mkdir(image.Image.Path, 0755)
 	}
 
 	// Write config
@@ -348,15 +393,15 @@ os = "%s"
 `
 	userImagePath := filepath.Join(m.config.UserPath(), "image.d")
 	defaultImagePath := filepath.Join(m.config.ConfigPath(), "image.d")
-	finalConfig := []byte(fmt.Sprintf(conf, name, imagePath, m.config.CurrentImage.Arch, m.config.CurrentImage.Os))
+	finalConfig := []byte(fmt.Sprintf(conf, image.Image.Name, image.Image.Path, m.config.CurrentImage.Arch, m.config.CurrentImage.Os))
 
 	if _, err := os.Stat(userImagePath); !os.IsNotExist(err) {
-		ioutil.WriteFile(filepath.Join(userImagePath, name+".conf"), finalConfig, 0640)
+		ioutil.WriteFile(filepath.Join(userImagePath, image.Image.Name+".conf"), finalConfig, 0640)
 	} else {
 		ioutil.WriteFile(filepath.Join(defaultImagePath, name+".conf"), finalConfig, 0640)
 	}
 
-	m.config.CurrentImage.Path = imagePath
+	m.config.CurrentImage.Path = image.Image.Path
 
 	// Create state db
 	os.MkdirAll(m.config.StatePath(), 0755)
@@ -371,6 +416,12 @@ os = "%s"
 
 	// Create pki db and import zps trust
 	m.pki = NewPki(m.config.PkiPath())
+
+	// Point to new security
+	m.security, err = NewSecurity(m.config.Security, m.pki)
+	if err != nil {
+		return err
+	}
 
 	err = m.PkiTrustImport(filepath.Join(m.config.CertPath(), "zps.io", "ca.pem"), "ca")
 	if err != nil {
@@ -387,8 +438,21 @@ os = "%s"
 		return err
 	}
 
+	// TODO fix this so we can refresh the cert cache following imports
+	m.security, err = NewSecurity(m.config.Security, m.pki)
+	if err != nil {
+		return err
+	}
+
 	// Ensure we have metadata for the new image
 	m.cache = NewCache(m.config.CachePath())
+
+	// Reload repos
+	err = m.config.LoadRepos()
+	if err != nil {
+		return err
+	}
+
 	err = m.Refresh()
 
 	// Rewrite helper if required
@@ -864,7 +928,6 @@ func (m *Manager) Refresh() error {
 		}
 
 		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security)
-
 		m.Emit("spin.start", fmt.Sprint("refreshing: ", r.Fetch.Uri.String()))
 		err = fe.Refresh()
 		if err == nil {
@@ -1617,4 +1680,12 @@ func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
 	}
 
 	return reqs, files, nil
+}
+
+func (m *Manager) IsEmptyDir(name string) (bool, error) {
+	entries, err := ioutil.ReadDir(name)
+	if err != nil {
+		return false, err
+	}
+	return len(entries) == 0, nil
 }

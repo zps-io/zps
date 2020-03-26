@@ -34,6 +34,7 @@ func NewZpsImageInitCommand() *ZpsImageInitCommand {
 	cmd.Flags().String("arch", "", "select image arch [x86_64|arm64]")
 	cmd.Flags().String("os", "", "select image os [darwin|linux]")
 	cmd.Flags().String("name", "", "set image name")
+	cmd.Flags().Bool("force", false, "purge the image path, before init")
 	cmd.Flags().Bool("helper", false, "reinstall ZPS helper")
 
 	return cmd
@@ -52,6 +53,7 @@ func (z *ZpsImageInitCommand) run(cmd *cobra.Command, args []string) error {
 	arch, _ := cmd.Flags().GetString("arch")
 	os, _ := cmd.Flags().GetString("os")
 	name, _ := cmd.Flags().GetString("name")
+	force, _ := cmd.Flags().GetBool("force")
 	helper, _ := cmd.Flags().GetBool("helper")
 
 	// Load manager
@@ -62,7 +64,7 @@ func (z *ZpsImageInitCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.ImageInit(cmd.Flags().Arg(0), name, os, arch, helper)
+	err = mgr.ImageInit(cmd.Flags().Arg(0), cmd.Flags().Arg(1), name, os, arch, force, helper)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
