@@ -30,6 +30,7 @@ func NewZpsPkiTrustCommand() *ZpsPkiTrustCommand {
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
+	cmd.AddCommand(NewZpsPkiTrustFetchCommand().Command)
 	cmd.AddCommand(NewZpsPkiTrustImportCommand().Command)
 	cmd.AddCommand(NewZpsPkiTrustListCommand().Command)
 	cmd.AddCommand(NewZpsPkiTrustRemoveCommand().Command)

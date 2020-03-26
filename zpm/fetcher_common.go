@@ -19,6 +19,7 @@ import (
 type Fetcher interface {
 	Refresh() error
 	Fetch(pkg *zps.Pkg) error
+	Keys() ([][]string, error)
 }
 
 func NewFetcher(uri *url.URL, cache *Cache, security Security) Fetcher {

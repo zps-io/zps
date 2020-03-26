@@ -153,6 +153,11 @@ func (f *FileFetcher) Fetch(pkg *zps.Pkg) error {
 	return nil
 }
 
+func (f *FileFetcher) Keys() ([][]string, error) {
+
+	return nil, errors.New("fetcher.file.keys not implemented")
+}
+
 func (f *FileFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 

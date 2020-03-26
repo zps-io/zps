@@ -674,6 +674,29 @@ func (m *Manager) PkiKeyPairRemove(fingerprint string) error {
 	return err
 }
 
+func (m *Manager) PkiTrustFetch(uriString string) error {
+	uri, err := url.Parse(uriString)
+	if err != nil {
+		return fmt.Errorf("invalid uri format")
+	}
+
+	fe := NewFetcher(uri, m.cache, m.security)
+	if fe == nil {
+		return fmt.Errorf("uri path not found: %s", uri)
+	}
+
+	results, err := fe.Keys()
+	if err != nil {
+		return err
+	}
+
+	for _, cert := range results {
+		m.Emit("manager.info", fmt.Sprintf("Imported certificate '%s' for publisher: %s", cert[0], cert[1]))
+	}
+
+	return err
+}
+
 func (m *Manager) PkiTrustImport(certPath string, typ string) error {
 	err := m.lock.TryLock()
 	if err != nil {
@@ -686,17 +709,12 @@ func (m *Manager) PkiTrustImport(certPath string, typ string) error {
 		return err
 	}
 
-	subject, publisher, fingerprint, err := sec.SecurityCertMetaFromBytes(&certPem)
+	subject, publisher, err := m.security.Trust(&certPem, typ)
 	if err != nil {
 		return err
 	}
 
-	err = m.pki.Certificates.Put(fingerprint, subject, publisher, typ, certPem)
-	if err != nil {
-		return err
-	}
-
-	m.Emit("manager.info", fmt.Sprintf("Imported certificate for publisher %s", publisher))
+	m.Emit("manager.info", fmt.Sprintf("Imported certificate '%s' for publisher: %s", subject, publisher))
 
 	return nil
 }

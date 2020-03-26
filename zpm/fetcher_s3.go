@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/chuckpreslar/emission"
 
@@ -160,6 +161,45 @@ func (s *S3Fetcher) Fetch(pkg *zps.Pkg) error {
 	}
 
 	return err
+}
+
+func (s *S3Fetcher) Keys() ([][]string, error) {
+	client := s3.New(s.session)
+
+	resp, err := client.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket: aws.String(s.uri.Host),
+		Prefix: aws.String(strings.TrimPrefix(s.uri.Path, "/") + "/"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to list items in bucket %q, %v", s.uri.Host, err)
+	}
+
+	var certs [][]string
+	dl := s3manager.NewDownloader(s.session)
+
+	for _, item := range resp.Contents {
+		if !strings.Contains(*item.Key, ".pem") {
+			continue
+		}
+
+		pem := &aws.WriteAtBuffer{}
+
+		_, err = dl.Download(pem, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    item.Key,
+		})
+
+		cert := pem.Bytes()
+
+		subject, publisher, err := s.security.Trust(&cert, "")
+		if err != nil {
+			return nil, err
+		}
+
+		certs = append(certs, []string{subject, publisher})
+	}
+
+	return certs, nil
 }
 
 func (s *S3Fetcher) refresh(osarch *zps.OsArch) error {

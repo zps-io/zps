@@ -5,6 +5,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/fezz-io/zps/sec"
 
@@ -37,6 +38,31 @@ func (s *SecurityOffline) KeyPair(publisher string) (*KeyPairEntry, error) {
 	}
 
 	return nil, nil
+}
+
+func (s *SecurityOffline) Trust(content *[]byte, typ string) (string, string, error) {
+	subject, publisher, fingerprint, err := sec.SecurityCertMetaFromBytes(content)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Attempt to detect cert type
+	if typ == "" {
+		if strings.Contains(subject, "CA") {
+			typ = PKICertCA
+		} else if strings.Contains(subject, "Intermediate") {
+			typ = PKICertIntermediate
+		} else {
+			typ = PKICertUser
+		}
+	}
+
+	err = s.pki.Certificates.Put(fingerprint, subject, publisher, typ, *content)
+	if err != nil {
+		return "", "", err
+	}
+
+	return subject, publisher, nil
 }
 
 // TODO warn on the presence of invalid signatures

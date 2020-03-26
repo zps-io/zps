@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Zachary Schneider
+ * Copyright 2020 Zachary Schneider
  */
 
 package commands
@@ -18,27 +18,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ZpsPkiTrustImportCommand struct {
+type ZpsPkiTrustFetchCommand struct {
 	*cobra.Command
 	*cli.Ui
 }
 
-func NewZpsPkiTrustImportCommand() *ZpsPkiTrustImportCommand {
-	cmd := &ZpsPkiTrustImportCommand{}
+func NewZpsPkiTrustFetchCommand() *ZpsPkiTrustFetchCommand {
+	cmd := &ZpsPkiTrustFetchCommand{}
 	cmd.Command = &cobra.Command{}
 	cmd.Ui = cli.NewUi()
-	cmd.Use = "import [CERT_FILE]"
-	cmd.Short = "Import trusted certificate into the pki store"
-	cmd.Long = "Import trusted certificate into the pki store"
+	cmd.Use = "fetch [CERT_URI]"
+	cmd.Short = "Fetch trusted certificates into the pki store"
+	cmd.Long = "Fetch trusted certificates into the pki store"
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
-	cmd.Flags().String("type", "user", "certificate type: user|intermediate|ca")
+	cmd.Flags().String("type", "user", "cerificate type: user|intermediate|ca")
 
 	return cmd
 }
 
-func (z *ZpsPkiTrustImportCommand) setup(cmd *cobra.Command, args []string) error {
+func (z *ZpsPkiTrustFetchCommand) setup(cmd *cobra.Command, args []string) error {
 	color, err := cmd.Flags().GetBool("no-color")
 
 	z.NoColor(color)
@@ -46,12 +46,11 @@ func (z *ZpsPkiTrustImportCommand) setup(cmd *cobra.Command, args []string) erro
 	return err
 }
 
-func (z *ZpsPkiTrustImportCommand) run(cmd *cobra.Command, args []string) error {
+func (z *ZpsPkiTrustFetchCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
-	typ, _ := cmd.Flags().GetString("type")
 
 	if cmd.Flags().Arg(0) == "" {
-		return errors.New("cert file name required")
+		return errors.New("cert URI required")
 	}
 
 	// Load manager
@@ -62,7 +61,7 @@ func (z *ZpsPkiTrustImportCommand) run(cmd *cobra.Command, args []string) error 
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.PkiTrustImport(cmd.Flags().Arg(0), typ)
+	err = mgr.PkiTrustFetch(cmd.Flags().Arg(0))
 	if err != nil {
 		z.Fatal(err.Error())
 	}

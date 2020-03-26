@@ -166,6 +166,10 @@ func (h *HttpsFetcher) Fetch(pkg *zps.Pkg) error {
 	return nil
 }
 
+func (h *HttpsFetcher) Keys() ([][]string, error) {
+	return nil, errors.New("fetcher.https.keys not implemented")
+}
+
 func (h *HttpsFetcher) refresh(osarch *zps.OsArch) error {
 	var err error
 

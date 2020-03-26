@@ -12,6 +12,7 @@ type Security interface {
 	Mode() string
 	Verify(content *[]byte, signatures []*action.Signature) (*action.Signature, error)
 	KeyPair(publisher string) (*KeyPairEntry, error)
+	Trust(content *[]byte, typ string) (string, string, error)
 }
 
 func NewSecurity(mode string, pki *Pki) (Security, error) {

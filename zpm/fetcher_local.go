@@ -75,3 +75,7 @@ func (f *LocalFetcher) Fetch(pkg *zps.Pkg) error {
 
 	return nil
 }
+
+func (f *LocalFetcher) Keys() ([][]string, error) {
+	return nil, errors.New("fetcher.local.keys not implemented")
+}
