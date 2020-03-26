@@ -60,7 +60,7 @@ func (z *ZpsInstallCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.Install(cmd.Flags().Args())
+	err = mgr.Install(cmd.Flags().Args(), nil)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

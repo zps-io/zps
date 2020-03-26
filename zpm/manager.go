@@ -315,94 +315,87 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 
 	// Flags override ImageFile content
 	if imagePath != "" {
-		image.Image.Path = imagePath
+		image.Path = imagePath
 	}
 	if name != "" {
-		image.Image.Name = name
+		image.Name = name
 	}
 	if imageOs != "" {
-		image.Image.Os = imageOs
+		image.Os = imageOs
 	}
 	if arch != "" {
-		image.Image.Arch = arch
+		image.Arch = arch
 	}
 
 	// TODO move this into OsArch
-	switch image.Image.Os {
+	switch image.Os {
 	case "":
 	case "darwin", "linux":
-		m.config.CurrentImage.Os = image.Image.Os
+		m.config.CurrentImage.Os = image.Os
 	default:
-		return fmt.Errorf("unsupported os %s", image.Image.Os)
+		return fmt.Errorf("unsupported os %s", image.Os)
 	}
 
 	switch arch {
 	case "":
 	case "x86_64":
-		m.config.CurrentImage.Os = image.Image.Arch
+		m.config.CurrentImage.Os = image.Arch
 	default:
-		return fmt.Errorf("unsupported arch %s", image.Image.Arch)
+		return fmt.Errorf("unsupported arch %s", image.Arch)
 	}
 
-	if image.Image.Path != "" {
-		image.Image.Path, err = filepath.Abs(imagePath)
+	if image.Path != "" {
+		image.Path, err = filepath.Abs(imagePath)
 		if err != nil {
 			return err
 		}
 	} else {
-		image.Image.Path, err = os.Getwd()
+		image.Path, err = os.Getwd()
 		if err != nil {
 			return err
 		}
 	}
 
 	// Auto set name
-	if image.Image.Name == "" {
-		image.Image.Name = filepath.Base(image.Image.Path)
+	if image.Name == "" {
+		image.Name = filepath.Base(image.Path)
 	}
 
 	// Look for name conflicts
 	for _, img := range m.config.Images {
-		if img.Name == image.Image.Name && img.Path != image.Image.Path {
-			return fmt.Errorf("name %s conflicts with existing image: %s", image.Image.Name, img.Path)
+		if img.Name == image.Name && img.Path != image.Path {
+			return fmt.Errorf("name %s conflicts with existing image: %s", image.Name, img.Path)
 		}
 	}
 
 	// Silently try dir create
-	os.Mkdir(image.Image.Path, 0755)
+	os.Mkdir(image.Path, 0755)
 
 	// Exit if the image path is not empty
-	empty, err := m.IsEmptyDir(image.Image.Path)
+	empty, err := m.IsEmptyImage(image.Path)
 	if err != nil {
 		return err
 	}
 
 	if !empty && !force {
-		return fmt.Errorf("selected init path is not empty: %s", image.Image.Path)
+		return fmt.Errorf("selected init path is not empty: %s", image.Path)
 	}
 
 	if force {
-		os.RemoveAll(image.Image.Path)
-		os.Mkdir(image.Image.Path, 0755)
+		m.Emit("manager.warn", fmt.Sprintf("purging image path: %s", image.Path))
+		err = m.EmptyImage(image.Path)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Write config
-	conf := `name = "%s"
-path = "%s"
-arch = "%s"
-os = "%s"
-`
-	userImagePath := filepath.Join(m.config.UserPath(), "image.d")
-	defaultImagePath := filepath.Join(m.config.ConfigPath(), "image.d")
-	finalConfig := []byte(fmt.Sprintf(conf, image.Image.Name, image.Image.Path, m.config.CurrentImage.Arch, m.config.CurrentImage.Os))
+	// Start bootstrap
+	m.Emit("manager.info", fmt.Sprintf("initializing: %s", image.Path))
 
-	if _, err := os.Stat(userImagePath); !os.IsNotExist(err) {
-		ioutil.WriteFile(filepath.Join(userImagePath, image.Image.Name+".conf"), finalConfig, 0640)
-	} else {
-		ioutil.WriteFile(filepath.Join(defaultImagePath, name+".conf"), finalConfig, 0640)
-	}
+	userImagePath := filepath.Join(m.config.UserPath(), config.ImagePath)
+	defaultImagePath := filepath.Join(m.config.ConfigPath(), config.ImagePath)
 
-	m.config.CurrentImage.Path = image.Image.Path
+	m.config.CurrentImage.Path = image.Path
 
 	// Create state db
 	os.MkdirAll(m.config.StatePath(), 0755)
@@ -410,7 +403,7 @@ os = "%s"
 	m.state = NewState(m.config.StatePath())
 
 	// Install zps into changed root
-	err = m.Install([]string{"zps"})
+	err = m.Install([]string{"zps"}, nil)
 	if err != nil {
 		return err
 	}
@@ -439,6 +432,15 @@ os = "%s"
 		return err
 	}
 
+	// Import imagefile trusts
+	for _, trust := range image.Trusts {
+		err := m.PkiTrustFetch(trust.Uri)
+		if err != nil {
+			m.Emit("manager.error", fmt.Sprintf("failed to fetch certificates for: %s", trust.Publisher))
+			continue
+		}
+	}
+
 	// TODO fix this so we can refresh the cert cache following imports
 	m.security, err = NewSecurity(m.config.Security, m.pki)
 	if err != nil {
@@ -448,13 +450,64 @@ os = "%s"
 	// Ensure we have metadata for the new image
 	m.cache = NewCache(m.config.CachePath())
 
+	// Write out repo configs from the ImageFile if present
+	for _, rc := range image.Repos {
+		ioutil.WriteFile(filepath.Join(m.config.ConfigPath(), config.RepoPath, rc.Name+".conf"), rc.ToHclFile().Bytes(), 0640)
+	}
+
 	// Reload repos
 	err = m.config.LoadRepos()
 	if err != nil {
 		return err
 	}
-	
+
 	err = m.Refresh()
+
+	// Install image packages
+	// TODO make all qualifiers work
+	request := zps.NewRequest()
+	for _, pkg := range image.Packages {
+		version := &zps.Version{}
+		req := zps.NewRequirement(pkg.Name, version)
+
+		if pkg.Version != "" {
+			err = version.Parse(pkg.Version)
+			if err != nil {
+				m.Emit("manager.warn", fmt.Sprintf("could not parse version for package: %s, skipping", pkg.Name))
+			}
+
+			if !version.Timestamp.IsZero() {
+				req.EXQ()
+			} else {
+				req.EQ()
+			}
+		} else {
+			req.ANY()
+		}
+
+		request.Install(req)
+	}
+
+	if len(request.Jobs()) > 0 {
+		err = m.Install(nil, request)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Write config
+	conf := &config.ImageConfig{
+		Name: image.Name,
+		Path: m.config.CurrentImage.Path,
+		Os:   m.config.CurrentImage.Arch,
+		Arch: m.config.CurrentImage.Os,
+	}
+
+	if _, err := os.Stat(userImagePath); !os.IsNotExist(err) {
+		ioutil.WriteFile(filepath.Join(userImagePath, image.Name+".conf"), conf.ToHclFile().Bytes(), 0640)
+	} else {
+		ioutil.WriteFile(filepath.Join(defaultImagePath, image.Name+".conf"), conf.ToHclFile().Bytes(), 0640)
+	}
 
 	// Rewrite helper if required
 	return m.config.SetupHelper(helper)
@@ -526,7 +579,7 @@ func (m *Manager) Info(pkgName string) ([]string, error) {
 	}, err
 }
 
-func (m *Manager) Install(args []string) error {
+func (m *Manager) Install(args []string, request *zps.Request) error {
 	err := m.lock.TryLock()
 	if err != nil {
 		return errors.New("zpm: locked by another process")
@@ -544,18 +597,26 @@ func (m *Manager) Install(args []string) error {
 		return errors.New("No repo metadata found. Please run zpm refresh.")
 	}
 
-	request := zps.NewRequest()
-	for _, arg := range reqs {
-		req, err := zps.NewRequirementFromSimpleString(arg)
-		if err != nil {
-			return err
-		}
+	if request == nil {
+		request = zps.NewRequest()
+		for _, arg := range reqs {
+			req, err := zps.NewRequirementFromSimpleString(arg)
+			if err != nil {
+				return err
+			}
 
-		if len(pool.WhatProvides(req)) == 0 {
-			return errors.New(fmt.Sprint("No candidates found for ", arg))
-		}
+			if len(pool.WhatProvides(req)) == 0 {
+				return errors.New(fmt.Sprint("no candidates found for: ", arg))
+			}
 
-		request.Install(req)
+			request.Install(req)
+		}
+	} else {
+		for _, job := range request.Jobs() {
+			if len(pool.WhatProvides(job.Requirement())) == 0 {
+				return errors.New(fmt.Sprint("no candidates found for: ", job.Requirement().Name))
+			}
+		}
 	}
 
 	// TODO: configure policy
@@ -1683,10 +1744,42 @@ func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
 	return reqs, files, nil
 }
 
-func (m *Manager) IsEmptyDir(name string) (bool, error) {
-	entries, err := ioutil.ReadDir(name)
+func (m *Manager) IsEmptyImage(imagePath string) (bool, error) {
+	entries, err := ioutil.ReadDir(imagePath)
 	if err != nil {
 		return false, err
 	}
-	return len(entries) == 0, nil
+
+	if len(entries) == 0 {
+		return true, nil
+	}
+
+	if len(entries) == 1 {
+		if strings.Contains("Imagefile", entries[0].Name()) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (m *Manager) EmptyImage(imagePath string) error {
+	entries, err := ioutil.ReadDir(imagePath)
+	if err != nil {
+		return err
+	}
+
+	if len(entries) == 0 {
+		return nil
+	}
+
+	for _, entry := range entries {
+		if strings.Contains("Imagefile", entry.Name()) {
+			continue
+		} else {
+			os.RemoveAll(filepath.Join(imagePath, entry.Name()))
+		}
+	}
+
+	return nil
 }

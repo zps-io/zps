@@ -34,6 +34,11 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 )
 
+const (
+	RepoPath  = "repo.d"
+	ImagePath = "image.d"
+)
+
 type ZpsConfig struct {
 	Mode     string `hcl:"mode"`
 	Security string `hcl:"security"`
@@ -203,12 +208,12 @@ func (z *ZpsConfig) LoadImages() error {
 	loadPath := z.ConfigPath()
 
 	// Override image load path if external config exists
-	if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".zps", "image.d")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".zps", ImagePath)); !os.IsNotExist(err) {
 		loadPath = filepath.Join(os.Getenv("HOME"), ".zps")
 	}
 
 	// Load defined images
-	imageConfigs, err := filepath.Glob(filepath.Join(loadPath, "image.d", "*.conf"))
+	imageConfigs, err := filepath.Glob(filepath.Join(loadPath, ImagePath, "*.conf"))
 	if err != nil {
 		return nil
 	}
@@ -299,7 +304,7 @@ func (z *ZpsConfig) LoadMain() error {
 func (z *ZpsConfig) LoadRepos() error {
 	z.Repos = nil
 	// Load defined repos
-	repoConfigs, err := filepath.Glob(path.Join(z.ConfigPath(), "repo.d", "*.conf"))
+	repoConfigs, err := filepath.Glob(path.Join(z.ConfigPath(), RepoPath, "*.conf"))
 	if err != nil {
 		return nil
 	}

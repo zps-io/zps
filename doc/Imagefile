@@ -8,10 +8,9 @@
   env.ENV_VAR
 */
 
-Image "snarf" {
-  os = "${ env.OS }"
-  arch = "${ env.ARCH }"
-}
+name = "myimage"
+os = "${ env.OS }"
+arch = "${ env.ARCH }"
 
 Repo "somevendor" {
   enabled = true
@@ -29,6 +28,10 @@ Repo "anothervendor" {
   fetch {
     uri = "https://anothervendor.io/packages/anothervendor.io/software"
   }
+}
+
+Trust "zps.io" {
+  uri = "s3://somepath/pki"
 }
 
 Config "component-two" {
@@ -63,7 +66,7 @@ Template "a-template" {
 }
 
 Package "snarf" {
-  // ANY, GTE, LTE, EQ, EXQ
+  // ANY, EQ, EXQ
   operation = "EQ"
   version = "1.0.1"
 }
