@@ -297,6 +297,7 @@ func (z *ZpsConfig) LoadMain() error {
 }
 
 func (z *ZpsConfig) LoadRepos() error {
+	z.Repos = nil
 	// Load defined repos
 	repoConfigs, err := filepath.Glob(path.Join(z.ConfigPath(), "repo.d", "*.conf"))
 	if err != nil {

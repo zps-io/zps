@@ -301,6 +301,7 @@ func (m *Manager) Freeze(args []string) error {
 	return nil
 }
 
+// TODO this is trash, refactor it after Imagefile support is added
 func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string, imageOs string, arch string, force bool, helper bool) error {
 	image := &config.ImageFile{}
 	err := image.Load(imageFilePath)
@@ -452,7 +453,7 @@ os = "%s"
 	if err != nil {
 		return err
 	}
-
+	
 	err = m.Refresh()
 
 	// Rewrite helper if required
