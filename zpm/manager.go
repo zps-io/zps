@@ -304,6 +304,7 @@ func (m *Manager) Freeze(args []string) error {
 // TODO this is trash, refactor it after Imagefile support is added
 func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string, imageOs string, arch string, profile string, configure bool, force bool, helper bool) error {
 	image := &config.ImageFile{}
+
 	err := image.Load(imageFilePath)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not found") {
@@ -315,7 +316,10 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 
 	// Flags override ImageFile content
 	if imagePath != "" {
-		image.Path = imagePath
+		image.Path, err = filepath.Abs(imagePath)
+		if err != nil {
+			return err
+		}
 	}
 	if name != "" {
 		image.Name = name
@@ -511,8 +515,8 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 	conf := &config.ImageConfig{
 		Name: image.Name,
 		Path: m.config.CurrentImage.Path,
-		Os:   m.config.CurrentImage.Arch,
-		Arch: m.config.CurrentImage.Os,
+		Os:   m.config.CurrentImage.Os,
+		Arch: m.config.CurrentImage.Arch,
 	}
 
 	if _, err := os.Stat(userImagePath); !os.IsNotExist(err) {

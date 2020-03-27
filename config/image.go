@@ -61,7 +61,9 @@ type TrustConfig struct {
 func (i *ImageFile) Load(imageFilePath string) error {
 	var err error
 
-	if imageFilePath == "" {
+	i.FilePath = imageFilePath
+
+	if i.FilePath == "" {
 		i.FilePath, err = os.Getwd()
 		if err != nil {
 			return err
