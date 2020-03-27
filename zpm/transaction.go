@@ -321,7 +321,9 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 		// Remove an existing frozen entry
 		err = t.state.Frozen.Del(pkg.Id())
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "not found") {
+				return err
+			}
 		}
 
 		// Remove templates from tpl db
