@@ -78,14 +78,14 @@ func LoadConfig(image string) (*ZpsConfig, error) {
 		return nil, err
 	}
 
-	// Setup shell helper
-	err = config.SetupHelper(false)
+	// Load image zps config
+	err = config.LoadMain()
 	if err != nil {
 		return nil, err
 	}
 
-	// Load image zps config
-	err = config.LoadMain()
+	// Setup shell helper
+	err = config.SetupHelper(false)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +140,10 @@ func (z *ZpsConfig) SetupHelper(overwrite bool) error {
 	}
 
 	zpsUserSettingsPath := filepath.Join(zpsUserPath, "init.sh")
+	
+	if z.Mode == "ancillary" {
+		os.Mkdir(filepath.Join(z.UserPath(), ImagePath), 0700)
+	}
 
 	_, err := os.Stat(zpsUserSettingsPath)
 
