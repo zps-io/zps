@@ -302,7 +302,7 @@ func (m *Manager) Freeze(args []string) error {
 }
 
 // TODO this is trash, refactor it after Imagefile support is added
-func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string, imageOs string, arch string, force bool, helper bool) error {
+func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string, imageOs string, arch string, profile string, configure bool, force bool, helper bool) error {
 	image := &config.ImageFile{}
 	err := image.Load(imageFilePath)
 	if err != nil {
@@ -522,7 +522,21 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 	}
 
 	// Rewrite helper if required
-	return m.config.SetupHelper(helper)
+	err = m.config.SetupHelper(helper)
+	if err != nil {
+		return err
+	}
+
+	if configure {
+		err = m.Configure(nil, profile)
+		if err != nil {
+			return err
+		}
+	} else {
+		m.Emit("manager.warn", "skipping configure")
+	}
+
+	return nil
 }
 
 func (m *Manager) ImageCurrent(image string) error {
