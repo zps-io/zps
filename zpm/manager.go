@@ -367,6 +367,7 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 
 	// Look for name conflicts
 	for _, img := range m.config.Images {
+
 		if img.Name == image.Name && img.Path != image.Path {
 			return fmt.Errorf("name %s conflicts with existing image: %s", image.Name, img.Path)
 		}
@@ -576,6 +577,8 @@ func (m *Manager) ImageList() error {
 	for _, image := range m.config.Images {
 		if image == m.config.CurrentImage {
 			m.Emit("manager.out", fmt.Sprintf("* %s %s", image.Name, image.Path))
+		} else if image.Name == "zroot" {
+			m.Emit("manager.out", fmt.Sprintf("  [yellow](%s) %s", image.Name, image.Path))
 		} else {
 			m.Emit("manager.out", fmt.Sprintf("  %s %s", image.Name, image.Path))
 		}

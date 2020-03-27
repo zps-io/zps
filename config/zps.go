@@ -140,7 +140,7 @@ func (z *ZpsConfig) SetupHelper(overwrite bool) error {
 	}
 
 	zpsUserSettingsPath := filepath.Join(zpsUserPath, "init.sh")
-	
+
 	if z.Mode == "ancillary" {
 		os.Mkdir(filepath.Join(z.UserPath(), ImagePath), 0700)
 	}
@@ -148,7 +148,7 @@ func (z *ZpsConfig) SetupHelper(overwrite bool) error {
 	_, err := os.Stat(zpsUserSettingsPath)
 
 	if os.IsNotExist(err) || overwrite {
-		err := ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, z.CurrentImage.Path)), 0600)
+		err = ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, z.CurrentImage.Path)), 0600)
 		if err != nil {
 			return err
 		}
@@ -207,7 +207,7 @@ func (z *ZpsConfig) LoadImages() error {
 		defaultArch = runtime.GOARCH
 	}
 
-	defaultImage := &ImageConfig{"default", z.Root, defaultOs, defaultArch}
+	defaultImage := &ImageConfig{"zroot", z.Root, defaultOs, defaultArch}
 
 	z.Images = append(z.Images, defaultImage)
 
@@ -245,7 +245,9 @@ func (z *ZpsConfig) LoadImages() error {
 			return diag
 		}
 
-		z.Images = append(z.Images, image)
+		if image.Name != defaultImage.Name {
+			z.Images = append(z.Images, image)
+		}
 	}
 
 	return nil
