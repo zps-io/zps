@@ -45,7 +45,7 @@ type ImageFile struct {
 	Arch string `hcl:"arch,optional"`
 
 	Repos     []*RepoConfig  `hcl:"Repo,block"`
-	Configs   []*ConfigFile  `hcl:"Config,block"`
+	Configs   []*Config      `hcl:"Config,block"`
 	Templates []*TplConfig   `hcl:"Template,block"`
 	Packages  []*PkgConfig   `hcl:"Package,block"`
 	Trusts    []*TrustConfig `hcl:"Trust,block"`
