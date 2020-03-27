@@ -501,6 +501,12 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 		m.Emit("manager.info", fmt.Sprintf("template %s modifies: %s", tpl.Name, tpl.Output))
 	}
 
+	// Install config profiles
+	for _, cfg := range image.Configs {
+		ioutil.WriteFile(filepath.Join(m.config.ConfigPath(), config.CfgPath, cfg.Namespace+".conf"), cfg.ToHclFile().Bytes(), 0640)
+		m.Emit("manager.info", fmt.Sprintf("config namespace add: %s", cfg.Namespace))
+	}
+
 	// Write config
 	conf := &config.ImageConfig{
 		Name: image.Name,
