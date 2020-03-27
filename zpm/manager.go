@@ -495,6 +495,12 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 		}
 	}
 
+	// Install templates
+	for _, tpl := range image.Templates {
+		ioutil.WriteFile(filepath.Join(m.config.ConfigPath(), config.TplPath, tpl.Name+".conf"), tpl.ToHclFile().Bytes(), 0640)
+		m.Emit("manager.info", fmt.Sprintf("template %s modifies: %s", tpl.Name, tpl.Output))
+	}
+
 	// Write config
 	conf := &config.ImageConfig{
 		Name: image.Name,

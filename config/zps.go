@@ -37,6 +37,7 @@ import (
 const (
 	RepoPath  = "repo.d"
 	ImagePath = "image.d"
+	TplPath   = "tpl.d"
 )
 
 type ZpsConfig struct {
@@ -398,7 +399,7 @@ func (z *ZpsConfig) LoadConfigs() error {
 
 func (z *ZpsConfig) LoadTemplates() error {
 	// Load defined images
-	configs, err := filepath.Glob(filepath.Join(z.ConfigPath(), "tpl.d", "*.conf"))
+	configs, err := filepath.Glob(filepath.Join(z.ConfigPath(), TplPath, "*.conf"))
 	if err != nil {
 		return nil
 	}
