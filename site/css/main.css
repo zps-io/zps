@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=IBM+Plex+Mono|Lato&display=swap');
 
 body {
-    background-image: url("../img/prism.png");
+    background-image: url("../img/bg.png");
     background-color: #333333;
     color: #fff;
     font-family: 'Lato', sans-serif;
@@ -18,22 +18,23 @@ hr {
 }
 
 #logo {
-    margin: 75px auto auto;
-    width: 50%
+    margin: 65px auto auto;
+    width: 75%
 }
 
 #logo img {
     display: block;
     margin-left: auto;
     margin-right: auto;
-    width: 40%;
-    height: 40%;
+    width: 35%;
+    height: 35%;
 }
 
 #tag {
     margin-top: 40px;
     text-align: center;
     font-weight: bold;
+    font-size: large;
 }
 
 #script {
@@ -41,7 +42,7 @@ hr {
     font-weight: normal;
     font-family: 'IBM Plex Mono', monospace;
     font-size: small;
-    background-color: #252525;
+    background-color: rgba(0, 0, 0, 0.5);
     width: 75%;
     padding: 10px;
     box-shadow: 3px 3px #000000;
@@ -50,7 +51,7 @@ hr {
 #help {
     margin: 20px auto auto;
     text-align: left;
-    background-color: #252525;
+    background-color: rgba(0, 0, 0, 0.5);
     width: 75%;
     padding: 10px;
     box-shadow: 3px 3px #000000;
@@ -80,4 +81,5 @@ hr {
     font-weight: lighter;
     font-size: smaller;
     text-align: right;
+    padding-bottom: 15px;
 }
