@@ -38,7 +38,7 @@ hr {
 }
 
 #script {
-    margin: 20px auto auto;
+    margin: 20px auto 20px auto;
     font-weight: normal;
     font-family: 'IBM Plex Mono', monospace;
     font-size: small;
