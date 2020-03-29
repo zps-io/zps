@@ -12,9 +12,10 @@ body {
 hr {
     margin-top: 40px;
     margin-bottom: 40px;
-    width: 75%;
+    width: 78%;
     border-top: none;
     border-bottom: 1px solid #ffffff;
+    max-width: 885px;
 }
 
 #logo {
@@ -44,8 +45,59 @@ hr {
     font-size: small;
     background-color: rgba(0, 0, 0, 0.5);
     width: 75%;
-    padding: 10px;
+    padding: 20px;
     box-shadow: 3px 3px #000000;
+    max-width: 850px;
+}
+
+#build {
+    margin: 20px auto 35px auto;
+    text-align: left;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 75%;
+    padding: 20px;
+    box-shadow: 3px 3px #000000;
+    max-width: 850px;
+}
+
+#build pre {
+    font-weight: normal;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: smaller;
+    background: none;
+    margin: 0;
+    padding: 0;
+    float: inherit;
+}
+
+#publish {
+    margin: 20px auto 35px auto;
+    text-align: left;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 75%;
+    padding: 20px;
+    box-shadow: 3px 3px #000000;
+    max-width: 850px;
+}
+
+#publish pre {
+    font-weight: normal;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: smaller;
+    background: none;
+    margin: 0;
+    padding: 0;
+    float: inherit;
+}
+
+.asciinema-player {
+    box-shadow: 3px 3px #000000;
+}
+
+.asciinema-terminal {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    border-style: none;
+    padding: 15px;
 }
 
 #help {
@@ -53,8 +105,9 @@ hr {
     text-align: left;
     background-color: rgba(0, 0, 0, 0.5);
     width: 75%;
-    padding: 10px;
+    padding: 20px;
     box-shadow: 3px 3px #000000;
+    max-width: 850px;
 }
 
 #help pre {
@@ -76,10 +129,11 @@ hr {
 }
 
 .footer {
-    margin: 35px auto auto;
+    margin: 35px auto 35px auto;
     width: 75%;
     font-weight: lighter;
     font-size: smaller;
     text-align: right;
     padding-bottom: 15px;
+    max-width: 850px;
 }

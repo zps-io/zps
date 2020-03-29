@@ -8,12 +8,12 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="stylesheet" href="css/main.css">
         <link rel="icon" href="img/favicon.png">
-        <script async defer src="https://buttons.github.io/buttons.js"></script>
-        <style>
+        <link rel="stylesheet" type="text/css" href="css/prism.css" />
+        <link rel="stylesheet" type="text/css" href="css/asciinema-player.css" />
+        <link rel="stylesheet" type="text/css" href="css/main.css" />
 
-        </style>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
         <meta name="theme-color" content="#fafafa">
     </head>
 
@@ -27,6 +27,52 @@
         <div class="action">
             <p>INSTALL</p>
             <div id="script">curl https://zps.io/setup.sh -o ./setup.sh && chmod 700 setup.sh && ./setup.sh ${your_image_dir}</div>
+        </div>
+        <div class="action">
+            <p>BUILD</p>
+            <div id="build">
+                <pre><code class="language-hcl">Zpkg "zps" {
+  publisher = "zps.io"
+  version = "${env.VERSION}"
+  summary = "ZPS the last word in package management"
+  description = "The Z package system, hopefully the last package manager you will ever use."
+  os = "${env.OS}"
+  arch = "x86_64"
+}
+
+Tag "zps.vcs.uri" {
+  value = "https://github.com/fezz-io/zps"
+}</code></pre>
+            </div>
+        </div>
+        <div class="action">
+            <asciinema-player src="casts/build.cast" theme="tango" cols="119" title="Build a ZPKG"></asciinema-player>
+        </div>
+        <div class="action">
+            <p>PUBLISH</p>
+            <div id="publish">
+                <pre><code class="language-hcl">priority = 10
+enabled = true
+
+fetch {
+  uri = "https://zps.io/packages/zps.io/core"
+}
+
+publish {
+  name = "ZPS Core"
+  prune = 3
+  uri = "s3://zps.io/packages/zps.io/core"
+}</code></pre>
+            </div>
+        </div>
+        <div class="action">
+            <asciinema-player src="casts/publish.cast" theme="tango" cols="119" title="Publish some ZPKGs"></asciinema-player>
+        </div>
+        <div class="action">
+            <p>MANAGE</p>
+        </div>
+        <div class="action">
+            <asciinema-player src="casts/manage.cast" theme="tango" cols="119" title="Manage ZPS"></asciinema-player>
         </div>
         <div class="action">
             <p>HELP</p>
@@ -82,6 +128,9 @@ Use "zps [command] --help" for more information about a command.
             </div>
         </div>
         <div class="footer">© Copyright 2020 Zachary Schneider</div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/components/prism-core.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/plugins/autoloader/prism-autoloader.min.js"></script>
+        <script src="js/asciinema-player.js"></script>
     </body>
 
 </html>
