@@ -302,7 +302,7 @@ func (m *Manager) Freeze(args []string) error {
 }
 
 // TODO this is trash, refactor it after Imagefile support is added
-func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string, imageOs string, arch string, profile string, configure bool, force bool, helper bool) error {
+func (m *Manager) ImageInit(imageFilePath string, name string, imageOs string, arch string, imagePath string, profile string, configure bool, force bool, helper bool) error {
 	image := &config.ImageFile{}
 
 	err := image.Load(imageFilePath)
@@ -315,18 +315,18 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 	}
 
 	// Flags override ImageFile content
-	if imagePath != "" {
-		image.Path, err = filepath.Abs(imagePath)
-		if err != nil {
-			return err
-		}
-	}
 	if name != "" {
 		image.Name = name
 	}
+
+	if image.Name == "" {
+		return errors.New("no name found or specified for image")
+	}
+
 	if imageOs != "" {
 		image.Os = imageOs
 	}
+
 	if arch != "" {
 		image.Arch = arch
 	}
@@ -348,29 +348,48 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 		return fmt.Errorf("unsupported arch %s", image.Arch)
 	}
 
-	if image.Path != "" {
+	// Attempt to detect images path
+	imagesPath := os.Getenv("ZPS_IMAGES_PATH")
+	if imagesPath == "" {
+		prefix, err := config.InstallPrefix()
+		if err != nil {
+			return errors.New("could not detect images path")
+		}
+
+		imagesPath = path.Dir(prefix)
+	}
+
+	// Override if flag is passed
+	if imagePath != "" {
 		image.Path, err = filepath.Abs(imagePath)
 		if err != nil {
 			return err
 		}
-	} else {
-		image.Path, err = os.Getwd()
+	}
+
+	// If the image path is not empty ensure abs path is set, otherwise detect the path
+	if image.Path != "" {
+		image.Path, err = filepath.Abs(image.Path)
 		if err != nil {
 			return err
 		}
-	}
-
-	// Auto set name
-	if image.Name == "" {
-		image.Name = filepath.Base(image.Path)
+	} else {
+		// If the image.Path is still empty construct it from either ZPS_IMAGES_PATH or one dir up from the current
+		// binary
+		image.Path = filepath.Join(imagesPath, image.Name)
 	}
 
 	// Look for name conflicts
 	for _, img := range m.config.Images {
-
 		if img.Name == image.Name && img.Path != image.Path {
 			return fmt.Errorf("name %s conflicts with existing image: %s", image.Name, img.Path)
 		}
+	}
+
+	// Refresh metadata in current image to ensure latest zps package
+	err = m.Refresh()
+	if err != nil {
+		return err
 	}
 
 	// Silently try dir create
@@ -467,6 +486,9 @@ func (m *Manager) ImageInit(imagePath string, imageFilePath string, name string,
 	}
 
 	err = m.Refresh()
+	if err != nil {
+		return err
+	}
 
 	// Install image packages
 	// TODO make all qualifiers work

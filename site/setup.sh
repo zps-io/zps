@@ -73,9 +73,7 @@ install() {
   "${EXTRACT_PATH}/usr/bin/zps" pki trust import --type intermediate "${EXTRACT_PATH}/usr/share/zps/certs/zps.io/intermediate.pem"
   "${EXTRACT_PATH}/usr/bin/zps" pki trust import --type user "${EXTRACT_PATH}/usr/share/zps/certs/zps.io/zps.pem"
 
-  "${EXTRACT_PATH}/usr/bin/zps" refresh
-
-  "${EXTRACT_PATH}/usr/bin/zps" image init --helper "${IMAGE_PATH}/default"
+  "${EXTRACT_PATH}/usr/bin/zps" image init --helper --name default
 }
 
 cleanup() {
@@ -87,9 +85,9 @@ cleanup() {
   log_info "Please add .zps/init.sh to your shell profile (zsh only)"
 }
 
-IMAGE_PATH="$1"
+export ZPS_IMAGES_PATH="$1"
 
-if [[ -z "$IMAGE_PATH" ]]; then
+if [[ -z "$ZPS_IMAGES_PATH" ]]; then
   log_error "Please provide a path in which to store your ZPS images, eg: /Users/username/images"
   exit 1
 fi
@@ -99,8 +97,8 @@ trap cleanup EXIT
 log_info "Detecting OS and ARCH"
 detect
 
-log_info "Dowloading ZPS"
+log_info "Downloading ZPS"
 download
 
-log_info "Installing ZPS into new default image in ${IMAGE_PATH}/default"
+log_info "Installing ZPS into new default image in ${ZPS_IMAGES_PATH}/default"
 install

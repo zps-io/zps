@@ -4,6 +4,7 @@ var ZshHelper = `###########
 # zsh only, bash support eventually
 ###########
 
+ZPS_IMAGES_PATH=%s
 ZPS_IMAGE_DEFAULT=%s
 
 zps_setup() {

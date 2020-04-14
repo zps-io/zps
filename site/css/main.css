@@ -18,6 +18,18 @@ hr {
     max-width: 885px;
 }
 
+h3 {
+    margin-top: 3px;
+}
+
+ul {
+    padding-left: 30px;
+}
+
+li {
+    line-height: 1.75em;
+}
+
 #logo {
     margin: 65px auto auto;
     width: 75%
@@ -43,6 +55,19 @@ hr {
     font-weight: normal;
     font-family: 'IBM Plex Mono', monospace;
     font-size: small;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 75%;
+    padding: 20px;
+    box-shadow: 3px 3px #000000;
+    max-width: 850px;
+}
+
+#what {
+    margin: 20px auto 20px auto;
+    font-weight: normal;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: small;
+    text-align: left;
     background-color: rgba(0, 0, 0, 0.5);
     width: 75%;
     padding: 20px;

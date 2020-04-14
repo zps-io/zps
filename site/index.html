@@ -18,7 +18,7 @@
     </head>
 
     <body>
-        <div id="logo"><img src="img/logo.png"></div>
+        <div id="logo"><img src="img/logo.png" alt="ZPS The Z Package System"></div>
         <div id="tag">The Last Word in Package Management</div>
         <div class="github">
             <a class="github-button" href="https://github.com/fezz-io/zps" data-color-scheme="no-preference: light; dark: light; light: light;" data-size="large" data-show-count="true" aria-label="Star fezz-io/zps on GitHub">Star</a>
@@ -29,9 +29,77 @@
             <div id="script">curl https://zps.io/setup.sh -o ./setup.sh && chmod 700 setup.sh && ./setup.sh ${your_image_dir}</div>
         </div>
         <div class="action">
+            <p>WHAT</p>
+            <div id="what">
+                <h3>ZPS</h3>
+                <p>
+                    ZPS is a modern binary package management solution designed to solve the delivery problems encountered by teams that execute rapidly as well as the compliance problems of those that rely on the software delivered.
+                </p>
+                <h3>Design</h3>
+                <p>
+                    <ul>
+                        <li>No invention of custom serialization formats</li>
+                        <li>System state can be modeled as a set of packages</li>
+                        <li>System state can be modeled as a set of packages</li>
+                        <li>A package system should support multiple roots (install roots)</li>
+                        <li>A package is composed of a set of actions</li>
+                        <li>The integrity of a system comprised of packages should be easily cryptographically validated and quickly repaired</li>
+                        <li>Versioning should be easy to automate</li>
+                        <li>Repositories should support channels for configurable upgrade work flows</li>
+                        <li>Repositories should be easily discoverable</li>
+                        <li>Repositories are multi-vendor from the start</li>
+                        <li>Repositories should support import work flows</li>
+                        <li>Packages may be automatically added to channels based on defined metadata queries</li>
+                    </ul>
+                </p>
+                <h3>Platform and Architectures</h3>
+                <p>
+                    <ul>
+                        <li>Architecture support will be limited to x86_64 (initially) and arm64 (eventually)</li>
+                        <li>OS support will be limited to OSX, Linux, FreeBSD (initially)</li>
+                        <li>Must support cross platform builds with variable interpolation</li>
+                    </ul>
+                </p>
+                <h3>Principles</h3>
+                <p>
+                    <ul>
+                        <li>Software build systems and software delivery are separate concerns, one must not adopt a build system to create a package</li>
+                        <li>Creating binary software packages should be easy</li>
+                        <li>Publishing binary software packages should be easy</li>
+                        <li>Design should support commercial software subscriptions thereby encouraging vendors to provide binary packages</li>
+                        <li>Vulgarities of technical implementation should not be exposed to the user</li>
+                        <li>Configuration management is a delivery vehicle for unfinished work (ZPS will handle configuration at install time)</li>
+                        <li>Design and functionality should not be crippled in order to support a zero value business model</li>
+                        <li>The Docker hype machine is the result of extended stagnation in the *NIX package management space</li>
+                    </ul>
+                </p>
+                <h3>Prior Art, and Influences</h3>
+                <p>
+                    <ul>
+                        <li>IPS</li>
+                        <li>APT/DPKG</li>
+                        <li>YUM/RPM</li>
+                        <li>npm</li>
+                        <li>pub</li>
+                        <li>libsolv</li>
+                    </ul>
+                </p>
+                <h3>Current State</h3>
+                <p>
+                    M1 has been recently completed. M1 is of functional prototype quality. Generally it should be fine
+                    for use, however breakage will occur and there are likely bugs.
+                </p>
+                <p>
+                    See GH issues for milestone information.
+                </p>
+            </div>
+        </div>
+        <div class="action">
             <p>BUILD</p>
             <div id="build">
-                <pre><code class="language-hcl">Zpkg "zps" {
+                <pre><code class="language-hcl">// HCL Zpkgfile declaration
+
+Zpkg "zps" {
   publisher = "zps.io"
   version = "${env.VERSION}"
   summary = "ZPS the last word in package management"
@@ -51,7 +119,9 @@ Tag "zps.vcs.uri" {
         <div class="action">
             <p>PUBLISH</p>
             <div id="publish">
-                <pre><code class="language-hcl">priority = 10
+                <pre><code class="language-hcl">// HCL repository declaration
+
+priority = 10
 enabled = true
 
 fetch {

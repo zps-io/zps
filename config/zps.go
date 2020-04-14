@@ -148,7 +148,7 @@ func (z *ZpsConfig) SetupHelper(overwrite bool) error {
 	_, err := os.Stat(zpsUserSettingsPath)
 
 	if os.IsNotExist(err) || overwrite {
-		err = ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, z.CurrentImage.Path)), 0600)
+		err = ioutil.WriteFile(zpsUserSettingsPath, []byte(fmt.Sprintf(ZshHelper, path.Dir(z.CurrentImage.Path), z.CurrentImage.Path)), 0600)
 		if err != nil {
 			return err
 		}
