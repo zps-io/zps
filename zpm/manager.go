@@ -598,6 +598,48 @@ func (m *Manager) ImageCurrent(image string) error {
 	return nil
 }
 
+func (m *Manager) ImageDelete(image string) error {
+	if len(m.config.Images) <= 2 {
+		return errors.New("you need at least one zps image left to default to")
+	}
+
+	// Delete passed image and config
+	for _, img := range m.config.Images {
+		if (img.Name == image || img.Path == image) && img.Name != "zroot" && img.Name != "default" {
+			// Basic safety check
+			if !m.IsImage(img.Path) {
+				return fmt.Errorf("path does not appear to be a zps image: %s", img.Path)
+			}
+
+			os.RemoveAll(img.Path)
+
+			// Remove the image config in question
+			cfgPath := m.config.ConfigForImage(img.Path)
+			if cfgPath != "" {
+				os.Remove(cfgPath)
+			}
+
+			m.Emit("manager.warn", fmt.Sprintf("removed: %s : %s", img.Name, img.Path))
+
+			// If we just deleted change the current image to default
+			if img.Name == m.config.CurrentImage.Name || img.Path == m.config.CurrentImage.Path {
+				err := m.config.LoadImages()
+				if err != nil {
+					return err
+				}
+
+				err = m.ImageCurrent(m.config.Images[1].Name)
+				if err != nil {
+					return err
+				}
+			}
+			break
+		}
+	}
+
+	return nil
+}
+
 func (m *Manager) ImageList() error {
 	for _, image := range m.config.Images {
 		if image == m.config.CurrentImage {
@@ -1800,6 +1842,14 @@ func (m *Manager) splitReqsFiles(args []string) ([]string, []string, error) {
 	}
 
 	return reqs, files, nil
+}
+
+func (m *Manager) IsImage(imagePath string) bool {
+	if _, err := os.Stat(filepath.Join(imagePath, "usr", "bin", "zps")); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
 }
 
 func (m *Manager) IsEmptyImage(imagePath string) (bool, error) {

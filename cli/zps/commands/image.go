@@ -33,6 +33,7 @@ func NewZpsImageCommand() *ZpsImageCommand {
 
 	cmd.AddCommand(NewZpsImageInitCommand().Command)
 	cmd.AddCommand(NewZpsImageCurrentCommand().Command)
+	cmd.AddCommand(NewZpsImageDeleteCommand().Command)
 	cmd.AddCommand(NewZpsImageListCommand().Command)
 	return cmd
 }

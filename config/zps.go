@@ -53,6 +53,8 @@ type ZpsConfig struct {
 	Repos     []*RepoConfig
 	Templates []*TplConfig
 
+	imgIndex map[string]string
+
 	hclCtx *hcl.EvalContext
 }
 
@@ -198,6 +200,8 @@ func (z *ZpsConfig) UserPath() string {
 }
 
 func (z *ZpsConfig) LoadImages() error {
+	z.imgIndex = make(map[string]string)
+
 	defaultOs := runtime.GOOS
 	var defaultArch string
 	switch runtime.GOARCH {
@@ -247,6 +251,7 @@ func (z *ZpsConfig) LoadImages() error {
 
 		if image.Name != defaultImage.Name {
 			z.Images = append(z.Images, image)
+			z.imgIndex[image.Path] = cfgPath
 		}
 	}
 
@@ -506,4 +511,8 @@ func (z *ZpsConfig) TemplatesForPkg(pkg string) []*TplConfig {
 	}
 
 	return tpls
+}
+
+func (z *ZpsConfig) ConfigForImage(imagePath string) string {
+	return z.imgIndex[imagePath]
 }
