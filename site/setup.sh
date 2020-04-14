@@ -73,7 +73,7 @@ install() {
   "${EXTRACT_PATH}/usr/bin/zps" pki trust import --type intermediate "${EXTRACT_PATH}/usr/share/zps/certs/zps.io/intermediate.pem"
   "${EXTRACT_PATH}/usr/bin/zps" pki trust import --type user "${EXTRACT_PATH}/usr/share/zps/certs/zps.io/zps.pem"
 
-  "${EXTRACT_PATH}/usr/bin/zps" image init --helper --name default
+  "${EXTRACT_PATH}/usr/bin/zps" image init --helper --force --name default
 }
 
 cleanup() {
