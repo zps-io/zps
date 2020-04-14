@@ -8,8 +8,7 @@ ZPS_IMAGES_PATH=%s
 ZPS_IMAGE_DEFAULT=%s
 
 zps_setup() {
-    ZPS_SESSION=$(mktemp -t zps.sess.XXXXXX)
-    export ZPS_SESSION
+	zps_session	
 
     precmd_functions+=(zps_reload)
     typeset -U precmd_functions
@@ -23,11 +22,12 @@ zps_setup() {
 
     PATH=${ZPS_IMAGE}/usr/bin:$ZPS_PREV_PATH
 
-    export ZPS_PREV_PATH ZPS_IMAGE PATH
+    export ZPS_PREV_PATH ZPS_IMAGES_PATH ZPS_IMAGE PATH
 }
 
 zps_reload() {
-    local zps_update=$(cat "$ZPS_SESSION")
+    zps_session
+	local zps_update=$(cat "$ZPS_SESSION")
 
     if [[ -z "${zps_update}" ]]; then
         return
@@ -39,6 +39,15 @@ zps_reload() {
 
     typeset -U path
     export ZPS_IMAGE PATH
+}
+
+zps_session() {
+    if [ -f "$ZPS_SESSION" ]; then
+        return
+    fi
+
+    ZPS_SESSION=$(mktemp -t zps.sess.XXXXXX)
+    export ZPS_SESSION
 }
 
 trap 'rm -f "$ZPS_SESSION"' EXIT

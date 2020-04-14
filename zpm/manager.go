@@ -376,7 +376,10 @@ func (m *Manager) ImageInit(imageFilePath string, name string, imageOs string, a
 	} else {
 		// If the image.Path is still empty construct it from either ZPS_IMAGES_PATH or one dir up from the current
 		// binary
-		image.Path = filepath.Join(imagesPath, image.Name)
+		image.Path, err = filepath.Abs(filepath.Join(imagesPath, image.Name))
+		if err != nil {
+			return err
+		}
 	}
 
 	// Look for name conflicts
