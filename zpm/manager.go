@@ -1882,11 +1882,60 @@ func (m *Manager) EmptyImage(imagePath string) error {
 	}
 
 	for _, entry := range entries {
-		if strings.Contains("Imagefile", entry.Name()) {
+		if strings.Contains("Imagefile", entry.Name()) || strings.Contains("var", entry.Name()) {
 			continue
 		} else {
 			os.RemoveAll(filepath.Join(imagePath, entry.Name()))
 		}
+	}
+
+	// TODO implement tmp, or repo data preloading to avoid this
+	// Cleanup var leaving only zps cache
+	if _, err := os.Stat(filepath.Join(imagePath, "var")); !os.IsNotExist(err) {
+		varEntries, err := ioutil.ReadDir(filepath.Join(imagePath, "var"))
+		if err != nil {
+			return err
+		}
+
+		for _, entry := range varEntries {
+			if strings.Contains("cache", entry.Name()) || strings.Contains("lib", entry.Name()) {
+				continue
+			} else {
+				os.RemoveAll(filepath.Join(imagePath, "var", entry.Name()))
+			}
+		}
+
+		if _, err := os.Stat(filepath.Join(imagePath, "var", "cache")); !os.IsNotExist(err) {
+			cacheEntries, err := ioutil.ReadDir(filepath.Join(imagePath, "var", "cache"))
+			if err != nil {
+				return err
+			}
+
+			for _, entry := range cacheEntries {
+				if strings.Contains("zps", entry.Name()) {
+					continue
+				} else {
+					os.RemoveAll(filepath.Join(imagePath, "var", "cache", entry.Name()))
+				}
+			}
+		}
+
+		if _, err := os.Stat(filepath.Join(imagePath, "var", "lib")); !os.IsNotExist(err) {
+			cacheEntries, err := ioutil.ReadDir(filepath.Join(imagePath, "var", "lib"))
+			if err != nil {
+				return err
+			}
+
+			for _, entry := range cacheEntries {
+				if strings.Contains("zps", entry.Name()) {
+					continue
+				} else {
+					os.RemoveAll(filepath.Join(imagePath, "var", "lib", entry.Name()))
+				}
+			}
+		}
+
+		os.Remove(filepath.Join(imagePath, "var", "lib", "zps", "image.db"))
 	}
 
 	return nil
