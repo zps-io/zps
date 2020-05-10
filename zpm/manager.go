@@ -396,7 +396,7 @@ func (m *Manager) ImageInit(imageFilePath string, name string, imageOs string, a
 	}
 
 	// Silently try dir create
-	os.Mkdir(image.Path, 0755)
+	os.MkdirAll(image.Path, 0755)
 
 	// Exit if the image path is not empty
 	empty, err := m.IsEmptyImage(image.Path)
