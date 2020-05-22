@@ -122,7 +122,9 @@ func (s *S3Publisher) Init() error {
 		return err
 	}
 
-	uploader := s3manager.NewUploader(s.session)
+	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
+		u.Concurrency = 3
+	})
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.uri.Host),
@@ -203,7 +205,9 @@ func (s *S3Publisher) Update() error {
 	// Upload config db
 	configDb.Seek(0, io.SeekStart)
 
-	uploader := s3manager.NewUploader(s.session)
+	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
+		u.Concurrency = 3
+	})
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.uri.Host),
@@ -352,7 +356,9 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 	// Upload metadata
 	metadataDb.Seek(0, io.SeekStart)
 
-	uploader := s3manager.NewUploader(s.session)
+	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
+		u.Concurrency = 3
+	})
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.uri.Host),
@@ -487,7 +493,9 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		}
 		defer metadataUp.Close()
 
-		uploader := s3manager.NewUploader(s.session)
+		uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
+			u.Concurrency = 3
+		})
 
 		_, err = uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(s.uri.Host),
@@ -538,7 +546,9 @@ func (s *S3Publisher) upload(file string, dest string) error {
 	}
 	defer src.Close()
 
-	uploader := s3manager.NewUploader(s.session)
+	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
+		u.Concurrency = 3
+	})
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.uri.Host),
