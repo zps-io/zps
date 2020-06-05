@@ -167,6 +167,10 @@ func (f *FileUnix) pkg(ctx context.Context) error {
 }
 
 func (f *FileUnix) validate(ctx context.Context) error {
+	if f.file.Size == 0 {
+		return nil
+	}
+
 	options := Opts(ctx)
 	payload := ctx.Value("payload").(*zpayload.Reader)
 
