@@ -85,7 +85,7 @@ cleanup() {
   log_info "Please add .zps/init.sh to your shell profile (zsh only)"
 }
 
-export ZPS_IMAGES_PATH="$1"
+export ZPS_IMAGES_PATH="${1:-$ZPS_IMAGES_PATH}"
 
 if [[ -z "$ZPS_IMAGES_PATH" ]]; then
   log_error "Please provide a path in which to store your ZPS images, eg: /Users/username/images"
