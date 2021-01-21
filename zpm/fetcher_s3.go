@@ -14,10 +14,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"strings"
-
-	"github.com/chuckpreslar/emission"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -25,9 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-
-	"net/url"
-	"path"
+	"github.com/chuckpreslar/emission"
 
 	"github.com/fezz-io/zps/zps"
 )
@@ -49,8 +47,6 @@ func NewS3Fetcher(uri *url.URL, cache *Cache, security Security) *S3Fetcher {
 
 	if user != "" && password != "" {
 		sess.Config.Credentials = credentials.NewStaticCredentials(user, password, "")
-	} else {
-		sess.Config.Credentials = credentials.NewEnvCredentials()
 	}
 
 	region, err := s3manager.GetBucketRegion(context.Background(), sess, uri.Host, "us-west-2")

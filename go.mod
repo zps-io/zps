@@ -25,10 +25,12 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/zclconf/go-cty v1.3.1
 	go.etcd.io/bbolt v1.3.3
-	golang.org/x/crypto v0.0.0-20190426145343-a29dc8fdc734
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/net v0.0.0-20190916140828-c8589233b77d
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
-	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3 // indirect
+	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	gonum.org/v1/gonum v0.0.0-20190915125329-975d99cd20a9
 	gopkg.in/resty.v1 v1.12.0
 )
+
+replace github.com/gernest/wow v0.1.0 => github.com/fezz-io/wow v0.1.1-0.20200606051511-4eedecafd068

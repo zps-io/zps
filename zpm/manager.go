@@ -663,10 +663,17 @@ func (m *Manager) Info(pkgName string) ([]string, error) {
 
 	manifest, err := m.state.Packages.Get(pkgName)
 	if err != nil {
+		return nil, err
+	}
+
+	if manifest == nil {
 		return nil, errors.New(fmt.Sprint(pkgName, " not installed"))
 	}
 
 	pkg, err := zps.NewPkgFromManifest(manifest)
+	if err != nil {
+		return nil, err
+	}
 
 	return []string{
 		strings.Join([]string{"Name:", pkg.Name()}, "|"),
@@ -680,6 +687,14 @@ func (m *Manager) Info(pkgName string) ([]string, error) {
 }
 
 func (m *Manager) Install(args []string, request *zps.Request) error {
+	/*
+	f, err := os.Create("zps.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+	*/
 	err := m.lock.TryLock()
 	if err != nil {
 		return errors.New("zpm: locked by another process")
@@ -1085,21 +1100,21 @@ func (m *Manager) Refresh() error {
 
 	for _, r := range m.config.Repos {
 		if r.Enabled == false {
-			m.Emit("manager.warn", fmt.Sprint("skipped disabled: ", r.Fetch.Uri.String()))
+			m.Emit("manager.warn", fmt.Sprint("skipped disabled: ", SafeURI(r.Fetch.Uri)))
 			continue
 		}
 
 		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security)
-		m.Emit("spin.start", fmt.Sprint("refreshing: ", r.Fetch.Uri.String()))
+		m.Emit("spin.start", fmt.Sprint("refreshing: ", SafeURI(r.Fetch.Uri)))
 		err = fe.Refresh()
 		if err == nil {
-			m.Emit("spin.success", fmt.Sprint("refreshed: ", r.Fetch.Uri.String()))
+			m.Emit("spin.success", fmt.Sprint("refreshed: ", SafeURI(r.Fetch.Uri)))
 		} else if strings.Contains(err.Error(), "no trusted certificates") {
-			m.Emit("spin.error", fmt.Sprint("metadata validation failed: ", r.Fetch.Uri.String()))
+			m.Emit("spin.error", fmt.Sprint("metadata validation failed: ", SafeURI(r.Fetch.Uri)))
 		} else if strings.Contains(err.Error(), "refresh failed") {
-			m.Emit("spin.error", fmt.Sprint("fetch metadata failed: ", r.Fetch.Uri.String()))
+			m.Emit("spin.error", fmt.Sprint("fetch metadata failed: ", SafeURI(r.Fetch.Uri)))
 		} else {
-			m.Emit("spin.warn", fmt.Sprint("no metadata: ", r.Fetch.Uri.String()))
+			m.Emit("spin.warn", fmt.Sprint("no metadata: ", SafeURI(r.Fetch.Uri)))
 		}
 	}
 

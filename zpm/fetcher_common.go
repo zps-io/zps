@@ -11,6 +11,7 @@
 package zpm
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/fezz-io/zps/zps"
@@ -35,4 +36,8 @@ func NewFetcher(uri *url.URL, cache *Cache, security Security) Fetcher {
 	default:
 		return nil
 	}
+}
+
+func SafeURI(uri *url.URL) string {
+	return fmt.Sprintf("%s://%s%s", uri.Scheme, uri.Host, uri.Path)
 }

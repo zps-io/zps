@@ -14,10 +14,9 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/dsnet/compress/bzip2"
 	"io"
 	"os"
-
-	"github.com/dsnet/compress/bzip2"
 )
 
 type Reader struct {

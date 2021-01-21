@@ -57,8 +57,6 @@ func NewS3Publisher(emitter *emission.Emitter, security Security, workPath strin
 
 	if user != "" && password != "" {
 		sess.Config.Credentials = credentials.NewStaticCredentials(user, password, "")
-	} else {
-		sess.Config.Credentials = credentials.NewEnvCredentials()
 	}
 
 	region, err := s3manager.GetBucketRegion(context.Background(), sess, uri.Host, "us-west-2")

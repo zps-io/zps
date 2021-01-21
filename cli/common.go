@@ -134,12 +134,15 @@ func (u *Ui) Spin(content string) {
 
 func (u *Ui) SpinSuccess(content string) {
 	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[green]"+content))
+	u.spinner.Stop()
 }
 
 func (u *Ui) SpinError(content string) {
 	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[red]"+content))
+	u.spinner.Stop()
 }
 
 func (u *Ui) SpinWarn(content string) {
 	u.spinner.PersistWith(spin.Spinner{Frames: []string{""}}, u.colorize.Color("[yellow]"+content))
+	u.spinner.Stop()
 }

@@ -214,7 +214,7 @@ func (b *Builder) set() error {
 		return err
 	}
 
-	pkg.Version().Timestamp = time.Now()
+	pkg.Version().Timestamp = time.Now().UTC()
 	b.manifest.Zpkg.Version = pkg.Version().String()
 
 	b.filename = pkg.FileName()
