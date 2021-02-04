@@ -163,6 +163,19 @@ func (m *Manager) Configure(packages []string, profile string) error {
 					m.Emit("manager.error", fmt.Sprintf("Template %s failed: %s", tpl.Key(), err.Error()))
 				}
 			}
+
+			// Run services last
+			current, err := m.state.Packages.Get(pkg)
+			if err != nil {
+				return err
+			}
+
+			for _, svc := range current.Section("Service") {
+				err = factory.Get(svc).Realize(ctx)
+				if err != nil {
+					m.Emit("manager.error", fmt.Sprintf("Service %s failed: %s", svc.Key(), err.Error()))
+				}
+			}
 		}
 	}
 

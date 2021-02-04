@@ -477,6 +477,8 @@ func (z *ZpsConfig) LoadHclContext() error {
 		"upper":          stdlib.UpperFunc,
 		"lower":          stdlib.LowerFunc,
 		"length":         stdlib.LengthFunc,
+		"coalesce":       stdlib.CoalesceFunc,
+		"lookup":         stdlib.LookupFunc,
 		"config_default": z.configDefault(),
 	}
 
@@ -497,6 +499,9 @@ func (z *ZpsConfig) HclContext(profile string) *hcl.EvalContext {
 	}
 
 	z.hclCtx.Variables["cfg"] = cty.ObjectVal(tree)
+	if z.CurrentImage.Os != "darwin" {
+		z.hclCtx.Variables["cloud"] = cty.ObjectVal(CloudMetaFetch())
+	}
 
 	return z.hclCtx
 }

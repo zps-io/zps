@@ -25,7 +25,6 @@ import (
 	"context"
 
 	"github.com/fezz-io/zps/action"
-	"github.com/naegelejd/go-acl/os/group"
 )
 
 type TemplateDefault struct {
@@ -72,7 +71,12 @@ func (t *TemplateDefault) configure(ctx context.Context) error {
 	if t.template.Output != "" {
 		output := filepath.Join(options.TargetPath, t.template.Output)
 
-		mode, err := strconv.ParseUint(t.template.Mode, 0, 0)
+		modeString := t.template.Mode
+		if modeString == "" {
+			modeString = "0640"
+		}
+
+		mode, err := strconv.ParseUint(modeString, 0, 0)
 		if err != nil {
 			return err
 		}
@@ -86,13 +90,13 @@ func (t *TemplateDefault) configure(ctx context.Context) error {
 		// that elsewhere
 
 		owner, _ := user.Lookup(t.template.Owner)
-		grp, _ := group.Lookup(t.template.Group)
+		grp, _ := user.LookupGroup(t.template.Group)
 		var uid int64
 		var gid int64
 
 		if owner != nil && grp != nil {
 			uid, _ = strconv.ParseInt(owner.Uid, 0, 0)
-			gid, _ = strconv.ParseInt(owner.Uid, 0, 0)
+			gid, _ = strconv.ParseInt(grp.Gid, 0, 0)
 		}
 
 		os.Chown(output, int(uid), int(gid))

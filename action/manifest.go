@@ -33,6 +33,8 @@ type Manifest struct {
 
 	Templates []*Template `hcl:"Template,block" json:"template,omitempty"`
 
+	Services []*Service `hcl:"Service,block" json:"service,omitempty"`
+
 	Signatures []*Signature `hcl:"Signature,block" json:"signature,omitempty"`
 
 	index map[string]int
@@ -82,6 +84,13 @@ func (m *Manifest) Add(action Action) {
 		} else {
 			m.Templates = append(m.Templates, action.(*Template))
 			m.index[action.Id()] = len(m.Templates) - 1
+		}
+	case "Service":
+		if m.Exists(action) {
+			m.Services[m.index[action.Id()]] = action.(*Service)
+		} else {
+			m.Services = append(m.Services, action.(*Service))
+			m.index[action.Id()] = len(m.Services) - 1
 		}
 	case "Signature":
 		if m.Exists(action) {
@@ -137,6 +146,10 @@ func (m *Manifest) Section(filters ...string) Actions {
 			for _, item := range m.Templates {
 				items = append(items, item)
 			}
+		case "Service":
+			for _, item := range m.Services {
+				items = append(items, item)
+			}
 		case "Signature":
 			for _, item := range m.Signatures {
 				items = append(items, item)
@@ -172,6 +185,10 @@ func (m *Manifest) Index() {
 		m.index[act.Id()] = index
 	}
 
+	for index, act := range m.Services {
+		m.index[act.Id()] = index
+	}
+
 	for index, act := range m.Signatures {
 		m.index[act.Id()] = index
 	}
@@ -187,6 +204,7 @@ func (m *Manifest) Actions() Actions {
 	actions = append(actions, m.Section("Tag")...)
 	actions = append(actions, m.Section("Requirement")...)
 	actions = append(actions, m.Section("Template")...)
+	actions = append(actions, m.Section("Service")...)
 	actions = append(actions, m.Section("Signature")...)
 	actions = append(actions, fs...)
 
@@ -229,6 +247,8 @@ func (m *Manifest) Validate() error {
 			return errors.New("Action Template: template does not source packaged file")
 		}
 	}
+
+	// TODO add a check to ensure that service includes the systemd unit
 
 	return nil
 }
