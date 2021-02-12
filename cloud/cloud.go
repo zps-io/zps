@@ -1,17 +1,24 @@
-package config
+package cloud
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"gopkg.in/resty.v1"
 	"net/http"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/zclconf/go-cty/cty"
+	"gopkg.in/resty.v1"
+)
+
+const(
+	AWS = "aws"
+	Azure = "azure"
+	GCP = "gcp"
+	Unknown = "unknown"
 )
 
 type AzureMeta struct {
@@ -22,11 +29,11 @@ type AzureMetaCompute struct {
 	Tags string `json:"tags"`
 }
 
-func CloudMetaFetch() map[string]cty.Value {
+func MetaFetch() map[string]cty.Value {
 	meta := make(map[string]cty.Value)
 	tags := make(map[string]cty.Value)
 
-	meta["provider"] = cty.StringVal("unknown")
+	meta["provider"] = cty.StringVal(Unknown)
 
 	// AWS
 	sess := session.Must(session.NewSession())
@@ -49,7 +56,7 @@ func CloudMetaFetch() map[string]cty.Value {
 						tags[*tag.Key] = cty.StringVal(*tag.Value)
 					}
 
-					meta["provider"] = cty.StringVal("aws")
+					meta["provider"] = cty.StringVal(AWS)
 					meta["tags"] = cty.MapVal(tags)
 
 					return meta
@@ -73,7 +80,7 @@ func CloudMetaFetch() map[string]cty.Value {
 			tags[split[0]] = cty.StringVal(split[1])
 		}
 
-		meta["provider"] = cty.StringVal("azure")
+		meta["provider"] = cty.StringVal(Azure)
 		meta["tags"] = cty.MapVal(tags)
 
 		return meta
@@ -93,7 +100,7 @@ func CloudMetaFetch() map[string]cty.Value {
 			}
 		}
 
-		meta["provider"] = cty.StringVal("gcp")
+		meta["provider"] = cty.StringVal(GCP)
 		meta["tags"] = cty.MapVal(tags)
 
 		return meta

@@ -11,6 +11,7 @@
 package config
 
 import (
+	"github.com/fezz-io/zps/cloud"
 	"io/ioutil"
 	"os"
 	"path"
@@ -197,6 +198,10 @@ func (z *ZpsConfig) UserPath() string {
 	}
 
 	return filepath.Join(os.Getenv("HOME"), ".zps")
+}
+
+func (z *ZpsConfig) CloudProvider() string {
+	return z.hclCtx.Variables["cloud"].AsValueMap()["provider"].AsString()
 }
 
 func (z *ZpsConfig) LoadImages() error {
@@ -482,6 +487,10 @@ func (z *ZpsConfig) LoadHclContext() error {
 		"config_default": z.configDefault(),
 	}
 
+	if z.CurrentImage.Os != "darwin" {
+		z.hclCtx.Variables["cloud"] = cty.ObjectVal(cloud.MetaFetch())
+	}
+
 	return nil
 }
 
@@ -499,9 +508,6 @@ func (z *ZpsConfig) HclContext(profile string) *hcl.EvalContext {
 	}
 
 	z.hclCtx.Variables["cfg"] = cty.ObjectVal(tree)
-	if z.CurrentImage.Os != "darwin" {
-		z.hclCtx.Variables["cloud"] = cty.ObjectVal(CloudMetaFetch())
-	}
 
 	return z.hclCtx
 }
