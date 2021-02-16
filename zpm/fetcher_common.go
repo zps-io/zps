@@ -40,6 +40,8 @@ func NewFetcher(uri *url.URL, cache *Cache, security Security, cloudProvider str
 		switch cloudProvider {
 		case cloud.AWS:
 			return NewS3Fetcher(uri, cache, security)
+		case cloud.GCP:
+			return NewGCSFetcher(uri, cache, security)
 		default:
 			return nil
 		}

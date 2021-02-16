@@ -74,7 +74,7 @@ func MetaFetch() cty.Value {
 		SetResult(&AzureMeta{}).
 		Get("http://169.254.169.254/metadata/instance?api-version=2020-09-01")
 
-	if err == nil {
+	if err == nil && azres.StatusCode() != 404 {
 		for _, tag := range strings.Split(azres.Result().(*AzureMeta).Compute.Tags, ";" ) {
 			split := strings.Split(tag, ":")
 			tags[split[0]] = cty.StringVal(split[1])
