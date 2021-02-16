@@ -487,8 +487,11 @@ func (z *ZpsConfig) LoadHclContext() error {
 		"config_default": z.configDefault(),
 	}
 
+	// Darwin provides a slow unreach response for metadata addresses for whatever reason
 	if z.CurrentImage.Os != "darwin" {
-		z.hclCtx.Variables["cloud"] = cty.ObjectVal(cloud.MetaFetch())
+		z.hclCtx.Variables["cloud"] = cloud.MetaFetch()
+	} else {
+		z.hclCtx.Variables["cloud"] = cloud.MetaUnknown()
 	}
 
 	return nil

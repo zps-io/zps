@@ -376,7 +376,7 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 			return err
 		}
 
-		configSig, err := os.Open(sigPath)
+		metadataSig, err := os.Open(sigPath)
 		if err != nil {
 			return err
 		}
@@ -384,7 +384,7 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		_, err = uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(s.uri.Host),
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
-			Body:   configSig,
+			Body:   metadataSig,
 		})
 	}
 

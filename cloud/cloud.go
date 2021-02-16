@@ -29,7 +29,7 @@ type AzureMetaCompute struct {
 	Tags string `json:"tags"`
 }
 
-func MetaFetch() map[string]cty.Value {
+func MetaFetch() cty.Value {
 	meta := make(map[string]cty.Value)
 	tags := make(map[string]cty.Value)
 
@@ -59,7 +59,7 @@ func MetaFetch() map[string]cty.Value {
 					meta["provider"] = cty.StringVal(AWS)
 					meta["tags"] = cty.MapVal(tags)
 
-					return meta
+					return cty.ObjectVal(meta)
 				}
 			}
 		}
@@ -83,7 +83,7 @@ func MetaFetch() map[string]cty.Value {
 		meta["provider"] = cty.StringVal(Azure)
 		meta["tags"] = cty.MapVal(tags)
 
-		return meta
+		return cty.ObjectVal(meta)
 	}
 
 	// GCP
@@ -103,8 +103,12 @@ func MetaFetch() map[string]cty.Value {
 		meta["provider"] = cty.StringVal(GCP)
 		meta["tags"] = cty.MapVal(tags)
 
-		return meta
+		return cty.ObjectVal(meta)
 	}
 
-	return meta
+	return cty.ObjectVal(meta)
+}
+
+func MetaUnknown() cty.Value {
+	return cty.ObjectVal(map[string]cty.Value{"provider": cty.StringVal(Unknown)})
 }
