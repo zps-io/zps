@@ -482,9 +482,9 @@ func (z *ZpsConfig) LoadHclContext() error {
 		"upper":          stdlib.UpperFunc,
 		"lower":          stdlib.LowerFunc,
 		"length":         stdlib.LengthFunc,
-		"coalesce":       stdlib.CoalesceFunc,
 		"lookup":         stdlib.LookupFunc,
 		"config_default": z.configDefault(),
+		"coalesce":       z.coalesce(),
 	}
 
 	// Darwin provides a slow unreach response for metadata addresses for whatever reason
