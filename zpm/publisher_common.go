@@ -27,6 +27,8 @@ func NewPublisher(emitter *emission.Emitter, security Security, workPath string,
 	switch uri.Scheme {
 	case "file":
 		return NewFilePublisher(emitter, security, uri, name, prune)
+	case "abs":
+		return NewABSPublisher(emitter, security, workPath, uri, name, prune)
 	case "gcs":
 		return NewGCSPublisher(emitter, security, workPath, uri, name, prune)
 	case "s3":

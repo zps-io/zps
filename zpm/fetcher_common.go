@@ -32,6 +32,8 @@ func NewFetcher(uri *url.URL, cache *Cache, security Security, cloudProvider str
 		return NewHttpsFetcher(uri, cache, security)
 	case "local":
 		return NewLocalFetcher(uri, cache, security)
+	case "abs":
+		return NewABSFetcher(uri, cache, security)
 	case "gcs":
 		return NewGCSFetcher(uri, cache, security)
 	case "s3":
@@ -42,6 +44,8 @@ func NewFetcher(uri *url.URL, cache *Cache, security Security, cloudProvider str
 			return NewS3Fetcher(uri, cache, security)
 		case cloud.GCP:
 			return NewGCSFetcher(uri, cache, security)
+		case cloud.Azure:
+			return NewABSFetcher(uri, cache, security)
 		default:
 			return nil
 		}

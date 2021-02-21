@@ -22,8 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fezz-io/zps/sec"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -31,6 +29,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/chuckpreslar/emission"
+
+	"github.com/fezz-io/zps/sec"
 	"github.com/fezz-io/zps/zpkg"
 	"github.com/fezz-io/zps/zps"
 )

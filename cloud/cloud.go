@@ -21,14 +21,6 @@ const(
 	Unknown = "unknown"
 )
 
-type AzureMeta struct {
-	Compute *AzureMetaCompute `json:"compute"`
-}
-
-type AzureMetaCompute struct {
-	Tags string `json:"tags"`
-}
-
 func MetaFetch() cty.Value {
 	meta := make(map[string]cty.Value)
 	tags := make(map[string]cty.Value)
