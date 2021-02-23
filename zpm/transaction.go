@@ -306,6 +306,15 @@ func (t *Transaction) remove(pkg zps.Solvable) error {
 			}
 		}
 
+		// Remove service entities
+		svcs := lookup.Section("Service")
+		for _, svc := range svcs {
+			err = factory.Get(svc).Realize(ctx)
+			if err != nil {
+				return err
+			}
+		}
+
 		// Remove from the package db
 		err = t.state.Packages.Del(pkg.Name())
 		if err != nil {

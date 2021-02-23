@@ -94,13 +94,13 @@ func (f *FileUnix) install(ctx context.Context) error {
 	// that elsewhere
 
 	owner, _ := user.Lookup(f.file.Owner)
-	grp, _ := group.Lookup(f.file.Group)
+	grp, _ := user.LookupGroup(f.file.Group)
 	var uid int64
 	var gid int64
 
 	if owner != nil && grp != nil {
 		uid, _ = strconv.ParseInt(owner.Uid, 0, 0)
-		gid, _ = strconv.ParseInt(owner.Uid, 0, 0)
+		gid, _ = strconv.ParseInt(grp.Gid, 0, 0)
 	}
 
 	os.Chown(target, int(uid), int(gid))

@@ -163,6 +163,19 @@ func (m *Manager) Configure(packages []string, profile string) error {
 					m.Emit("manager.error", fmt.Sprintf("Template %s failed: %s", tpl.Key(), err.Error()))
 				}
 			}
+
+			// Run services last
+			current, err := m.state.Packages.Get(pkg)
+			if err != nil {
+				return err
+			}
+
+			for _, svc := range current.Section("Service") {
+				err = factory.Get(svc).Realize(ctx)
+				if err != nil {
+					m.Emit("manager.error", fmt.Sprintf("Service %s failed: %s", svc.Key(), err.Error()))
+				}
+			}
 		}
 	}
 
@@ -237,7 +250,7 @@ func (m *Manager) Fetch(args []string) error {
 		pkg := policy.SelectRequest(pool.WhatProvides(job.Requirement()))
 
 		uri, _ := url.ParseRequestURI(pool.Location(pkg.Location()).Uri)
-		fe := NewFetcher(uri, m.cache, m.security)
+		fe := NewFetcher(uri, m.cache, m.security, m.config.CloudProvider())
 		err = fe.Fetch(pkg.(*zps.Pkg))
 		if err != nil {
 			return err
@@ -751,7 +764,7 @@ func (m *Manager) Install(args []string, request *zps.Request) error {
 		switch op.Operation {
 		case phase.INSTALL:
 			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
-			fe := NewFetcher(uri, m.cache, m.security)
+			fe := NewFetcher(uri, m.cache, m.security, m.config.CloudProvider())
 
 			m.Emitter.Emit("spin.start", fmt.Sprint("fetching: ", op.Package.Id()))
 			err = fe.Fetch(op.Package.(*zps.Pkg))
@@ -921,7 +934,7 @@ func (m *Manager) PkiTrustFetch(uriString string) error {
 		return fmt.Errorf("invalid uri format")
 	}
 
-	fe := NewFetcher(uri, m.cache, m.security)
+	fe := NewFetcher(uri, m.cache, m.security, m.config.CloudProvider())
 	if fe == nil {
 		return fmt.Errorf("uri path not found: %s", uri)
 	}
@@ -1104,7 +1117,7 @@ func (m *Manager) Refresh() error {
 			continue
 		}
 
-		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security)
+		fe := NewFetcher(r.Fetch.Uri, m.cache, m.security, m.config.CloudProvider())
 		m.Emit("spin.start", fmt.Sprint("refreshing: ", SafeURI(r.Fetch.Uri)))
 		err = fe.Refresh()
 		if err == nil {
@@ -1473,7 +1486,7 @@ func (m *Manager) Update(reqs []string) error {
 		switch op.Operation {
 		case phase.INSTALL:
 			uri, _ := url.ParseRequestURI(pool.Location(op.Package.Location()).Uri)
-			fe := NewFetcher(uri, m.cache, m.security)
+			fe := NewFetcher(uri, m.cache, m.security, m.config.CloudProvider())
 			err = fe.Fetch(op.Package.(*zps.Pkg))
 			if err != nil {
 				return err

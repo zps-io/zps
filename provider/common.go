@@ -12,6 +12,7 @@ package provider
 
 import (
 	"context"
+	"runtime"
 
 	"github.com/fezz-io/zps/phase"
 
@@ -108,6 +109,15 @@ func DefaultFactory(emitter *emission.Emitter) *Factory {
 		On("SymLink", phase.PACKAGE, "package").
 		On("SymLink", phase.REMOVE, "remove").
 		On("Template", phase.CONFIGURE, "configure")
+
+	switch runtime.GOOS {
+	case "linux":
+		factory.Register("Service", NewServiceSystemD)
+		factory.On("Service", phase.CONFIGURE, "configure")
+		factory.On("Service", phase.REMOVE, "remove")
+	default:
+		factory.Register("Service", NewServiceDefault)
+	}
 
 	return factory
 }

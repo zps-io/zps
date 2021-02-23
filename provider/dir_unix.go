@@ -72,13 +72,13 @@ func (d *DirUnix) install(ctx context.Context) error {
 	// that elsewhere
 
 	owner, _ := user.Lookup(d.dir.Owner)
-	grp, _ := group.Lookup(d.dir.Group)
+	grp, _ := user.LookupGroup(d.dir.Group)
 	var uid int64
 	var gid int64
 
 	if owner != nil && grp != nil {
 		uid, _ = strconv.ParseInt(owner.Uid, 0, 0)
-		gid, _ = strconv.ParseInt(owner.Uid, 0, 0)
+		gid, _ = strconv.ParseInt(grp.Gid, 0, 0)
 	}
 
 	os.Chown(target, int(uid), int(gid))

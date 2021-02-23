@@ -12,6 +12,7 @@ package zpm
 
 import (
 	"fmt"
+	"github.com/fezz-io/zps/cloud"
 	"net/url"
 
 	"github.com/fezz-io/zps/zps"
@@ -23,7 +24,7 @@ type Fetcher interface {
 	Keys() ([][]string, error)
 }
 
-func NewFetcher(uri *url.URL, cache *Cache, security Security) Fetcher {
+func NewFetcher(uri *url.URL, cache *Cache, security Security, cloudProvider string) Fetcher {
 	switch uri.Scheme {
 	case "file":
 		return NewFileFetcher(uri, cache, security)
@@ -31,8 +32,23 @@ func NewFetcher(uri *url.URL, cache *Cache, security Security) Fetcher {
 		return NewHttpsFetcher(uri, cache, security)
 	case "local":
 		return NewLocalFetcher(uri, cache, security)
+	case "abs":
+		return NewABSFetcher(uri, cache, security)
+	case "gcs":
+		return NewGCSFetcher(uri, cache, security)
 	case "s3":
 		return NewS3Fetcher(uri, cache, security)
+	case "cloud":
+		switch cloudProvider {
+		case cloud.AWS:
+			return NewS3Fetcher(uri, cache, security)
+		case cloud.GCP:
+			return NewGCSFetcher(uri, cache, security)
+		case cloud.Azure:
+			return NewABSFetcher(uri, cache, security)
+		default:
+			return nil
+		}
 	default:
 		return nil
 	}

@@ -11,6 +11,7 @@
 package config
 
 import (
+	"github.com/fezz-io/zps/cloud"
 	"io/ioutil"
 	"os"
 	"path"
@@ -197,6 +198,10 @@ func (z *ZpsConfig) UserPath() string {
 	}
 
 	return filepath.Join(os.Getenv("HOME"), ".zps")
+}
+
+func (z *ZpsConfig) CloudProvider() string {
+	return z.hclCtx.Variables["cloud"].AsValueMap()["provider"].AsString()
 }
 
 func (z *ZpsConfig) LoadImages() error {
@@ -477,8 +482,12 @@ func (z *ZpsConfig) LoadHclContext() error {
 		"upper":          stdlib.UpperFunc,
 		"lower":          stdlib.LowerFunc,
 		"length":         stdlib.LengthFunc,
+		"lookup":         stdlib.LookupFunc,
 		"config_default": z.configDefault(),
+		"coalesce":       z.coalesce(),
 	}
+
+	z.hclCtx.Variables["cloud"] = cloud.MetaFetch()
 
 	return nil
 }
