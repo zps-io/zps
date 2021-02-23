@@ -487,12 +487,7 @@ func (z *ZpsConfig) LoadHclContext() error {
 		"coalesce":       z.coalesce(),
 	}
 
-	// Darwin provides a slow unreach response for metadata addresses for whatever reason
-	if z.CurrentImage.Os != "darwin" {
-		z.hclCtx.Variables["cloud"] = cloud.MetaFetch()
-	} else {
-		z.hclCtx.Variables["cloud"] = cloud.MetaUnknown()
-	}
+	z.hclCtx.Variables["cloud"] = cloud.MetaFetch()
 
 	return nil
 }

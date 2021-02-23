@@ -1,7 +1,9 @@
 package cloud
 
 import (
+	"net"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -26,6 +28,11 @@ func MetaFetch() cty.Value {
 	tags := make(map[string]cty.Value)
 
 	meta["provider"] = cty.StringVal(Unknown)
+
+	// Return quickly when no metadata endpoint is available
+	if !MetaIsPresent() {
+		return cty.ObjectVal(meta)
+	}
 
 	// AWS
 	sess := session.Must(session.NewSession())
@@ -101,6 +108,30 @@ func MetaFetch() cty.Value {
 	return cty.ObjectVal(meta)
 }
 
-func MetaUnknown() cty.Value {
-	return cty.ObjectVal(map[string]cty.Value{"provider": cty.StringVal(Unknown)})
+func MetaIsPresent() bool {
+	check := resty.New()
+
+	dialer := &net.Dialer{
+		Timeout:   100 * time.Millisecond,
+		KeepAlive: 30 * time.Second,
+	}
+
+	check.SetTransport(&http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+	})
+	check.SetCloseConnection(true)
+
+	_, err := check.R().Get("http://169.254.169.254/")
+	if _, ok := err.(net.Error); ok {
+		return false
+	}
+
+	return true
 }
