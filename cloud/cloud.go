@@ -74,13 +74,16 @@ func MetaFetch() cty.Value {
 		Get("http://169.254.169.254/metadata/instance?api-version=2020-09-01")
 
 	if err == nil && azres.StatusCode() != 404 {
-		for _, tag := range strings.Split(azres.Result().(*AzureMeta).Compute.Tags, ";" ) {
-			split := strings.Split(tag, ":")
-			tags[split[0]] = cty.StringVal(split[1])
+		if azres.Result().(*AzureMeta).Compute.Tags != "" {
+			for _, tag := range strings.Split(azres.Result().(*AzureMeta).Compute.Tags, ";" ) {
+				split := strings.Split(tag, ":")
+				tags[split[0]] = cty.StringVal(split[1])
+			}
+
+			meta["tags"] = cty.MapVal(tags)
 		}
 
 		meta["provider"] = cty.StringVal(Azure)
-		meta["tags"] = cty.MapVal(tags)
 
 		return cty.ObjectVal(meta)
 	}
@@ -126,6 +129,7 @@ func MetaIsPresent() bool {
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
 	})
+
 	check.SetCloseConnection(true)
 
 	_, err := check.R().Get("http://169.254.169.254/")
