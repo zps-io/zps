@@ -179,21 +179,27 @@ func (b *Builder) resolve() error {
 				var dir = action.NewDir()
 				dir.Path = objectPath
 
-				b.manifest.Add(dir)
+				if !b.manifest.Exists(dir) {
+					b.manifest.Add(dir)
+				}
 			}
 
 			if f.Mode().IsRegular() {
 				var file = action.NewFile()
 				file.Path = objectPath
 
-				b.manifest.Add(file)
+				if !b.manifest.Exists(file) {
+					b.manifest.Add(file)
+				}
 			}
 
 			if f.Mode()&os.ModeSymlink == os.ModeSymlink {
 				var symlink = action.NewSymLink()
 				symlink.Path = objectPath
 
-				b.manifest.Add(symlink)
+				if !b.manifest.Exists(symlink) {
+					b.manifest.Add(symlink)
+				}
 			}
 		}
 
