@@ -143,7 +143,12 @@ func (d *DirUnix) remove(ctx context.Context) error {
 		return nil
 	}
 
-	return os.Remove(target)
+	err = os.Remove(target)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	return err
 }
 
 func (d *DirUnix) isEmpty(name string) (bool, error) {
