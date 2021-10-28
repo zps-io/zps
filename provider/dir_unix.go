@@ -154,6 +154,10 @@ func (d *DirUnix) remove(ctx context.Context) error {
 func (d *DirUnix) isEmpty(name string) (bool, error) {
 	f, err := os.Open(name)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return true, nil
+		}
+
 		return false, err
 	}
 	defer f.Close()
