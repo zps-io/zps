@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"github.com/chuckpreslar/emission"
 	"github.com/fezz-io/zps/systemd"
+	"os"
 	"path/filepath"
 
 	"github.com/fezz-io/zps/action"
@@ -103,13 +104,17 @@ func (s *ServiceSystemD) configure(ctx context.Context) error {
 func (s *ServiceSystemD) remove(_ context.Context) error {
 	err := systemd.UnLink(s.service.Name+".service")
 	if err != nil {
-		return err
+		if !os.IsNotExist(err) {
+			return err
+		}
 	}
 
 	if s.service.Timer {
 		err := systemd.UnLink(s.service.Name+".timer")
 		if err != nil {
-			return err
+			if !os.IsNotExist(err) {
+				return err
+			}
 		}
 	}
 
