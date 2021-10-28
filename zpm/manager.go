@@ -119,6 +119,12 @@ func (m *Manager) Channel(repo string, pkg string, channel string) error {
 }
 
 func (m *Manager) Configure(packages []string, profile string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
 	pool, err := m.pool()
 	if err != nil {
 		return err
