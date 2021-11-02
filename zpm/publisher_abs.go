@@ -301,6 +301,14 @@ func (a *ABSPublisher) Publish(pkgs ...string) error {
 	return nil
 }
 
+func (a *ABSPublisher) Lock() error {
+	return nil
+}
+
+func (a *ABSPublisher) Unlock() error {
+	return nil
+}
+
 func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
 	tmpDir, err := ioutil.TempDir(a.workPath, "channel")
 	if err != nil {
@@ -311,6 +319,13 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	err = a.Lock()
+	if err != nil {
+		return errors.New("Repository: " + a.uri.String() + " is locked by another process")
+	}
+
+	defer a.Unlock()
 
 	// Download metadata db
 	err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)
@@ -382,6 +397,13 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	err = a.Lock()
+	if err != nil {
+		return errors.New("Repository: " + a.uri.String() + " is locked by another process")
+	}
+
+	defer a.Unlock()
 
 	// Download metadata db
 	err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)

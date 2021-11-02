@@ -12,6 +12,7 @@ package zpm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -83,7 +84,7 @@ func (g *GCSPublisher) Init() error {
 	o := client.Bucket(g.uri.Host).Object(g.uri.Path + "/")
 	if _, err := o.NewWriter(createCtx).Write([]byte("")); err != nil {
 		cancel()
-		return fmt.Errorf("Object(%q).Create: %v", g.uri.Path + "/", err)
+		return fmt.Errorf("Object(%q).Create: %v", g.uri.Path+"/", err)
 	}
 	cancel()
 
@@ -330,6 +331,45 @@ func (g *GCSPublisher) Publish(pkgs ...string) error {
 	return nil
 }
 
+func (g *GCSPublisher) Lock() error {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	rc, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).NewReader(ctx)
+	if err != nil && err != storage.ErrObjectNotExist {
+		return err
+	}
+
+	defer rc.Close()
+
+	wc := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).NewWriter(ctx)
+	defer func() {
+		err = wc.Close()
+	}()
+
+	wc.ContentType = "text/plain"
+	if _, err := wc.Write([]byte("")); err != nil {
+		return err
+	}
+
+	// This might be an err from defer, we need to check wc.Close error because sometimes Write might not return an error
+	// because of async nature
+	return err
+}
+
+func (g *GCSPublisher) Unlock() error {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	return client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).Delete(ctx)
+}
+
 func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
 	tmpDir, err := ioutil.TempDir(g.workPath, "channel")
 	if err != nil {
@@ -340,6 +380,13 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	err = g.Lock()
+	if err != nil {
+		return errors.New("Repository: " + g.uri.String() + " is locked by another process")
+	}
+
+	defer g.Unlock()
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -447,6 +494,13 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	err = g.Lock()
+	if err != nil {
+		return errors.New("Repository: " + g.uri.String() + " is locked by another process")
+	}
+
+	defer g.Unlock()
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -594,7 +648,7 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		o := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String()) + "/")
 		if err := o.Delete(delCtx); err != nil {
 			cancel()
-			return fmt.Errorf("Object(%q).Delete: %v", path.Join(g.uri.Path, osarch.String()) + "/", err)
+			return fmt.Errorf("Object(%q).Delete: %v", path.Join(g.uri.Path, osarch.String())+"/", err)
 		}
 		cancel()
 	}

@@ -307,6 +307,44 @@ func (s *S3Publisher) Publish(pkgs ...string) error {
 	return nil
 }
 
+func (s *S3Publisher) Lock() error {
+	svc := s3.New(s.session)
+	_, err := svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.uri.Host),
+		Key:    aws.String(path.Join(s.uri.Path, ".lock")),
+	})
+
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != "NotFound" {
+				return err
+			}
+		}
+	}
+
+	uploader := s3manager.NewUploader(s.session)
+
+	data := strings.NewReader("")
+
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(s.uri.Host),
+		Key:    aws.String(path.Join(s.uri.Path, ".lock")),
+		Body:   data,
+	})
+
+	return err
+}
+
+func (s *S3Publisher) Unlock() error {
+	svc := s3.New(s.session)
+
+	_, err := svc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(s.uri.Host),
+		Key:    aws.String(path.Join(s.uri.Path, ".lock")),
+	})
+	return err
+}
+
 func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
 	tmpDir, err := ioutil.TempDir(s.workPath, "channel")
 	if err != nil {
@@ -317,6 +355,13 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	err = s.Lock()
+	if err != nil {
+		return errors.New("Repository: " + s.uri.String() + " is locked by another process")
+	}
+
+	defer s.Unlock()
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -401,6 +446,13 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	err = s.Lock()
+	if err != nil {
+		return errors.New("Repository: " + s.uri.String() + " is locked by another process")
+	}
+
+	defer s.Unlock()
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {

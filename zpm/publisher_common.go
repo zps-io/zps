@@ -21,6 +21,8 @@ type Publisher interface {
 	Update() error
 	Channel(pkg string, channel string) error
 	Publish(...string) error
+	Lock() error
+	Unlock() error
 }
 
 func NewPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) Publisher {
