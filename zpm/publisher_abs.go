@@ -302,11 +302,28 @@ func (a *ABSPublisher) Publish(pkgs ...string) error {
 }
 
 func (a *ABSPublisher) Lock() error {
-	return nil
+	ctx := context.Background()
+
+	res, err := a.blobClient.Get(ctx, a.account, a.container, path.Join(a.path, ".lock"), blobs.GetInput{})
+
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != 404 {
+		return fmt.Errorf("Lock file exists")
+	}
+
+	_, err = a.blobClient.PutBlockBlob(ctx, a.account, a.container, path.Join(a.path, ".lock"), blobs.PutBlockBlobInput{})
+
+	return err
 }
 
 func (a *ABSPublisher) Unlock() error {
-	return nil
+	ctx := context.Background()
+	_, err := a.blobClient.Delete(ctx, a.account, a.container, path.Join(a.path, ".lock"), blobs.DeleteInput{})
+
+	return err
 }
 
 func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {

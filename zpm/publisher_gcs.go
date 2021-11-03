@@ -339,8 +339,12 @@ func (g *GCSPublisher) Lock() error {
 	}
 
 	rc, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).NewReader(ctx)
-	if err != nil && err != storage.ErrObjectNotExist {
-		return err
+	if err != nil {
+		if err != storage.ErrObjectNotExist {
+			return err
+		}
+	} else {
+		return fmt.Errorf("Lock file exists")
 	}
 
 	defer rc.Close()

@@ -320,6 +320,8 @@ func (s *S3Publisher) Lock() error {
 				return err
 			}
 		}
+	} else {
+		return fmt.Errorf("Lock file exists")
 	}
 
 	uploader := s3manager.NewUploader(s.session)
