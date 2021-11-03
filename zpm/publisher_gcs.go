@@ -338,18 +338,17 @@ func (g *GCSPublisher) Lock() error {
 		return err
 	}
 
-	rc, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).NewReader(ctx)
+	rc, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, "zps.lock")).NewReader(ctx)
 	if err != nil {
 		if err != storage.ErrObjectNotExist {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Lock file exists")
+		rc.Close()
+		return fmt.Errorf("Lock file %s exists", path.Join(g.uri.Path, "zps.lock"))
 	}
 
-	defer rc.Close()
-
-	wc := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).NewWriter(ctx)
+	wc := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, "zps.lock")).NewWriter(ctx)
 	defer func() {
 		err = wc.Close()
 	}()
@@ -359,9 +358,7 @@ func (g *GCSPublisher) Lock() error {
 		return err
 	}
 
-	// This might be an err from defer, we need to check wc.Close error because sometimes Write might not return an error
-	// because of async nature
-	return err
+	return nil
 }
 
 func (g *GCSPublisher) Unlock() error {
@@ -371,7 +368,7 @@ func (g *GCSPublisher) Unlock() error {
 		return err
 	}
 
-	return client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, ".lock")).Delete(ctx)
+	return client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, "zps.lock")).Delete(ctx)
 }
 
 func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
@@ -501,7 +498,7 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	err = g.Lock()
 	if err != nil {
-		return errors.New("Repository: " + g.uri.String() + " is locked by another process")
+		return errors.New("Repository: " + g.uri.String() + " is locked by another process, err: " + err.Error())
 	}
 
 	defer g.Unlock()

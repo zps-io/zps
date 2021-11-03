@@ -202,7 +202,7 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string, 
 
 	err = f.Lock()
 	if err != nil {
-		return errors.New("Repository: " + f.uri.String() + " is locked by another process")
+		return errors.New("Repository: " + f.uri.String() + " is locked by another process, err: " + err.Error())
 	}
 
 	defer f.Unlock()
@@ -249,7 +249,7 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 
 	err = f.Lock()
 	if err != nil {
-		return errors.New("Repository: " + f.uri.String() + " is locked by another process")
+		return errors.New("Repository: " + f.uri.String() + " is locked by another process, err: " + err.Error())
 	}
 
 	defer f.Unlock()
