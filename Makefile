@@ -30,7 +30,7 @@ $(os):
 	mkdir -p -m 0750 dist/${@}-x86_64/var/cache/zps
 	mkdir -p -m 0750 dist/${@}-x86_64/var/tmp/zps
 	mkdir -p -m 0755 dist/${@}-x86_64/usr/share/zps/certs/zps.io
-#	cp ../zps.io/ca.pem ../zps.io/intermediate.pem ../zps.io/zps.pem dist/${@}-x86_64/usr/share/zps/certs/zps.io
+	cp ../zps.io/ca.pem ../zps.io/intermediate.pem ../zps.io/zps.pem dist/${@}-x86_64/usr/share/zps/certs/zps.io
 	echo "$$REPO" > dist/${@}-x86_64/etc/zps/repo.d/zps.conf
 	chmod 640 dist/${@}-x86_64/etc/zps/repo.d/*
 	GOOS=${@} go build -ldflags "-s -w -X github.com/fezz-io/zps/cli/zps/commands.Version=${VERSION}" -o dist/${@}-x86_64/usr/bin/zps \
