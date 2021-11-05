@@ -49,9 +49,11 @@ type ABSPublisher struct {
 
 	blobClient      *blobs.Client
 	containerClient *containers.Client
+
+	lockUri *url.URL
 }
 
-func NewABSPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) *ABSPublisher {
+func NewABSPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int, lockUri *url.URL) *ABSPublisher {
 	authorizer, err := auth.NewAuthorizerFromEnvironmentWithResource("https://storage.azure.com/")
 	if err != nil {
 		authorizer, err = auth.NewAuthorizerFromCLIWithResource("https://storage.azure.com/")
@@ -78,6 +80,7 @@ func NewABSPublisher(emitter *emission.Emitter, security Security, workPath stri
 		cloud.AzureBlobObjectPrefixFromURL(uri),
 		&blob,
 		&container,
+		lockUri,
 	}
 }
 
@@ -312,6 +315,15 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
+	locker := NewLocker(a.lockUri)
+
+	err = locker.Lock()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", a.name, err.Error())
+	}
+
+	defer locker.Unlock()
+
 	// Download metadata db
 	err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)
 	if err != nil {
@@ -382,6 +394,15 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	locker := NewLocker(a.lockUri)
+
+	err = locker.Lock()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", a.name, err.Error())
+	}
+
+	defer locker.Unlock()
 
 	// Download metadata db
 	err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)

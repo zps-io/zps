@@ -23,16 +23,16 @@ type Publisher interface {
 	Publish(...string) error
 }
 
-func NewPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) Publisher {
+func NewPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int, lockUri *url.URL) Publisher {
 	switch uri.Scheme {
 	case "file":
-		return NewFilePublisher(emitter, security, uri, name, prune)
+		return NewFilePublisher(emitter, security, uri, name, prune, lockUri)
 	case "abs":
-		return NewABSPublisher(emitter, security, workPath, uri, name, prune)
+		return NewABSPublisher(emitter, security, workPath, uri, name, prune, lockUri)
 	case "gcs":
-		return NewGCSPublisher(emitter, security, workPath, uri, name, prune)
+		return NewGCSPublisher(emitter, security, workPath, uri, name, prune, lockUri)
 	case "s3":
-		return NewS3Publisher(emitter, security, workPath, uri, name, prune)
+		return NewS3Publisher(emitter, security, workPath, uri, name, prune, lockUri)
 	default:
 		return nil
 	}

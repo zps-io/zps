@@ -11,28 +11,24 @@
 package config
 
 import (
-	"github.com/fezz-io/zps/cloud"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 
-	"github.com/hashicorp/hcl/v2/hclparse"
-
-	"errors"
-	"fmt"
-
-	"net/url"
-
-	"runtime"
-
-	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/fezz-io/zps/cloud"
 )
 
 const (
@@ -350,27 +346,33 @@ func (z *ZpsConfig) LoadRepos() error {
 		}
 
 		// Validate fetch section
-		if repo.Fetch != nil {
-			if repo.Fetch.UriString != "" {
-				repo.Fetch.Uri, err = url.Parse(repo.Fetch.UriString)
-				if err != nil {
-					return err
-				}
-			} else {
-				return errors.New(fmt.Sprint("config: repo fetch.uri required in ", rconfig))
-			}
-		} else {
+		if repo.Fetch == nil {
 			return errors.New(fmt.Sprint("config: repo fetch section required in ", rconfig))
 		}
 
+		if repo.Fetch.UriString == "" {
+			return errors.New(fmt.Sprint("config: repo fetch.uri required in ", rconfig))
+
+		}
+
+		repo.Fetch.Uri, err = url.Parse(repo.Fetch.UriString)
+		if err != nil {
+			return err
+		}
+
 		if repo.Publish != nil {
-			if repo.Publish.UriString != "" {
-				repo.Publish.Uri, err = url.Parse(repo.Publish.UriString)
-				if err != nil {
-					return err
-				}
-			} else {
+			if repo.Publish.UriString == "" {
 				return errors.New(fmt.Sprint("config: repo publish.uri required in ", rconfig))
+			}
+
+			repo.Publish.Uri, err = url.Parse(repo.Publish.UriString)
+			if err != nil {
+				return err
+			}
+
+			repo.Publish.LockUri, err = url.Parse(repo.Publish.LockUriString)
+			if err != nil {
+				return err
 			}
 		}
 

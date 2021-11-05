@@ -47,9 +47,11 @@ type S3Publisher struct {
 	prune int
 
 	session *session.Session
+
+	lockUri *url.URL
 }
 
-func NewS3Publisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) *S3Publisher {
+func NewS3Publisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int, lockUri *url.URL) *S3Publisher {
 	sess := session.Must(session.NewSession())
 
 	user := uri.User.Username()
@@ -70,7 +72,7 @@ func NewS3Publisher(emitter *emission.Emitter, security Security, workPath strin
 
 	sess.Config.Region = aws.String(region)
 
-	return &S3Publisher{emitter, security, workPath, uri, name, prune, sess}
+	return &S3Publisher{emitter, security, workPath, uri, name, prune, sess, lockUri}
 }
 
 func (s *S3Publisher) Init() error {
@@ -318,6 +320,15 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
+	locker := NewLocker(s.lockUri)
+
+	err = locker.Lock()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
+	}
+
+	defer locker.Unlock()
+
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
 		return err
@@ -401,6 +412,15 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	locker := NewLocker(s.lockUri)
+
+	err = locker.Lock()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
+	}
+
+	defer locker.Unlock()
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {

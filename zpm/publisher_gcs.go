@@ -40,10 +40,12 @@ type GCSPublisher struct {
 	uri   *url.URL
 	name  string
 	prune int
+
+	lockUri *url.URL
 }
 
-func NewGCSPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) *GCSPublisher {
-	return &GCSPublisher{emitter, security, workPath, uri, name, prune}
+func NewGCSPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int, lockUri *url.URL) *GCSPublisher {
+	return &GCSPublisher{emitter, security, workPath, uri, name, prune, lockUri}
 }
 
 func (g *GCSPublisher) Init() error {
@@ -83,7 +85,7 @@ func (g *GCSPublisher) Init() error {
 	o := client.Bucket(g.uri.Host).Object(g.uri.Path + "/")
 	if _, err := o.NewWriter(createCtx).Write([]byte("")); err != nil {
 		cancel()
-		return fmt.Errorf("Object(%q).Create: %v", g.uri.Path + "/", err)
+		return fmt.Errorf("Object(%q).Create: %v", g.uri.Path+"/", err)
 	}
 	cancel()
 
@@ -341,6 +343,15 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
+	locker := NewLocker(g.lockUri)
+
+	err = locker.Lock()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
+	}
+
+	defer locker.Unlock()
+
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
 		return err
@@ -447,6 +458,15 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	locker := NewLocker(g.lockUri)
+
+	err = locker.Lock()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
+	}
+
+	defer locker.Unlock()
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -594,7 +614,7 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		o := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String()) + "/")
 		if err := o.Delete(delCtx); err != nil {
 			cancel()
-			return fmt.Errorf("Object(%q).Delete: %v", path.Join(g.uri.Path, osarch.String()) + "/", err)
+			return fmt.Errorf("Object(%q).Delete: %v", path.Join(g.uri.Path, osarch.String())+"/", err)
 		}
 		cancel()
 	}
