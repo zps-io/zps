@@ -12,6 +12,7 @@ package commands
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/fezz-io/zps/cli"
 	"github.com/fezz-io/zps/zpm"
@@ -33,6 +34,8 @@ func NewZpsRepoInitCommand() *ZpsRepoInitCommand {
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
+	cmd.Flags().Bool("yes", false, "Do not ask for confirmation")
+
 	return cmd
 }
 
@@ -46,9 +49,26 @@ func (z *ZpsRepoInitCommand) setup(cmd *cobra.Command, args []string) error {
 
 func (z *ZpsRepoInitCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
+	repoName := cmd.Flags().Arg(0)
 
-	if cmd.Flags().Arg(0) == "" {
+	if repoName == "" {
 		return errors.New("Repo name required")
+	}
+
+	isSilent, _ := cmd.Flags().GetBool("yes")
+
+	if !isSilent {
+		fmt.Printf("ZPS will delete all data in repository '%s', proceed? [y/n]: ", repoName)
+
+		var response string
+		fmt.Scanln(&response)
+
+		switch response {
+		case "y", "Y", "Yes", "yes":
+			fmt.Println("Initializing repo...")
+		case "n", "N", "No", "no":
+			return nil
+		}
 	}
 
 	// Load manager
@@ -59,7 +79,7 @@ func (z *ZpsRepoInitCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.RepoInit(cmd.Flags().Arg(0))
+	err = mgr.RepoInit(repoName)
 	if err != nil {
 		z.Fatal(err.Error())
 	}
