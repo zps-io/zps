@@ -58,7 +58,7 @@ func (z *ZpsRepoInitCommand) run(cmd *cobra.Command, args []string) error {
 	isSilent, _ := cmd.Flags().GetBool("yes")
 
 	if !isSilent {
-		fmt.Printf("This command will delete all data in repository '%s', proceed? [y/n]: ", repoName)
+		fmt.Printf("ZPS will delete all data in repository '%s', proceed? [y/n]: ", repoName)
 
 		var response string
 		fmt.Scanln(&response)
