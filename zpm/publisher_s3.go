@@ -22,6 +22,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -311,9 +312,7 @@ func (s *S3Publisher) Publish(pkgs ...string) error {
 }
 
 func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
-	retries := 5
-
-	var newEtag [16]byte
+	retries := 10
 
 	tmpDir, err := ioutil.TempDir(s.workPath, "channel")
 	if err != nil {
@@ -332,7 +331,7 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
 	}
 
-	defer locker.UnlockWithEtag(newEtag)
+	defer locker.UnlockWithEtag(&eTag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -349,7 +348,7 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
 		})
 		if err != nil {
-			return fmt.Errorf("unable to download: %s", s.uri.Path)
+			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
 		medatabaDbData := make([]byte, size)
@@ -367,8 +366,10 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		if len(eTag) > 0 && actualETag != eTag {
 			retries -= 1
 			if retries == 0 {
-				return fmt.Errorf("Object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
 			}
+			time.Sleep(6 * time.Second)
+			continue
 		}
 
 		break
@@ -403,6 +404,10 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		Body:   metadataDb,
 	})
 
+	if err != nil {
+		return fmt.Errorf("unable to upload new metadata file: %s", s.uri.Path)
+	}
+
 	medatabaDbData := make([]byte, 0)
 	_, err = metadataDb.Read(medatabaDbData)
 	if err != nil {
@@ -433,15 +438,17 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
 			Body:   metadataSig,
 		})
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
 }
 
 func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
-	retries := 5
-
-	var newEtag [16]byte
+	retries := 10
 
 	tmpDir, err := ioutil.TempDir(s.workPath, "publish")
 	if err != nil {
@@ -460,7 +467,7 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
 	}
 
-	defer locker.UnlockWithEtag(newEtag)
+	defer locker.UnlockWithEtag(&eTag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -472,21 +479,19 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 	client := s3manager.NewDownloader(s.session)
 
 	for {
-		size, err := client.Download(metadataDb, &s3.GetObjectInput{
+		_, err := client.Download(metadataDb, &s3.GetObjectInput{
 			Bucket: aws.String(s.uri.Host),
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
 		})
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
-				return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
-			}
+			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
-		medatabaDbData := make([]byte, size)
+		medatabaDbData := make([]byte, 0)
 
 		_, err = metadataDb.Read(medatabaDbData)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+			return fmt.Errorf("unable to read downloaded metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
 		actualETag := md5.Sum(medatabaDbData)
@@ -497,8 +502,10 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		if len(eTag) > 0 && actualETag != eTag {
 			retries -= 1
 			if retries == 0 {
-				return fmt.Errorf("S3 object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", s.uri.Path, string(eTag[:]), string(actualETag[:]))
 			}
+			time.Sleep(6 * time.Second)
+			continue
 		}
 
 		break
@@ -585,12 +592,17 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 			Body:   metadataUp,
 		})
 
+		if err != nil {
+			return fmt.Errorf("unable to upload new metadata file: %s", s.uri.Path)
+		}
+
 		medatabaDbData := make([]byte, 0)
 		_, err = metadataDb.Read(medatabaDbData)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+			return fmt.Errorf("unable to read new metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
+		// Updated eTag will go to the same defer function
 		eTag = md5.Sum(medatabaDbData)
 
 		// Sign and upload
@@ -615,6 +627,10 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 				Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
 				Body:   configSig,
 			})
+
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		_, err = svc.DeleteObject(&s3.DeleteObjectInput{

@@ -334,9 +334,7 @@ func (g *GCSPublisher) Publish(pkgs ...string) error {
 }
 
 func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
-	retries := 5
-
-	var newEtag [16]byte
+	retries := 10
 
 	tmpDir, err := ioutil.TempDir(g.workPath, "channel")
 	if err != nil {
@@ -355,7 +353,7 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
 	}
 
-	defer locker.UnlockWithEtag(newEtag)
+	defer locker.UnlockWithEtag(&eTag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -375,16 +373,13 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
 		defer cancel()
 		if err != nil {
-			cancel()
 			return fmt.Errorf("unable to download: %s", g.uri.Path)
 		}
 
 		if _, err = io.Copy(metadataDb, cd); err != nil {
-			cancel()
 			return fmt.Errorf("io.Copy: %v", err)
 		}
 		if err := cd.Close(); err != nil {
-			cancel()
 			return fmt.Errorf("Reader.Close: %v", err)
 		}
 
@@ -392,7 +387,7 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 		_, err = metadataDb.Read(medatabaDbData)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded file: %s", g.uri.Path)
+			return fmt.Errorf("unable to read downloaded metadata file: %s, err: %s", g.uri.Path, err.Error())
 		}
 
 		actualETag := md5.Sum(medatabaDbData)
@@ -403,8 +398,10 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		if len(eTag) > 0 && actualETag != eTag {
 			retries -= 1
 			if retries == 0 {
-				return fmt.Errorf("S3 object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
 			}
+			time.Sleep(6 * time.Second)
+			continue
 		}
 
 		break
@@ -449,6 +446,7 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return fmt.Errorf("unable to read new metadata file: %s", g.uri.Path)
 	}
 
+	// Updated eTag will go to the same defer function
 	eTag = md5.Sum(medatabaDbData)
 
 	// Sign and upload
@@ -486,9 +484,7 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 }
 
 func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
-	retries := 5
-
-	var newEtag [16]byte
+	retries := 10
 
 	tmpDir, err := ioutil.TempDir(g.workPath, "publish")
 	if err != nil {
@@ -507,7 +503,7 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
 	}
 
-	defer locker.UnlockWithEtag(newEtag)
+	defer locker.UnlockWithEtag(&eTag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -527,6 +523,9 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		defer cancel()
 
 		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
+		if err != nil {
+			return fmt.Errorf("unable to read metadata file: %s, err %s", g.uri.Path, err.Error())
+		}
 		if cd != nil {
 			if _, err = io.Copy(metadataDb, cd); err != nil {
 				cancel()
@@ -553,8 +552,10 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		if len(eTag) > 0 && actualETag != eTag {
 			retries -= 1
 			if retries == 0 {
-				return fmt.Errorf("S3 object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
 			}
+			time.Sleep(6 * time.Second)
+			continue
 		}
 
 		break
@@ -641,6 +642,15 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			return fmt.Errorf("Writer.Close: %v", err)
 		}
 		cancel()
+
+		medatabaDbData := make([]byte, 0)
+		_, err = metadataUp.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read new metadata file: %s, err: %s", g.uri.Path, err.Error())
+		}
+
+		// Updated eTag will go to the same defer function
+		eTag = md5.Sum(medatabaDbData)
 
 		// Sign and upload
 		if keyPair != nil {

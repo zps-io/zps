@@ -26,7 +26,7 @@ func (f *FileLocker) LockWithEtag() ([16]byte, error) {
 	return [16]byte{}, f.Lock()
 }
 
-func (f *FileLocker) UnlockWithEtag(eTag [16]byte) error {
+func (f *FileLocker) UnlockWithEtag(eTag *[16]byte) error {
 	return f.Unlock()
 }
 

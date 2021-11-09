@@ -37,9 +37,21 @@ func (d *DynamoLocker) Lock() error {
 	return err
 }
 
+// Unlock is used when we need to unlock repo but metadata wasn't changed
 func (d *DynamoLocker) Unlock() error {
-	eTag := [16]byte{}
-	return d.UnlockWithEtag(eTag)
+	_, err := d.client.UpdateItem(&dynamodb.UpdateItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"LockKey": {S: aws.String(d.key)},
+		},
+		UpdateExpression: aws.String("SET Locked = :false"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":false": {BOOL: aws.Bool(false)},
+		},
+		TableName: &d.tableName,
+	})
+
+	return err
+
 }
 
 func (d *DynamoLocker) LockWithEtag() ([16]byte, error) {
@@ -75,7 +87,7 @@ func (d *DynamoLocker) LockWithEtag() ([16]byte, error) {
 	return eTag, nil
 }
 
-func (d *DynamoLocker) UnlockWithEtag(eTag [16]byte) error {
+func (d *DynamoLocker) UnlockWithEtag(eTag *[16]byte) error {
 	eTagString := hex.EncodeToString(eTag[:])
 	_, err := d.client.UpdateItem(&dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{

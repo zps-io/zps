@@ -18,13 +18,13 @@ func (n *NoneLocker) Lock() error {
 }
 
 func (n *NoneLocker) Unlock() error {
-	return n.UnlockWithEtag([16]byte{})
+	return nil
 }
 
 func (n *NoneLocker) LockWithEtag() ([16]byte, error) {
 	return [16]byte{}, nil
 }
 
-func (n *NoneLocker) UnlockWithEtag(etag [16]byte) error {
+func (n *NoneLocker) UnlockWithEtag(etag *[16]byte) error {
 	return nil
 }
