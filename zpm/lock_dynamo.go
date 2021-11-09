@@ -1,6 +1,7 @@
 package zpm
 
 import (
+	"encoding/hex"
 	"net/url"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -32,24 +33,57 @@ func NewDynamoLocker(uri *url.URL) *DynamoLocker {
 }
 
 func (d *DynamoLocker) Lock() error {
-	_, err := d.client.PutItem(&dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"LockKey": {S: aws.String(d.key)},
-		},
-		TableName:           &d.tableName,
-		ConditionExpression: aws.String("attribute_not_exists(LockKey)"),
-	})
-
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := d.LockWithEtag()
+	return err
 }
 
 func (d *DynamoLocker) Unlock() error {
-	_, err := d.client.DeleteItem(&dynamodb.DeleteItemInput{
+	eTag := [16]byte{}
+	return d.UnlockWithEtag(eTag)
+}
+
+func (d *DynamoLocker) LockWithEtag() ([16]byte, error) {
+	var eTag [16]byte
+
+	result, err := d.client.UpdateItem(&dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"LockKey": {S: aws.String(d.key)},
+		},
+		UpdateExpression: aws.String("SET Locked = :true"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":true":  {BOOL: aws.Bool(true)},
+			":false": {BOOL: aws.Bool(false)},
+		},
+		ConditionExpression: aws.String("Locked = :false"),
+		ReturnValues:        aws.String("ETag"),
+		TableName:           &d.tableName,
+	})
+	if err != nil {
+		return eTag, err
+	}
+
+	if len(result.String()) > 0 {
+		eTagSlice, err := hex.DecodeString(result.String())
+		if err != nil {
+			return eTag, err
+		}
+
+		copy(eTag[:], eTagSlice)
+
+	}
+	return eTag, nil
+}
+
+func (d *DynamoLocker) UnlockWithEtag(eTag [16]byte) error {
+	eTagString := hex.EncodeToString(eTag[:])
+	_, err := d.client.UpdateItem(&dynamodb.UpdateItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"LockKey": {S: aws.String(d.key)},
+		},
+		UpdateExpression: aws.String("SET Locked = :false, ETag = :eTag"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":false": {BOOL: aws.Bool(false)},
+			":eTag":  {S: aws.String(eTagString)},
 		},
 		TableName: &d.tableName,
 	})

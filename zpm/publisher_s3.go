@@ -12,6 +12,7 @@ package zpm
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -310,6 +311,10 @@ func (s *S3Publisher) Publish(pkgs ...string) error {
 }
 
 func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
+	retries := 5
+
+	var newEtag [16]byte
+
 	tmpDir, err := ioutil.TempDir(s.workPath, "channel")
 	if err != nil {
 		return err
@@ -322,12 +327,12 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 
 	locker := NewLocker(s.lockUri)
 
-	err = locker.Lock()
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
 	}
 
-	defer locker.Unlock()
+	defer locker.UnlockWithEtag(newEtag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -338,12 +343,35 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 	// Download metadata db
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(metadataDb, &s3.GetObjectInput{
-		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
-	})
-	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+	for {
+		size, err := client.Download(metadataDb, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
+		})
+		if err != nil {
+			return fmt.Errorf("unable to download: %s", s.uri.Path)
+		}
+
+		medatabaDbData := make([]byte, size)
+
+		_, err = metadataDb.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+		}
+
+		actualETag := md5.Sum(medatabaDbData)
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("Object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
+			}
+		}
+
+		break
 	}
 
 	// Modify metadata
@@ -375,6 +403,14 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		Body:   metadataDb,
 	})
 
+	medatabaDbData := make([]byte, 0)
+	_, err = metadataDb.Read(medatabaDbData)
+	if err != nil {
+		return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+	}
+
+	eTag = md5.Sum(medatabaDbData)
+
 	// Sign and upload
 	if keyPair != nil {
 		rsaKey, err := keyPair.RSAKey()
@@ -403,6 +439,10 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 }
 
 func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
+	retries := 5
+
+	var newEtag [16]byte
+
 	tmpDir, err := ioutil.TempDir(s.workPath, "publish")
 	if err != nil {
 		return err
@@ -415,12 +455,12 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 
 	locker := NewLocker(s.lockUri)
 
-	err = locker.Lock()
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
 	}
 
-	defer locker.Unlock()
+	defer locker.UnlockWithEtag(newEtag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -431,14 +471,38 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 	// Download metadata db
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(metadataDb, &s3.GetObjectInput{
-		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
-	})
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
-			return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+	for {
+		size, err := client.Download(metadataDb, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
+		})
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
+				return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+			}
 		}
+
+		medatabaDbData := make([]byte, size)
+
+		_, err = metadataDb.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+		}
+
+		actualETag := md5.Sum(medatabaDbData)
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("S3 object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
+			}
+		}
+
+		break
+
 	}
 
 	metadata := NewMetadata(metaPath)
@@ -520,6 +584,14 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
 			Body:   metadataUp,
 		})
+
+		medatabaDbData := make([]byte, 0)
+		_, err = metadataDb.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+		}
+
+		eTag = md5.Sum(medatabaDbData)
 
 		// Sign and upload
 		if keyPair != nil {

@@ -12,6 +12,7 @@ package zpm
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -305,6 +306,10 @@ func (a *ABSPublisher) Publish(pkgs ...string) error {
 }
 
 func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
+	retries := 5
+
+	var newEtag [16]byte
+
 	tmpDir, err := ioutil.TempDir(a.workPath, "channel")
 	if err != nil {
 		return err
@@ -317,17 +322,38 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 	locker := NewLocker(a.lockUri)
 
-	err = locker.Lock()
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", a.name, err.Error())
 	}
 
-	defer locker.Unlock()
+	defer locker.UnlockWithEtag(newEtag)
 
-	// Download metadata db
-	err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)
-	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", a.uri.Path))
+	for {
+		// Download metadata db
+		err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)
+		if err != nil {
+			return errors.New(fmt.Sprintf("unable to download: %s", a.uri.Path))
+		}
+
+		bytes, err := ioutil.ReadFile(path.Join(a.path, osarch.String(), "metadata.db"))
+		if err != nil {
+			return fmt.Errorf("Unable to read an object: %s", a.uri.Path)
+		}
+
+		actualETag := md5.Sum(bytes)
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("Object %q has eTag mismatch: want %q, got %q", a.uri.Path, eTag, actualETag)
+			}
+		}
+
+		break
 	}
 
 	// Modify metadata
@@ -358,6 +384,14 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return err
 	}
 
+	medatabaDbData := make([]byte, 0)
+	_, err = metadataDb.Read(medatabaDbData)
+	if err != nil {
+		return fmt.Errorf("unable to read downloaded file: %s", a.uri.Path)
+	}
+
+	eTag = md5.Sum(medatabaDbData)
+
 	// Sign and upload
 	if keyPair != nil {
 		rsaKey, err := keyPair.RSAKey()
@@ -385,6 +419,10 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 }
 
 func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
+	retries := 5
+
+	var newEtag [16]byte
+
 	tmpDir, err := ioutil.TempDir(a.workPath, "publish")
 	if err != nil {
 		return err
@@ -397,20 +435,42 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	locker := NewLocker(a.lockUri)
 
-	err = locker.Lock()
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", a.name, err.Error())
 	}
 
-	defer locker.Unlock()
+	defer locker.UnlockWithEtag(newEtag)
 
-	// Download metadata db
-	err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)
+	for {
+		// Download metadata db
+		err = a.chunkedGet(path.Join(a.path, osarch.String(), "metadata.db"), metaPath)
 
-	if err != nil {
-		if !strings.Contains(err.Error(), "404") {
-			return errors.New(fmt.Sprintf("unable to download: %s", a.uri.Path))
+		if err != nil {
+			if !strings.Contains(err.Error(), "404") {
+				return errors.New(fmt.Sprintf("unable to download: %s", a.uri.Path))
+			}
 		}
+
+		bytes, err := ioutil.ReadFile(path.Join(a.path, osarch.String(), "metadata.db"))
+		if err != nil {
+			return fmt.Errorf("Unable to read an object: %s", a.uri.Path)
+		}
+
+		actualETag := md5.Sum(bytes)
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("Object %q has eTag mismatch: want %q, got %q", a.uri.Path, eTag, actualETag)
+			}
+		}
+
+		break
+
 	}
 
 	metadata := NewMetadata(metaPath)
@@ -484,6 +544,14 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		if err != nil {
 			return err
 		}
+
+		medatabaDbData := make([]byte, 0)
+		_, err = metadataUp.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read downloaded file: %s", a.uri.Path)
+		}
+
+		eTag = md5.Sum(medatabaDbData)
 
 		// Sign and upload
 		if keyPair != nil {

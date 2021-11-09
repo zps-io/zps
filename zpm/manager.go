@@ -1210,7 +1210,6 @@ func (m *Manager) RepoUnlock(name string) error {
 		}
 		if name == repo.Publish.Name && repo.Publish.LockUri != nil {
 			locker := NewLocker(repo.Publish.LockUri)
-
 			return locker.Unlock()
 		}
 	}

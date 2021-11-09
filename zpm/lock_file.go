@@ -22,6 +22,14 @@ func NewFileLocker(uri *url.URL) *FileLocker {
 	}
 }
 
+func (f *FileLocker) LockWithEtag() ([16]byte, error) {
+	return [16]byte{}, f.Lock()
+}
+
+func (f *FileLocker) UnlockWithEtag(eTag [16]byte) error {
+	return f.Unlock()
+}
+
 func (f *FileLocker) Lock() error {
 	return f.lockfile.TryLock()
 }

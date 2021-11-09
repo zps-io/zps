@@ -5,6 +5,8 @@ import (
 )
 
 type Locker interface {
+	LockWithEtag() ([16]byte, error)
+	UnlockWithEtag([16]byte) error
 	Lock() error
 	Unlock() error
 }

@@ -12,6 +12,7 @@ package zpm
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -333,6 +334,10 @@ func (g *GCSPublisher) Publish(pkgs ...string) error {
 }
 
 func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
+	retries := 5
+
+	var newEtag [16]byte
+
 	tmpDir, err := ioutil.TempDir(g.workPath, "channel")
 	if err != nil {
 		return err
@@ -345,12 +350,12 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 	locker := NewLocker(g.lockUri)
 
-	err = locker.Lock()
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
 	}
 
-	defer locker.Unlock()
+	defer locker.UnlockWithEtag(newEtag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -364,23 +369,47 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return err
 	}
 
-	// Download metadata db
-	cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
-	cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
-	if err != nil {
-		cancel()
-		return fmt.Errorf("unable to download: %s", g.uri.Path)
-	}
+	for {
+		// Download metadata db
+		cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
+		defer cancel()
+		if err != nil {
+			cancel()
+			return fmt.Errorf("unable to download: %s", g.uri.Path)
+		}
 
-	if _, err = io.Copy(metadataDb, cd); err != nil {
-		cancel()
-		return fmt.Errorf("io.Copy: %v", err)
+		if _, err = io.Copy(metadataDb, cd); err != nil {
+			cancel()
+			return fmt.Errorf("io.Copy: %v", err)
+		}
+		if err := cd.Close(); err != nil {
+			cancel()
+			return fmt.Errorf("Reader.Close: %v", err)
+		}
+
+		medatabaDbData := make([]byte, 0)
+
+		_, err = metadataDb.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read downloaded file: %s", g.uri.Path)
+		}
+
+		actualETag := md5.Sum(medatabaDbData)
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("S3 object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
+			}
+		}
+
+		break
+
 	}
-	if err := cd.Close(); err != nil {
-		cancel()
-		return fmt.Errorf("Reader.Close: %v", err)
-	}
-	cancel()
 
 	// Modify metadata
 	metadata := NewMetadata(metaPath)
@@ -413,6 +442,14 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return fmt.Errorf("Writer.Close: %v", err)
 	}
 	cancel()
+
+	medatabaDbData := make([]byte, 0)
+	_, err = metadataDb.Read(medatabaDbData)
+	if err != nil {
+		return fmt.Errorf("unable to read new metadata file: %s", g.uri.Path)
+	}
+
+	eTag = md5.Sum(medatabaDbData)
 
 	// Sign and upload
 	if keyPair != nil {
@@ -449,6 +486,10 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 }
 
 func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
+	retries := 5
+
+	var newEtag [16]byte
+
 	tmpDir, err := ioutil.TempDir(g.workPath, "publish")
 	if err != nil {
 		return err
@@ -461,12 +502,12 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	locker := NewLocker(g.lockUri)
 
-	err = locker.Lock()
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
 		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
 	}
 
-	defer locker.Unlock()
+	defer locker.UnlockWithEtag(newEtag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -480,21 +521,44 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		return err
 	}
 
-	// Download metadata db
-	cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+	for {
+		// Download metadata db
+		cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+		defer cancel()
 
-	cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
-	if cd != nil {
-		if _, err = io.Copy(metadataDb, cd); err != nil {
-			cancel()
-			return fmt.Errorf("io.Copy: %v", err)
+		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
+		if cd != nil {
+			if _, err = io.Copy(metadataDb, cd); err != nil {
+				cancel()
+				return fmt.Errorf("io.Copy: %v", err)
+			}
+			if err := cd.Close(); err != nil {
+				cancel()
+				return fmt.Errorf("Reader.Close: %v", err)
+			}
 		}
-		if err := cd.Close(); err != nil {
-			cancel()
-			return fmt.Errorf("Reader.Close: %v", err)
+
+		medatabaDbData := make([]byte, 0)
+
+		_, err = metadataDb.Read(medatabaDbData)
+		if err != nil {
+			return fmt.Errorf("unable to read downloaded file: %s", g.uri.Path)
 		}
+
+		actualETag := md5.Sum(medatabaDbData)
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("S3 object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
+			}
+		}
+
+		break
 	}
-	cancel()
 
 	metadata := NewMetadata(metaPath)
 	repo := &zps.Repo{}
