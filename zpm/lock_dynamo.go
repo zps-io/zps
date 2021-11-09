@@ -54,16 +54,17 @@ func (d *DynamoLocker) LockWithEtag() ([16]byte, error) {
 			":true":  {BOOL: aws.Bool(true)},
 			":false": {BOOL: aws.Bool(false)},
 		},
-		ConditionExpression: aws.String("Locked = :false"),
-		ReturnValues:        aws.String("ETag"),
+		ConditionExpression: aws.String("attribute_not_exists(Locked) or Locked = :false"),
+		ReturnValues:        aws.String("ALL_NEW"),
 		TableName:           &d.tableName,
 	})
+
 	if err != nil {
 		return eTag, err
 	}
 
-	if len(result.String()) > 0 {
-		eTagSlice, err := hex.DecodeString(result.String())
+	if eTagResult, ok := result.Attributes["ETag"]; ok {
+		eTagSlice, err := hex.DecodeString(*eTagResult.S)
 		if err != nil {
 			return eTag, err
 		}
