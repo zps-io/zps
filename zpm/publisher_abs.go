@@ -385,13 +385,13 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return err
 	}
 
-	medatabaDbData := make([]byte, 0)
-	_, err = metadataDb.Read(medatabaDbData)
+	metadataDbData := make([]byte, 0)
+	_, err = metadataDb.Read(metadataDbData)
 	if err != nil {
 		return fmt.Errorf("unable to read downloaded file: %s", a.uri.Path)
 	}
 
-	eTag = md5.Sum(medatabaDbData)
+	eTag = md5.Sum(metadataDbData)
 
 	// Sign and upload
 	if keyPair != nil {
@@ -547,13 +547,13 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			return err
 		}
 
-		medatabaDbData := make([]byte, 0)
-		_, err = metadataUp.Read(medatabaDbData)
+		metadataDbData := make([]byte, 0)
+		_, err = metadataUp.Read(metadataDbData)
 		if err != nil {
 			return fmt.Errorf("unable to read downloaded file: %s", a.uri.Path)
 		}
 
-		eTag = md5.Sum(medatabaDbData)
+		eTag = md5.Sum(metadataDbData)
 
 		// Sign and upload
 		if keyPair != nil {

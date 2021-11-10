@@ -13,7 +13,6 @@ package zpm
 import (
 	"context"
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -134,6 +133,10 @@ func (s *S3Publisher) Init() error {
 		Body:   configDb,
 	})
 
+	if err != nil {
+		return fmt.Errorf("unable to upload config.db for repo: %s, err: %s", s.uri.Path, err.Error())
+	}
+
 	// Sign and upload
 	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
 	if err != nil {
@@ -163,6 +166,10 @@ func (s *S3Publisher) Init() error {
 			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
 			Body:   configSig,
 		})
+
+		if err != nil {
+			return fmt.Errorf("unable to upload config.sig for repo: %s, err: %s", s.uri.Path, err.Error())
+		}
 	}
 
 	return err
@@ -193,7 +200,7 @@ func (s *S3Publisher) Update() error {
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 	})
 	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+		return fmt.Errorf("unable to download: %s, err: %s", s.uri.Path, err.Error())
 	}
 
 	// Modify config db
@@ -216,6 +223,10 @@ func (s *S3Publisher) Update() error {
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 		Body:   configDb,
 	})
+
+	if err != nil {
+		return fmt.Errorf("unable to upload config.db for repo: %s, err: %s", s.uri.Path, err.Error())
+	}
 
 	// Sign and upload
 	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
@@ -246,6 +257,10 @@ func (s *S3Publisher) Update() error {
 			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
 			Body:   configSig,
 		})
+
+		if err != nil {
+			return fmt.Errorf("unable to upload config.sig for repo: %s, err: %s", s.uri.Path, err.Error())
+		}
 	}
 
 	return err
@@ -351,14 +366,14 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
-		medatabaDbData := make([]byte, size)
+		metadataDbData := make([]byte, size)
 
-		_, err = metadataDb.Read(medatabaDbData)
+		_, err = metadataDb.Read(metadataDbData)
 		if err != nil {
 			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
 		}
 
-		actualETag := md5.Sum(medatabaDbData)
+		actualETag := md5.Sum(metadataDbData)
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -596,14 +611,14 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 			return fmt.Errorf("unable to upload new metadata file: %s", s.uri.Path)
 		}
 
-		medatabaDbData := make([]byte, 0)
-		_, err = metadataDb.Read(medatabaDbData)
+		metadataDbData := make([]byte, 0)
+		_, err = metadataDb.Read(metadataDbData)
 		if err != nil {
 			return fmt.Errorf("unable to read new metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
 		// Updated eTag will go to the same defer function
-		eTag = md5.Sum(medatabaDbData)
+		eTag = md5.Sum(metadataDbData)
 
 		// Sign and upload
 		if keyPair != nil {

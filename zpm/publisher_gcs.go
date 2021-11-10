@@ -440,14 +440,14 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 	}
 	cancel()
 
-	medatabaDbData := make([]byte, 0)
-	_, err = metadataDb.Read(medatabaDbData)
+	metadataDbData := make([]byte, 0)
+	_, err = metadataDb.Read(metadataDbData)
 	if err != nil {
 		return fmt.Errorf("unable to read new metadata file: %s", g.uri.Path)
 	}
 
 	// Updated eTag will go to the same defer function
-	eTag = md5.Sum(medatabaDbData)
+	eTag = md5.Sum(metadataDbData)
 
 	// Sign and upload
 	if keyPair != nil {
@@ -643,14 +643,14 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		}
 		cancel()
 
-		medatabaDbData := make([]byte, 0)
-		_, err = metadataUp.Read(medatabaDbData)
+		metadataDbData := make([]byte, 0)
+		_, err = metadataUp.Read(metadataDbData)
 		if err != nil {
 			return fmt.Errorf("unable to read new metadata file: %s, err: %s", g.uri.Path, err.Error())
 		}
 
 		// Updated eTag will go to the same defer function
-		eTag = md5.Sum(medatabaDbData)
+		eTag = md5.Sum(metadataDbData)
 
 		// Sign and upload
 		if keyPair != nil {
