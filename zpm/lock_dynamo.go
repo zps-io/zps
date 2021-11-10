@@ -1,7 +1,6 @@
 package zpm
 
 import (
-	"encoding/hex"
 	"net/url"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -54,8 +53,8 @@ func (d *DynamoLocker) Unlock() error {
 
 }
 
-func (d *DynamoLocker) LockWithEtag() ([16]byte, error) {
-	var eTag [16]byte
+func (d *DynamoLocker) LockWithEtag() (string, error) {
+	eTag := ""
 
 	result, err := d.client.UpdateItem(&dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -76,19 +75,12 @@ func (d *DynamoLocker) LockWithEtag() ([16]byte, error) {
 	}
 
 	if eTagResult, ok := result.Attributes["ETag"]; ok {
-		eTagSlice, err := hex.DecodeString(*eTagResult.S)
-		if err != nil {
-			return eTag, err
-		}
-
-		copy(eTag[:], eTagSlice)
-
+		eTag = *eTagResult.S
 	}
 	return eTag, nil
 }
 
-func (d *DynamoLocker) UnlockWithEtag(eTag *[16]byte) error {
-	eTagString := hex.EncodeToString(eTag[:])
+func (d *DynamoLocker) UnlockWithEtag(eTag *string) error {
 	_, err := d.client.UpdateItem(&dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"LockKey": {S: aws.String(d.key)},
@@ -96,7 +88,7 @@ func (d *DynamoLocker) UnlockWithEtag(eTag *[16]byte) error {
 		UpdateExpression: aws.String("SET Locked = :false, ETag = :eTag"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":false": {BOOL: aws.Bool(false)},
-			":eTag":  {S: aws.String(eTagString)},
+			":eTag":  {S: eTag},
 		},
 		TableName: &d.tableName,
 	})

@@ -13,6 +13,7 @@ package zpm
 import (
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -340,7 +341,8 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 			return fmt.Errorf("unable to read aa metadata file: %s, err: %s", a.uri.Path, err.Error())
 		}
 
-		actualETag := md5.Sum(bytes)
+		actualETagArray := md5.Sum(bytes)
+		actualETag := hex.EncodeToString(actualETagArray[:])
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -353,7 +355,6 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 			time.Sleep(6 * time.Second)
 			continue
 		}
-
 		break
 	}
 
@@ -391,7 +392,10 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return fmt.Errorf("unable to read downloaded file: %s", a.uri.Path)
 	}
 
-	eTag = md5.Sum(metadataDbData)
+	// Updated eTag will go to the same defer function
+	eTagArray := md5.Sum(metadataDbData)
+
+	eTag = hex.EncodeToString(eTagArray[:])
 
 	// Sign and upload
 	if keyPair != nil {
@@ -456,7 +460,10 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			return fmt.Errorf("unable to read an object: %s, err: %s", a.uri.Path, err.Error())
 		}
 
-		actualETag := md5.Sum(bytes)
+		actualETagArray := md5.Sum(bytes)
+		actualETag := hex.EncodeToString(actualETagArray[:])
+
+		fmt.Printf("ETag: %s ActualETag: %s", eTag, actualETag)
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -464,13 +471,11 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		if len(eTag) > 0 && actualETag != eTag {
 			retries -= 1
 			if retries == 0 {
-				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", a.uri.Path, string(eTag[:]), string(actualETag[:]))
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", a.uri.Path, eTag, actualETag)
 			}
-
 			time.Sleep(6 * time.Second)
 			continue
 		}
-
 		break
 
 	}
@@ -553,7 +558,10 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			return fmt.Errorf("unable to read downloaded file: %s", a.uri.Path)
 		}
 
-		eTag = md5.Sum(metadataDbData)
+		// Updated eTag will go to the same defer function
+		eTagArray := md5.Sum(metadataDbData)
+
+		eTag = hex.EncodeToString(eTagArray[:])
 
 		// Sign and upload
 		if keyPair != nil {

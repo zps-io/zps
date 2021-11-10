@@ -21,10 +21,10 @@ func (n *NoneLocker) Unlock() error {
 	return nil
 }
 
-func (n *NoneLocker) LockWithEtag() ([16]byte, error) {
-	return [16]byte{}, nil
+func (n *NoneLocker) LockWithEtag() (string, error) {
+	return "", nil
 }
 
-func (n *NoneLocker) UnlockWithEtag(etag *[16]byte) error {
+func (n *NoneLocker) UnlockWithEtag(etag *string) error {
 	return nil
 }

@@ -13,6 +13,7 @@ package zpm
 import (
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -355,19 +356,22 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 	defer locker.UnlockWithEtag(&eTag)
 
-	metadataDb, err := os.Create(metaPath)
-	if err != nil {
-		return err
-	}
+	var metadataDb *os.File
 	defer metadataDb.Close()
 
 	ctx := context.Background()
+
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return err
 	}
 
 	for {
+		metadataDb, err := os.Create(metaPath)
+		if err != nil {
+			return err
+		}
+
 		// Download metadata db
 		cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
 		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
@@ -383,14 +387,13 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 			return fmt.Errorf("Reader.Close: %v", err)
 		}
 
-		medatabaDbData := make([]byte, 0)
-
-		_, err = metadataDb.Read(medatabaDbData)
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded metadata file: %s, err: %s", g.uri.Path, err.Error())
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
 		}
-
-		actualETag := md5.Sum(medatabaDbData)
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -403,7 +406,6 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 			time.Sleep(6 * time.Second)
 			continue
 		}
-
 		break
 
 	}
@@ -440,14 +442,14 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 	}
 	cancel()
 
-	metadataDbData := make([]byte, 0)
-	_, err = metadataDb.Read(metadataDbData)
+	hash := md5.New()
+	_, err = io.Copy(hash, metadataDb)
 	if err != nil {
-		return fmt.Errorf("unable to read new metadata file: %s", g.uri.Path)
+		return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
 	}
 
-	// Updated eTag will go to the same defer function
-	eTag = md5.Sum(metadataDbData)
+	eTagArray := hash.Sum(nil)
+	eTag = hex.EncodeToString(eTagArray[:])
 
 	// Sign and upload
 	if keyPair != nil {
@@ -528,23 +530,20 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		}
 		if cd != nil {
 			if _, err = io.Copy(metadataDb, cd); err != nil {
-				cancel()
 				return fmt.Errorf("io.Copy: %v", err)
 			}
 			if err := cd.Close(); err != nil {
-				cancel()
 				return fmt.Errorf("Reader.Close: %v", err)
 			}
 		}
 
-		medatabaDbData := make([]byte, 0)
-
-		_, err = metadataDb.Read(medatabaDbData)
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded file: %s", g.uri.Path)
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
 		}
-
-		actualETag := md5.Sum(medatabaDbData)
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -557,7 +556,6 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			time.Sleep(6 * time.Second)
 			continue
 		}
-
 		break
 	}
 
@@ -643,14 +641,14 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		}
 		cancel()
 
-		metadataDbData := make([]byte, 0)
-		_, err = metadataUp.Read(metadataDbData)
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataUp)
 		if err != nil {
-			return fmt.Errorf("unable to read new metadata file: %s, err: %s", g.uri.Path, err.Error())
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
 		}
 
-		// Updated eTag will go to the same defer function
-		eTag = md5.Sum(metadataDbData)
+		eTagArray := hash.Sum(nil)
+		eTag = hex.EncodeToString(eTagArray[:])
 
 		// Sign and upload
 		if keyPair != nil {

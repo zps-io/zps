@@ -13,6 +13,7 @@ package zpm
 import (
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -348,17 +349,19 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 
 	defer locker.UnlockWithEtag(&eTag)
 
-	metadataDb, err := os.Create(metaPath)
-	if err != nil {
-		return err
-	}
+	var metadataDb *os.File
 	defer metadataDb.Close()
 
-	// Download metadata db
 	client := s3manager.NewDownloader(s.session)
 
 	for {
-		size, err := client.Download(metadataDb, &s3.GetObjectInput{
+		metadataDb, err = os.Create(metaPath)
+		if err != nil {
+			return err
+		}
+
+		// Download metadata db
+		_, err = client.Download(metadataDb, &s3.GetObjectInput{
 			Bucket: aws.String(s.uri.Host),
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
 		})
@@ -366,14 +369,13 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
-		metadataDbData := make([]byte, size)
-
-		_, err = metadataDb.Read(metadataDbData)
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
-
-		actualETag := md5.Sum(metadataDbData)
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -423,13 +425,14 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		return fmt.Errorf("unable to upload new metadata file: %s", s.uri.Path)
 	}
 
-	medatabaDbData := make([]byte, 0)
-	_, err = metadataDb.Read(medatabaDbData)
+	hash := md5.New()
+	_, err = io.Copy(hash, metadataDb)
 	if err != nil {
-		return fmt.Errorf("unable to read downloaded file: %s", s.uri.Path)
+		return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
 	}
 
-	eTag = md5.Sum(medatabaDbData)
+	eTagArray := hash.Sum(nil)
+	eTag = hex.EncodeToString(eTagArray[:])
 
 	// Sign and upload
 	if keyPair != nil {
@@ -484,17 +487,17 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 
 	defer locker.UnlockWithEtag(&eTag)
 
-	metadataDb, err := os.Create(metaPath)
-	if err != nil {
-		return err
-	}
-	defer metadataDb.Close()
-
-	// Download metadata db
 	client := s3manager.NewDownloader(s.session)
 
 	for {
-		_, err := client.Download(metadataDb, &s3.GetObjectInput{
+		metadataDb, err := os.Create(metaPath)
+		if err != nil {
+			return err
+		}
+		defer metadataDb.Close()
+
+		// Download metadata db
+		_, err = client.Download(metadataDb, &s3.GetObjectInput{
 			Bucket: aws.String(s.uri.Host),
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
 		})
@@ -502,14 +505,13 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
-		medatabaDbData := make([]byte, 0)
-
-		_, err = metadataDb.Read(medatabaDbData)
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
 		if err != nil {
-			return fmt.Errorf("unable to read downloaded metadata file: %s, err: %s", s.uri.Path, err.Error())
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
-
-		actualETag := md5.Sum(medatabaDbData)
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -517,12 +519,11 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		if len(eTag) > 0 && actualETag != eTag {
 			retries -= 1
 			if retries == 0 {
-				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", s.uri.Path, string(eTag[:]), string(actualETag[:]))
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
 			}
 			time.Sleep(6 * time.Second)
 			continue
 		}
-
 		break
 
 	}
@@ -608,17 +609,18 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 		})
 
 		if err != nil {
-			return fmt.Errorf("unable to upload new metadata file: %s", s.uri.Path)
+			return fmt.Errorf("unable to upload new metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
-		metadataDbData := make([]byte, 0)
-		_, err = metadataDb.Read(metadataDbData)
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataUp)
 		if err != nil {
-			return fmt.Errorf("unable to read new metadata file: %s, err: %s", s.uri.Path, err.Error())
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
 		}
 
 		// Updated eTag will go to the same defer function
-		eTag = md5.Sum(metadataDbData)
+		eTagArray := hash.Sum(nil)
+		eTag = hex.EncodeToString(eTagArray[:])
 
 		// Sign and upload
 		if keyPair != nil {
