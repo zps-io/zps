@@ -394,7 +394,6 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 	// Updated eTag will go to the same defer function
 	eTagArray := md5.Sum(metadataDbData)
-
 	eTag = hex.EncodeToString(eTagArray[:])
 
 	// Sign and upload
@@ -462,8 +461,6 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 		actualETagArray := md5.Sum(bytes)
 		actualETag := hex.EncodeToString(actualETagArray[:])
-
-		fmt.Printf("ETag: %s ActualETag: %s", eTag, actualETag)
 
 		// if eTag is empty, it means locker method doesn't support
 		// storing attribute or doesn't contain previous eTag
@@ -560,7 +557,6 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 		// Updated eTag will go to the same defer function
 		eTagArray := md5.Sum(metadataDbData)
-
 		eTag = hex.EncodeToString(eTagArray[:])
 
 		// Sign and upload
