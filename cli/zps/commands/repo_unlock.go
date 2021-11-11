@@ -25,6 +25,8 @@ func NewZpsRepoUnlockCommand() *ZpsRepoUnlockCommand {
 	cmd.PreRunE = cmd.setup
 	cmd.RunE = cmd.run
 
+	cmd.Flags().Bool("remove-etag", false, "Unlock repo with emprty ETag")
+
 	return cmd
 }
 
@@ -39,6 +41,8 @@ func (z *ZpsRepoUnlockCommand) setup(cmd *cobra.Command, args []string) error {
 func (z *ZpsRepoUnlockCommand) run(cmd *cobra.Command, args []string) error {
 	image, _ := cmd.Flags().GetString("image")
 
+	removeETag, _ := cmd.Flags().GetBool("remove-etag")
+
 	if cmd.Flags().Arg(0) == "" {
 		return errors.New("Repo name required")
 	}
@@ -51,7 +55,7 @@ func (z *ZpsRepoUnlockCommand) run(cmd *cobra.Command, args []string) error {
 
 	SetupEventHandlers(mgr.Emitter, z.Ui)
 
-	err = mgr.RepoUnlock(cmd.Flags().Arg(0))
+	err = mgr.RepoUnlock(cmd.Flags().Arg(0), removeETag)
 	if err != nil {
 		z.Fatal(err.Error())
 	}

@@ -48,7 +48,6 @@ func (d *DynamoLocker) Unlock() error {
 		},
 		TableName: &d.tableName,
 	})
-
 	return err
 
 }

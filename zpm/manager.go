@@ -1197,7 +1197,7 @@ func (m *Manager) RepoInit(name string) error {
 	return errors.New("Repo: " + name + " not found")
 }
 
-func (m *Manager) RepoUnlock(name string) error {
+func (m *Manager) RepoUnlock(name string, removeEtag bool) error {
 	err := m.lock.TryLock()
 	if err != nil {
 		return errors.New("zpm: locked by another process")
@@ -1210,6 +1210,10 @@ func (m *Manager) RepoUnlock(name string) error {
 		}
 		if name == repo.Publish.Name && repo.Publish.LockUri != nil {
 			locker := NewLocker(repo.Publish.LockUri)
+			if removeEtag {
+				emptyEtag := ""
+				return locker.UnlockWithEtag(&emptyEtag)
+			}
 			return locker.Unlock()
 		}
 	}
