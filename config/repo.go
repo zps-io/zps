@@ -36,10 +36,12 @@ type FetchConfig struct {
 }
 
 type PublishConfig struct {
-	Uri       *url.URL
-	UriString string `hcl:"uri"`
-	Name      string `hcl:"name"`
-	Prune     int    `hcl:"prune"`
+	Uri           *url.URL
+	UriString     string `hcl:"uri"`
+	Name          string `hcl:"name"`
+	Prune         int    `hcl:"prune"`
+	LockUri       *url.URL
+	LockUriString string `hcl:"lock_uri,optional"`
 }
 
 // Sadly there is no way yet to dump a struct to HCL
@@ -71,10 +73,11 @@ func (r *RepoConfig) ToHclFile() *hclwrite.File {
 	if r.Publish != nil {
 		file.Body().AppendNewline()
 
-		publish := file.Body().AppendNewBlock("fetch", nil)
+		publish := file.Body().AppendNewBlock("publish", nil)
 		publish.Body().SetAttributeValue("uri", cty.StringVal(r.Publish.UriString))
 		publish.Body().SetAttributeValue("name", cty.StringVal(r.Publish.Name))
 		publish.Body().SetAttributeValue("prune", cty.NumberIntVal(int64(r.Publish.Prune)))
+		publish.Body().SetAttributeValue("lock_uri", cty.StringVal(r.Publish.LockUriString))
 	}
 
 	return file

@@ -12,7 +12,8 @@ package zpm
 
 import (
 	"context"
-	"errors"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,6 +22,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -47,9 +49,11 @@ type S3Publisher struct {
 	prune int
 
 	session *session.Session
+
+	lockUri *url.URL
 }
 
-func NewS3Publisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) *S3Publisher {
+func NewS3Publisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int, lockUri *url.URL) *S3Publisher {
 	sess := session.Must(session.NewSession())
 
 	user := uri.User.Username()
@@ -70,7 +74,7 @@ func NewS3Publisher(emitter *emission.Emitter, security Security, workPath strin
 
 	sess.Config.Region = aws.String(region)
 
-	return &S3Publisher{emitter, security, workPath, uri, name, prune, sess}
+	return &S3Publisher{emitter, security, workPath, uri, name, prune, sess, lockUri}
 }
 
 func (s *S3Publisher) Init() error {
@@ -130,6 +134,10 @@ func (s *S3Publisher) Init() error {
 		Body:   configDb,
 	})
 
+	if err != nil {
+		return fmt.Errorf("unable to upload config.db for repo: %s, err: %s", s.uri.Path, err.Error())
+	}
+
 	// Sign and upload
 	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
 	if err != nil {
@@ -159,6 +167,10 @@ func (s *S3Publisher) Init() error {
 			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
 			Body:   configSig,
 		})
+
+		if err != nil {
+			return fmt.Errorf("unable to upload config.sig for repo: %s, err: %s", s.uri.Path, err.Error())
+		}
 	}
 
 	return err
@@ -189,7 +201,7 @@ func (s *S3Publisher) Update() error {
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 	})
 	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+		return fmt.Errorf("unable to download: %s, err: %s", s.uri.Path, err.Error())
 	}
 
 	// Modify config db
@@ -212,6 +224,10 @@ func (s *S3Publisher) Update() error {
 		Key:    aws.String(path.Join(s.uri.Path, "config.db")),
 		Body:   configDb,
 	})
+
+	if err != nil {
+		return fmt.Errorf("unable to upload config.db for repo: %s, err: %s", s.uri.Path, err.Error())
+	}
 
 	// Sign and upload
 	keyPair, err := s.security.KeyPair(PublisherFromUri(s.uri))
@@ -242,6 +258,10 @@ func (s *S3Publisher) Update() error {
 			Key:    aws.String(path.Join(s.uri.Path, "config.sig")),
 			Body:   configSig,
 		})
+
+		if err != nil {
+			return fmt.Errorf("unable to upload config.sig for repo: %s, err: %s", s.uri.Path, err.Error())
+		}
 	}
 
 	return err
@@ -308,6 +328,8 @@ func (s *S3Publisher) Publish(pkgs ...string) error {
 }
 
 func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
+	retries := 10
+
 	tmpDir, err := ioutil.TempDir(s.workPath, "channel")
 	if err != nil {
 		return err
@@ -318,21 +340,56 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
-	metadataDb, err := os.Create(metaPath)
+	locker := NewLocker(s.lockUri)
+
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
-		return err
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
 	}
+
+	defer locker.UnlockWithEtag(&eTag)
+
+	var metadataDb *os.File
 	defer metadataDb.Close()
 
-	// Download metadata db
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(metadataDb, &s3.GetObjectInput{
-		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
-	})
-	if err != nil {
-		return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+	for {
+		metadataDb, err = os.Create(metaPath)
+		if err != nil {
+			return err
+		}
+
+		// Download metadata db
+		_, err = client.Download(metadataDb, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
+		})
+		if err != nil {
+			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
+		}
+
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
+		if err != nil {
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
+		}
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
+			}
+			time.Sleep(6 * time.Second)
+			continue
+		}
+
+		break
 	}
 
 	// Modify metadata
@@ -364,6 +421,19 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 		Body:   metadataDb,
 	})
 
+	if err != nil {
+		return fmt.Errorf("unable to upload new metadata file: %s", s.uri.Path)
+	}
+
+	hash := md5.New()
+	_, err = io.Copy(hash, metadataDb)
+	if err != nil {
+		return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
+	}
+
+	eTagArray := hash.Sum(nil)
+	eTag = hex.EncodeToString(eTagArray[:])
+
 	// Sign and upload
 	if keyPair != nil {
 		rsaKey, err := keyPair.RSAKey()
@@ -386,12 +456,18 @@ func (s *S3Publisher) channel(osarch *zps.OsArch, pkg string, channel string, ke
 			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
 			Body:   metadataSig,
 		})
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
 }
 
 func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
+	retries := 10
+
 	tmpDir, err := ioutil.TempDir(s.workPath, "publish")
 	if err != nil {
 		return err
@@ -402,23 +478,54 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
-	metadataDb, err := os.Create(metaPath)
-	if err != nil {
-		return err
-	}
-	defer metadataDb.Close()
+	locker := NewLocker(s.lockUri)
 
-	// Download metadata db
+	eTag, err := locker.LockWithEtag()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", s.name, err.Error())
+	}
+
+	defer locker.UnlockWithEtag(&eTag)
+
 	client := s3manager.NewDownloader(s.session)
 
-	_, err = client.Download(metadataDb, &s3.GetObjectInput{
-		Bucket: aws.String(s.uri.Host),
-		Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
-	})
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() != "NoSuchKey" {
-			return errors.New(fmt.Sprintf("unable to download: %s", s.uri.Path))
+	for {
+		metadataDb, err := os.Create(metaPath)
+		if err != nil {
+			return err
 		}
+		defer metadataDb.Close()
+
+		// Download metadata db
+		_, err = client.Download(metadataDb, &s3.GetObjectInput{
+			Bucket: aws.String(s.uri.Host),
+			Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.db")),
+		})
+		if err != nil {
+			return fmt.Errorf("unable to download metadata file: %s, err: %s", s.uri.Path, err.Error())
+		}
+
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
+		if err != nil {
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
+		}
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", s.uri.Path, eTag, actualETag)
+			}
+			time.Sleep(6 * time.Second)
+			continue
+		}
+		break
+
 	}
 
 	metadata := NewMetadata(metaPath)
@@ -501,6 +608,20 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 			Body:   metadataUp,
 		})
 
+		if err != nil {
+			return fmt.Errorf("unable to upload new metadata file: %s, err: %s", s.uri.Path, err.Error())
+		}
+
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataUp)
+		if err != nil {
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", s.uri.Path, err.Error())
+		}
+
+		// Updated eTag will go to the same defer function
+		eTagArray := hash.Sum(nil)
+		eTag = hex.EncodeToString(eTagArray[:])
+
 		// Sign and upload
 		if keyPair != nil {
 			rsaKey, err := keyPair.RSAKey()
@@ -523,6 +644,10 @@ func (s *S3Publisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zp
 				Key:    aws.String(path.Join(s.uri.Path, osarch.String(), "metadata.sig")),
 				Body:   configSig,
 			})
+
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		_, err = svc.DeleteObject(&s3.DeleteObjectInput{

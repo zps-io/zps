@@ -107,7 +107,7 @@ func (m *Manager) Channel(repo string, pkg string, channel string) error {
 		}
 
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune, r.Publish.LockUri)
 
 			err := pb.Channel(pkg, channel)
 
@@ -707,12 +707,12 @@ func (m *Manager) Info(pkgName string) ([]string, error) {
 
 func (m *Manager) Install(args []string, request *zps.Request) error {
 	/*
-	f, err := os.Create("zps.pprof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
+		f, err := os.Create("zps.pprof")
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	*/
 	err := m.lock.TryLock()
 	if err != nil {
@@ -1101,7 +1101,7 @@ func (m *Manager) Publish(repo string, pkgs ...string) error {
 		}
 
 		if repo == r.Publish.Name && r.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), r.Publish.Uri, r.Publish.Name, r.Publish.Prune, r.Publish.LockUri)
 
 			return pb.Publish(pkgs...)
 		}
@@ -1188,13 +1188,34 @@ func (m *Manager) RepoInit(name string) error {
 		}
 
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune, repo.Publish.LockUri)
 
 			return pb.Init()
 		}
 	}
 
 	return errors.New("Repo: " + name + " not found")
+}
+
+func (m *Manager) RepoUnlock(name string) error {
+	err := m.lock.TryLock()
+	if err != nil {
+		return errors.New("zpm: locked by another process")
+	}
+	defer m.lock.Unlock()
+
+	for _, repo := range m.config.Repos {
+		if repo.Publish == nil {
+			continue
+		}
+		if name == repo.Publish.Name && repo.Publish.LockUri != nil {
+			locker := NewLocker(repo.Publish.LockUri)
+			return locker.Unlock()
+		}
+	}
+
+	return nil
+
 }
 
 func (m *Manager) RepoContents(name string) ([]string, error) {
@@ -1289,7 +1310,7 @@ func (m *Manager) RepoUpdate(name string) error {
 		}
 
 		if name == repo.Publish.Name && repo.Publish.Uri != nil {
-			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune)
+			pb := NewPublisher(m.Emitter, m.security, m.config.WorkPath(), repo.Publish.Uri, repo.Publish.Name, repo.Publish.Prune, repo.Publish.LockUri)
 
 			return pb.Update()
 		}

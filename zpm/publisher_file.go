@@ -11,20 +11,17 @@
 package zpm
 
 import (
-	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 
-	"github.com/fezz-io/zps/sec"
-
-	"io"
-
 	"github.com/chuckpreslar/emission"
+
+	"github.com/fezz-io/zps/sec"
 	"github.com/fezz-io/zps/zpkg"
 	"github.com/fezz-io/zps/zps"
-	"github.com/nightlyone/lockfile"
 )
 
 type FilePublisher struct {
@@ -36,10 +33,12 @@ type FilePublisher struct {
 	name string
 
 	prune int
+
+	lockUri *url.URL
 }
 
-func NewFilePublisher(emitter *emission.Emitter, security Security, uri *url.URL, name string, prune int) *FilePublisher {
-	return &FilePublisher{emitter, security, uri, name, prune}
+func NewFilePublisher(emitter *emission.Emitter, security Security, uri *url.URL, name string, prune int, lockUri *url.URL) *FilePublisher {
+	return &FilePublisher{emitter, security, uri, name, prune, lockUri}
 }
 
 func (f *FilePublisher) Init() error {
@@ -184,16 +183,14 @@ func (f *FilePublisher) channel(osarch *zps.OsArch, pkg string, channel string, 
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
 	os.Remove(sigPath)
 
-	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
+	locker := NewLocker(f.lockUri)
+
+	err = locker.Lock()
 	if err != nil {
-		return err
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", f.name, err.Error())
 	}
 
-	err = lock.TryLock()
-	if err != nil {
-		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
-	}
-	defer lock.Unlock()
+	defer locker.Unlock()
 
 	metadata := NewMetadata(metaPath)
 	meta, err := metadata.All()
@@ -235,16 +232,14 @@ func (f *FilePublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*
 	os.Mkdir(filepath.Join(f.uri.Path, osarch.String()), 0750)
 	os.Remove(sigPath)
 
-	lock, err := lockfile.New(filepath.Join(f.uri.Path, osarch.String(), ".lock"))
+	locker := NewLocker(f.lockUri)
+
+	err = locker.Lock()
 	if err != nil {
-		return err
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", f.name, err.Error())
 	}
 
-	err = lock.TryLock()
-	if err != nil {
-		return errors.New("Repository: " + f.uri.String() + " " + osarch.String() + " is locked by another process")
-	}
-	defer lock.Unlock()
+	defer locker.Unlock()
 
 	metadata := NewMetadata(metaPath)
 

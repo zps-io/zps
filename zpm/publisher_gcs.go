@@ -12,6 +12,8 @@ package zpm
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,10 +42,12 @@ type GCSPublisher struct {
 	uri   *url.URL
 	name  string
 	prune int
+
+	lockUri *url.URL
 }
 
-func NewGCSPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int) *GCSPublisher {
-	return &GCSPublisher{emitter, security, workPath, uri, name, prune}
+func NewGCSPublisher(emitter *emission.Emitter, security Security, workPath string, uri *url.URL, name string, prune int, lockUri *url.URL) *GCSPublisher {
+	return &GCSPublisher{emitter, security, workPath, uri, name, prune, lockUri}
 }
 
 func (g *GCSPublisher) Init() error {
@@ -83,7 +87,7 @@ func (g *GCSPublisher) Init() error {
 	o := client.Bucket(g.uri.Host).Object(g.uri.Path + "/")
 	if _, err := o.NewWriter(createCtx).Write([]byte("")); err != nil {
 		cancel()
-		return fmt.Errorf("Object(%q).Create: %v", g.uri.Path + "/", err)
+		return fmt.Errorf("Object(%q).Create: %v", g.uri.Path+"/", err)
 	}
 	cancel()
 
@@ -331,6 +335,8 @@ func (g *GCSPublisher) Publish(pkgs ...string) error {
 }
 
 func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, keyPair *KeyPairEntry) error {
+	retries := 10
+
 	tmpDir, err := ioutil.TempDir(g.workPath, "channel")
 	if err != nil {
 		return err
@@ -341,35 +347,68 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
 
-	metadataDb, err := os.Create(metaPath)
+	locker := NewLocker(g.lockUri)
+
+	eTag, err := locker.LockWithEtag()
 	if err != nil {
-		return err
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
 	}
+
+	defer locker.UnlockWithEtag(&eTag)
+
+	var metadataDb *os.File
 	defer metadataDb.Close()
 
 	ctx := context.Background()
+
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Download metadata db
-	cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
-	cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
-	if err != nil {
-		cancel()
-		return fmt.Errorf("unable to download: %s", g.uri.Path)
-	}
+	for {
+		metadataDb, err := os.Create(metaPath)
+		if err != nil {
+			return err
+		}
 
-	if _, err = io.Copy(metadataDb, cd); err != nil {
-		cancel()
-		return fmt.Errorf("io.Copy: %v", err)
+		// Download metadata db
+		cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
+		defer cancel()
+		if err != nil {
+			return fmt.Errorf("unable to download: %s", g.uri.Path)
+		}
+
+		if _, err = io.Copy(metadataDb, cd); err != nil {
+			return fmt.Errorf("io.Copy: %v", err)
+		}
+		if err := cd.Close(); err != nil {
+			return fmt.Errorf("Reader.Close: %v", err)
+		}
+
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
+		if err != nil {
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
+		}
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
+			}
+			time.Sleep(6 * time.Second)
+			continue
+		}
+		break
+
 	}
-	if err := cd.Close(); err != nil {
-		cancel()
-		return fmt.Errorf("Reader.Close: %v", err)
-	}
-	cancel()
 
 	// Modify metadata
 	metadata := NewMetadata(metaPath)
@@ -402,6 +441,15 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 		return fmt.Errorf("Writer.Close: %v", err)
 	}
 	cancel()
+
+	hash := md5.New()
+	_, err = io.Copy(hash, metadataDb)
+	if err != nil {
+		return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
+	}
+
+	eTagArray := hash.Sum(nil)
+	eTag = hex.EncodeToString(eTagArray[:])
 
 	// Sign and upload
 	if keyPair != nil {
@@ -438,6 +486,8 @@ func (g *GCSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 }
 
 func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*zps.Pkg, keyPair *KeyPairEntry) error {
+	retries := 10
+
 	tmpDir, err := ioutil.TempDir(g.workPath, "publish")
 	if err != nil {
 		return err
@@ -447,6 +497,15 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 
 	metaPath := filepath.Join(tmpDir, "metadata.db")
 	sigPath := filepath.Join(tmpDir, "metadata.sig")
+
+	locker := NewLocker(g.lockUri)
+
+	eTag, err := locker.LockWithEtag()
+	if err != nil {
+		return fmt.Errorf("repository: %s is locked by another process, error: %s", g.name, err.Error())
+	}
+
+	defer locker.UnlockWithEtag(&eTag)
 
 	metadataDb, err := os.Create(metaPath)
 	if err != nil {
@@ -460,21 +519,45 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		return err
 	}
 
-	// Download metadata db
-	cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+	for {
+		// Download metadata db
+		cdCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+		defer cancel()
 
-	cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
-	if cd != nil {
-		if _, err = io.Copy(metadataDb, cd); err != nil {
-			cancel()
-			return fmt.Errorf("io.Copy: %v", err)
+		cd, err := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String(), "metadata.db")).NewReader(cdCtx)
+		if err != nil {
+			return fmt.Errorf("unable to read metadata file: %s, err %s", g.uri.Path, err.Error())
 		}
-		if err := cd.Close(); err != nil {
-			cancel()
-			return fmt.Errorf("Reader.Close: %v", err)
+		if cd != nil {
+			if _, err = io.Copy(metadataDb, cd); err != nil {
+				return fmt.Errorf("io.Copy: %v", err)
+			}
+			if err := cd.Close(); err != nil {
+				return fmt.Errorf("Reader.Close: %v", err)
+			}
 		}
+
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataDb)
+		if err != nil {
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
+		}
+		actualETagArray := hash.Sum(nil)
+		actualETag := hex.EncodeToString(actualETagArray[:])
+
+		// if eTag is empty, it means locker method doesn't support
+		// storing attribute or doesn't contain previous eTag
+		// we will break from cycle right after
+		if len(eTag) > 0 && actualETag != eTag {
+			retries -= 1
+			if retries == 0 {
+				return fmt.Errorf("object %q has eTag mismatch: want %q, got %q", g.uri.Path, eTag, actualETag)
+			}
+			time.Sleep(6 * time.Second)
+			continue
+		}
+		break
 	}
-	cancel()
 
 	metadata := NewMetadata(metaPath)
 	repo := &zps.Repo{}
@@ -558,6 +641,15 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		}
 		cancel()
 
+		hash := md5.New()
+		_, err = io.Copy(hash, metadataUp)
+		if err != nil {
+			return fmt.Errorf("unable to calculate md5 sum of metadata file: %s, err: %s", g.uri.Path, err.Error())
+		}
+
+		eTagArray := hash.Sum(nil)
+		eTag = hex.EncodeToString(eTagArray[:])
+
 		// Sign and upload
 		if keyPair != nil {
 			rsaKey, err := keyPair.RSAKey()
@@ -594,7 +686,7 @@ func (g *GCSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 		o := client.Bucket(g.uri.Host).Object(path.Join(g.uri.Path, osarch.String()) + "/")
 		if err := o.Delete(delCtx); err != nil {
 			cancel()
-			return fmt.Errorf("Object(%q).Delete: %v", path.Join(g.uri.Path, osarch.String()) + "/", err)
+			return fmt.Errorf("Object(%q).Delete: %v", path.Join(g.uri.Path, osarch.String())+"/", err)
 		}
 		cancel()
 	}

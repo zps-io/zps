@@ -34,6 +34,7 @@ func NewZpsRepoCommand() *ZpsRepoCommand {
 	cmd.AddCommand(NewZpsRepoContentsCommand().Command)
 	cmd.AddCommand(NewZpsRepoListCommand().Command)
 	cmd.AddCommand(NewZpsRepoUpdateCommand().Command)
+	cmd.AddCommand(NewZpsRepoUnlockCommand().Command)
 	return cmd
 }
 
