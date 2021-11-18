@@ -20,6 +20,6 @@ func NewLocker(uri *url.URL) Locker {
 	case "none":
 		return NewNoneLocker(uri)
 	default:
-		return nil
+		return NewNoneLocker(uri)
 	}
 }
