@@ -338,7 +338,7 @@ func (a *ABSPublisher) channel(osarch *zps.OsArch, pkg string, channel string, k
 
 		bytes, err := ioutil.ReadFile(path.Join(a.path, osarch.String(), "metadata.db"))
 		if err != nil {
-			return fmt.Errorf("unable to read aa metadata file: %s, err: %s", a.uri.Path, err.Error())
+			return fmt.Errorf("unable to read metadata file: %s, err: %s", a.uri.Path, err.Error())
 		}
 
 		actualETagArray := md5.Sum(bytes)
@@ -454,7 +454,7 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			}
 		}
 
-		bytes, err := ioutil.ReadFile(path.Join(a.path, osarch.String(), "metadata.db"))
+		bytes, err := ioutil.ReadFile(metaPath)
 		if err != nil {
 			return fmt.Errorf("unable to read an object: %s, err: %s", a.uri.Path, err.Error())
 		}
@@ -474,7 +474,6 @@ func (a *ABSPublisher) publish(osarch *zps.OsArch, pkgFiles []string, zpkgs []*z
 			continue
 		}
 		break
-
 	}
 
 	metadata := NewMetadata(metaPath)
