@@ -13,7 +13,7 @@ package main
 import (
 	"os"
 
-	"github.com/fezz-io/zps/cli/zps/commands"
+	"github.com/zps-io/zps/cli/zps/commands"
 )
 
 func main() {

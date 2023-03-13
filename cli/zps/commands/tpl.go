@@ -11,9 +11,9 @@
 package commands
 
 import (
-	"github.com/fezz-io/zps/cli"
+	"github.com/zps-io/zps/cli"
 
-	"github.com/fezz-io/zps/zpm"
+	"github.com/zps-io/zps/zpm"
 
 	"errors"
 

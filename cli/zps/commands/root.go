@@ -11,8 +11,8 @@
 package commands
 
 import (
-	"github.com/fezz-io/zps/cli"
 	"github.com/spf13/cobra"
+	"github.com/zps-io/zps/cli"
 )
 
 // TODO get rid of this once cobra cmd has command groups

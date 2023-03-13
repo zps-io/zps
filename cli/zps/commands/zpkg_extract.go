@@ -14,10 +14,10 @@ import (
 	"errors"
 	"os"
 
-	"github.com/fezz-io/zps/zpm"
+	"github.com/zps-io/zps/zpm"
 
-	"github.com/fezz-io/zps/cli"
 	"github.com/spf13/cobra"
+	"github.com/zps-io/zps/cli"
 )
 
 type ZpsZpkgExtractCommand struct {

@@ -8,5 +8,5 @@ Zpkg "zps" {
 }
 
 Tag "zps.vcs.uri" {
-  value = "https://github.com/fezz-io/zps"
+  value = "https://github.com/zps-io/zps"
 }

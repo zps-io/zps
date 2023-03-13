@@ -1,4 +1,4 @@
-module github.com/fezz-io/zps
+module github.com/zps-io/zps
 
 go 1.13
 
@@ -13,7 +13,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/dsnet/compress v0.0.1
-	github.com/fezz-io/sat v0.0.0-20190412034122-acaa8fa26246
+	github.com/zps-io/sat v0.0.0-20190412034122-acaa8fa26246
 	github.com/gernest/wow v0.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.3.0
@@ -37,4 +37,4 @@ require (
 	gopkg.in/resty.v1 v1.12.0
 )
 
-replace github.com/gernest/wow v0.1.0 => github.com/fezz-io/wow v0.1.1-0.20200606051511-4eedecafd068
+replace github.com/gernest/wow v0.1.0 => github.com/zps-io/wow v0.1.1-0.20200606051511-4eedecafd068
